@@ -48,7 +48,7 @@ const NavLink: React.FC<NavLinkProps> = ({
 
       {chevron && (
         <div
-          className={`w-2 h-2 border-l-2 border-b-2 border-[#0A0A0A] transition-all duration-300 group-hover:border-[#86BBD8] ${
+          className={`w-2 h-2 border-l-2 border-b-2 border-[#0A0A0A] transition-all duration-300 group-hover:border-[#27408B] ${
             isOpen ? "rotate-[135deg] mt-[2px]" : "rotate-[-45deg]"
           }`}
         />
