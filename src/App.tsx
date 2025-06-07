@@ -1,18 +1,29 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Navbar from "./components/navigation/Navbar";
-import Home from "./pages/Home";
-import Collectie from "./pages/Collection";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/navigation/Navbar';
+import TopBar from './components/TopBar';
+import Home from './pages/Home';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Footer from './components/Footer';
 
-const App = () => {
+function App() {
   return (
-    <BrowserRouter>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/collectie" element={<Collectie />} />
-      </Routes>
-    </BrowserRouter>
+    <Router>
+      <div className="min-h-screen flex flex-col">
+        <TopBar />
+        <Navbar />
+        {/* alleen padding voor de TopBar (40px hoogte) */}
+        <main className="!flex-grow !pt-[40px]">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </Router>
   );
-};
+}
 
 export default App;

@@ -1,10 +1,6 @@
 import React, { useState, useRef } from "react";
 import NavLink from "./NavLink";
-import {
-  Bars3Icon,
-  XMarkIcon,
-  UserIcon,
-} from "@heroicons/react/24/outline";
+import { Bars3Icon, XMarkIcon, UserIcon } from "@heroicons/react/24/outline";
 
 const Navbar: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -25,7 +21,7 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-white shadow-md w-3/4 h-20 flex items-center justify-between px-6 rounded-b-lg z-50">
+      <nav className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-white shadow-md w-3/4 h-20 flex items-center justify-between px-6 rounded-b-lg z-50">
         {/* Logo */}
         <a href="/" className="inline-flex items-center">
           <img
@@ -86,15 +82,15 @@ const Navbar: React.FC = () => {
             className={`w-8 h-8 transition-transform duration-300 ease-in-out hover:scale-110
               ${isMobileMenuOpen ? "text-[#27408B]" : "text-[#0A0A0A]"}
               group-hover:text-[#27408B]
-              group-focus:text-[#27408B"]}`}
+              group-focus:text-[#27408B]`}
           />
         </button>
       </nav>
 
       {/* Mobile menu */}
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white z-50 shadow-lg transform transition-transform duration-300 ease-in-out 
-        ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} lg:hidden`}
+        className={`fixed top-0 left-0 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
+        ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"} lg:hidden !z-[110]`}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           {/* Mobile logo */}
@@ -147,7 +143,7 @@ const Navbar: React.FC = () => {
 
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/20 z-40"
+          className="fixed inset-0 bg-black/20 !z-[105]"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}

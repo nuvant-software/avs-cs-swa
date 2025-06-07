@@ -1,72 +1,47 @@
-import { useState } from 'react';
+import React from 'react';
 
-const Home = () => {
-  const [currentSlide, setCurrentSlide] = useState(0);
+const Home = () => (
+  <>
+    {/* HERO */}
+    <section
+      className="
+        !relative
+        !w-screen
+        !h-[calc(100vh-40px)]
+        !bg-[url('/assets/hero/slide1.jpg')]
+        !bg-cover
+        !bg-center
+        !flex
+        !items-center
+        !justify-center
+      "
+    >
+      {/* donkere overlay */}
+      <div className="!absolute !inset-0 !bg-black/60" />
 
-  const slides = [
-    {
-      id: 1,
-      image: '/assets/hero/slide1.jpg',
-      title: 'Welkom bij AutoVerkoop',
-      description: 'Uw vertrouwde partner in autohandel'
-    },
-    {
-      id: 2,
-      image: '/assets/hero/slide2.jpg',
-      title: 'Uitgebreide Collectie',
-      description: 'Ontdek onze selectie van kwaliteitsvoertuigen'
-    },
-    {
-      id: 3,
-      image: '/assets/hero/slide3.jpg',
-      title: 'Professionele Service',
-      description: 'Expertise en betrouwbaarheid staan voorop'
-    }
-  ];
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-  };
-
-  return (
-    <div className="fixed inset-0 w-full h-full overflow-hidden">
-      {/* Simple slider */}
-      <div className="absolute inset-0 w-full h-full">
-        <img
-          src={slides[currentSlide].image}
-          alt={slides[currentSlide].title}
-          className="absolute inset-0 w-full h-full object-cover"
-          onError={(e) => {
-            console.error('Error loading image:', slides[currentSlide].image);
-            e.currentTarget.style.border = '2px solid red';
-          }}
-        />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">{slides[currentSlide].title}</h1>
-          <p className="text-xl md:text-2xl">{slides[currentSlide].description}</p>
-        </div>
+      <div className="!relative !text-center !text-white !px-4">
+        <h1 className="!text-5xl !md:text-7xl !font-bold mb-4">
+          Welkom bij AVS Autoverkoop
+        </h1>
+        <p className="!text-lg !md:text-2xl mb-6">
+          Kwaliteit en betrouwbaarheid sinds 2004
+        </p>
+        <button className="!bg-[#27408B] !text-white !px-6 !py-3 !rounded-lg !text-xl hover:!bg-[#0A1833] !transition !duration-300">
+          Bekijk Onze Auto's
+        </button>
       </div>
+    </section>
 
-      {/* Navigation buttons */}
-      <button
-        onClick={prevSlide}
-        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full z-50"
-      >
-        ←
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full z-50"
-      >
-        →
-      </button>
-    </div>
-  );
-};
+    {/* OVER ONS */}
+    <section className="!bg-gray-50 !py-16">
+      <div className="!w-3/4 !mx-auto !text-center">
+        <h2 className="!text-4xl !font-bold mb-4">Over Ons</h2>
+        <p className="!text-lg !text-gray-700">
+          AVS Autoverkoop is al meer dan 20 jaar dé specialist in kwalitatieve tweedehands auto's.
+        </p>
+      </div>
+    </section>
+  </>
+);
 
-export default Home;    
+export default Home;
