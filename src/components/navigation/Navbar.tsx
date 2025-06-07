@@ -21,7 +21,19 @@ const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-white shadow-md w-3/4 h-20 flex items-center justify-between px-6 rounded-b-lg z-50">
+      <nav
+        className="
+          fixed top-10 left-0 transform-none
+          w-full h-20
+          bg-white shadow-md
+          flex items-center justify-between
+          px-6 rounded-b-lg
+          z-50
+      
+          /* desktop: 75% breed, gecentreerd */
+          lg:left-1/2 lg:transform lg:-translate-x-1/2 lg:w-3/4 lg:rounded-b-lg
+        "
+      >
         {/* Logo */}
         <a href="/" className="inline-flex items-center">
           <img
