@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2769.44 1274.6">
+  <defs>
+    <style>
+      .cls-1 {
+        font-family: Conthrax-SemiBold, Conthrax;
+        font-size: 258px;
+        font-weight: 600;
+      }
+
+      .cls-1, .cls-2 {
+        fill: #27408b;
+      }
+
+      .cls-3 {
+        letter-spacing: 0em;
+      }
+
+      .cls-4 {
+        letter-spacing: -.04em;
+      }
+
+      .cls-5 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-6 {
+        letter-spacing: -.03em;
+      }
+
+      .cls-7 {
+        letter-spacing: -.04em;
+      }
+    </style>
+  </defs>
+  <path class="cls-2" d="M1527.06,824.04c-31.4,0-60.73-15.69-78.14-41.82l-.13-.2L930.2,0h223.94l372.93,562.38,314.84-474.78c34.43-51.92,92.58-83.13,154.88-83.13h632.33v186.63h-631.9l-391.86,590.93c-17.1,26.03-46.28,41.86-77.81,42.02h-.47ZM1450.02,678.57c-.14.21-.29.43-.43.65l.43-.65Z"/>
+  <path class="cls-2" d="M1294.97,821.13L788.46,57.37c-22.63-34.1-60.58-54.46-101.51-54.46s-78.88,20.36-101.53,54.49L78.94,821.13h287.95l320.07-482.66,195.93,295.47h-228.48l-123.76,186.62h372.72s103.27,0,103.27,0l.37.56h287.95Z"/>
+  <path class="cls-2" d="M2452.15,823.43h-693.62l107.46-159.97h490.97c43.29,0,78.38-35.09,78.38-78.38h0c0-43.29-35.09-78.38-78.38-78.38h-387l106.06-159.97h376.14c131.63,0,238.34,106.71,238.34,238.34h0c0,131.63-106.71,238.34-238.34,238.34h0Z"/>
+  <rect class="cls-2" x="78.94" y="938.78" width="2611.55" height="40.49"/>
+  <text class="cls-1" transform="translate(84.66 1204.42)"><tspan class="cls-7" x="0" y="0">A</tspan><tspan x="241.23" y="0">U</tspan><tspan class="cls-5" x="493.29" y="0">T</tspan><tspan class="cls-4" x="713.37" y="0">OV</tspan><tspan class="cls-3" x="1198.66" y="0">ER</tspan><tspan class="cls-6" x="1651.45" y="0">K</tspan><tspan x="1864.04" y="0">OOP</tspan></text>
+</svg>
