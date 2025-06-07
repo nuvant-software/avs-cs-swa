@@ -6,6 +6,7 @@ interface NavLinkProps {
   chevron?: boolean;
   isOpen?: boolean;
   className?: string;
+  onClick?: () => void; // ✅ voeg dit toe
 }
 
 const NavLink: React.FC<NavLinkProps> = ({
@@ -14,10 +15,12 @@ const NavLink: React.FC<NavLinkProps> = ({
   chevron,
   isOpen,
   className,
+  onClick, // ✅ destructure
 }) => {
   return (
     <a
       href={href}
+      onClick={onClick} // ✅ hier gebruiken
       className={`group relative inline-flex items-center gap-2 text-lg text-[#27408B] hover:text-[#27408B] transition-colors duration-300 ${className || ""}`}
     >
       {React.Children.map(children, (child) => {

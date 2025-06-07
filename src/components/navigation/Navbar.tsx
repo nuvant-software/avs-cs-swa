@@ -4,7 +4,6 @@ import {
   Bars3Icon,
   XMarkIcon,
   UserIcon,
-  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 
 const Navbar: React.FC = () => {
@@ -88,15 +87,15 @@ const Navbar: React.FC = () => {
           <li><NavLink href="/collectie">Collectie</NavLink></li>
 
           <li>
-            <button
+            <NavLink
+              href="#"
+              chevron={true}
+              isOpen={isMobileDropdownOpen}
+              className="w-full justify-between text-base"
               onClick={() => setIsMobileDropdownOpen(!isMobileDropdownOpen)}
-              className="flex items-center justify-between w-full text-[#0A0A0A] text-base transition-colors duration-300 hover:text-[#1C448E]"
             >
               Diensten
-              <ChevronDownIcon
-                className={`w-6 h-6 transition-transform duration-300 ${isMobileDropdownOpen ? "rotate-180 text-[#1C448E]" : "text-[#0A0A0A]"}`}
-              />
-            </button>
+            </NavLink>
             <ul className={`pl-2 mt-2 space-y-1 transition-all duration-300 overflow-hidden ${isMobileDropdownOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}`}>
               <li><NavLink href="#">Autoverkoop</NavLink></li>
               <li><NavLink href="#">Auto zoeken</NavLink></li>
@@ -111,7 +110,7 @@ const Navbar: React.FC = () => {
               <UserIcon className="w-6 h-6 text-[#0A0A0A]" />
               Login
             </NavLink>
-          </li> 
+          </li>
         </ul>
       </div>
 
