@@ -34,13 +34,6 @@ const Home = () => {
 
   return (
     <div className="fixed inset-0 w-full h-full overflow-hidden">
-      {/* Debug info */}
-      <div className="absolute top-0 left-0 bg-black/50 text-white p-2 z-50">
-        Current slide: {currentSlide + 1}
-        <br />
-        Image path: {slides[currentSlide].image}
-      </div>
-
       {/* Simple slider */}
       <div className="absolute inset-0 w-full h-full">
         <img
