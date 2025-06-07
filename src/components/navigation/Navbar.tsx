@@ -26,8 +26,9 @@ const Navbar: React.FC = () => {
   return (
     <>
       <nav className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-white shadow-md w-3/4 h-20 flex items-center justify-between px-6 rounded-b-lg z-50">
-        <div className="text-2xl font-bold text-[#0A0A0A]">🚗 AutoVerkoop</div>
-
+        <div className="text-2xl font-bold text-[#0A0A0A]">
+          🚗 AutoVerkoop
+        </div>
         <ul className="flex gap-8 max-[1300px]:hidden">
           <li><NavLink href="/">Home</NavLink></li>
           <li><NavLink href="/collectie">Collectie</NavLink></li>
@@ -38,20 +39,27 @@ const Navbar: React.FC = () => {
           >
             <NavLink href="#" chevron={true} isOpen={isDropdownOpen}>Diensten</NavLink>
             <ul
-              className={`absolute left-0 w-56 bg-white shadow-lg overflow-hidden transition-all duration-500 ease-out mt-6 
-                ${isDropdownOpen ? "opacity-100 scale-y-100 translate-y-0" : "opacity-0 scale-y-75 -translate-y-2"}`}
+              className={`
+                absolute left-0 w-56 bg-[#FFFFFF]
+                shadow-lg overflow-hidden
+                transition-all duration-500 ease-out
+                mt-7 py-4
+                rounded-bl-lg rounded-br-lg
+                ${isDropdownOpen 
+                  ? "opacity-100 scale-y-100 translate-y-0" 
+                  : "opacity-0 scale-y-75 -translate-y-2"
+                }`}
               style={{ transformOrigin: "top" }}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
-              <li><NavLink href="#">Autoverkoop</NavLink></li>
-              <li><NavLink href="#">Auto zoeken</NavLink></li>
+              <li className="pl-4"><NavLink href="#">Autoverkoop</NavLink></li>
+              <li className="pl-4"><NavLink href="#">Auto zoeken</NavLink></li>
             </ul>
           </li>
           <li><NavLink href="#">Over Ons</NavLink></li>
           <li><NavLink href="#">Contact</NavLink></li>
         </ul>
-
         <div className="block max-[1300px]:hidden">
           <NavLink href="#" className="inline-flex items-center gap-2">
             <UserIcon className="w-5 h-5 text-[#0A0A0A]" />
@@ -60,11 +68,17 @@ const Navbar: React.FC = () => {
         </div>
 
         <button
-          className="hidden max-[1300px]:block focus:outline-none z-50 transition-colors duration-300 hover:text-[#1C448E]"
-          onClick={() => setIsMobileMenuOpen(true)}
-        >
-          <Bars3Icon className="w-8 h-8 text-[#0A0A0A] transition-transform duration-300 ease-in-out hover:text-[#1C448E] hover:scale-110" />
-        </button>
+        type="button"
+        onClick={() => setIsMobileMenuOpen(true)}
+        className="hidden max-[1300px]:block z-50 !bg-transparent !border-none !outline-none appearance-none group"
+      >
+        <Bars3Icon
+          className={`w-8 h-8 transition-transform duration-300 ease-in-out hover:scale-110
+            ${isMobileMenuOpen ? "text-[#27408B]" : "text-[#0A0A0A]"}
+            group-hover:text-[#27408B]
+            group-focus:text-[#27408B"]}`}
+        />
+      </button>
       </nav>
 
       {/* Mobile menu */}
@@ -75,7 +89,7 @@ const Navbar: React.FC = () => {
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <div className="text-2xl font-bold text-[#0A0A0A]">🚗 AutoVerkoop</div>
           <button
-            className="text-[#0A0A0A] focus:outline-none transition-colors duration-300 hover:text-[#1C448E]"
+            className="text-[#0A0A0A] focus:outline-none !bg-transparent !border-none transition-colors duration-300 hover:text-[#1C448E]"
             onClick={() => setIsMobileMenuOpen(false)}
           >
             <XMarkIcon className="w-8 h-8 transition-transform duration-300 ease-in-out hover:text-[#1C448E] hover:rotate-90" />
