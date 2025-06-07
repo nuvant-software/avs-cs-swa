@@ -52,6 +52,7 @@ const Navbar: React.FC = () => {
                 shadow-lg overflow-hidden
                 transition-all duration-500 ease-out
                 mt-7 py-4
+                space-y-2
                 rounded-bl-lg rounded-br-lg
                 ${isDropdownOpen 
                   ? "opacity-100 scale-y-100 translate-y-0" 
