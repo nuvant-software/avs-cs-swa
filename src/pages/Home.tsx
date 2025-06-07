@@ -20,7 +20,7 @@ const Home: React.FC = () => {
           pb-10
         "
       >
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 !bg-black/60" />
         <div className="relative w-3/4 mx-auto px-6 text-left text-white">
           <h1 className="text-5xl md:text-7xl font-bold mb-4 mt-24">
             Welkom bij AVS Autoverkoop
@@ -28,7 +28,7 @@ const Home: React.FC = () => {
           <p className="text-lg md:text-2xl mb-6">
             Kwaliteit en betrouwbaarheid sinds 2004
           </p>
-          <button className="bg-[#27408B] text-white px-6 py-3 rounded-lg text-xl hover:bg-[#0A1833] transition duration-300">
+          <button className="!bg-[#27408B] text-white px-6 py-3 rounded-lg text-xl hover:!bg-[#0A1833] transition duration-300">
             Bekijk Onze Auto's
           </button>
         </div>
@@ -77,7 +77,7 @@ const Home: React.FC = () => {
             placeholderMin="0"
             placeholderMax="100k"
           />
-          <button className="w-full py-3 bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 hover:bg-[#0A1833] transition">
+          <button className="w-full py-3 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 hover:!bg-[#0A1833] transition">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"
@@ -94,27 +94,14 @@ const Home: React.FC = () => {
 
         {/* tablet (md ≤ w < lg) */}
         <div
-          className="
-            hidden md:flex lg:hidden
-            flex-col space-y-4
-            mx-auto w-3/4 px-6 py-6
-            bg-white shadow-lg rounded-lg
-            md:mt-[-5rem]
-            relative z-20
-          "
+          className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 !bg-white shadow-lg rounded-lg md:mt-[-5rem] relative z-20"
         >
           {/* blauwbalk */}
           <div
-            className="
-              absolute top-0 left-6 transform -translate-y-full
-              bg-[#012E3C] text-white
-              px-8 py-3
-              rounded-t-md
-              text-lg md:text-xl
-              before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2
-              before:border-l-6 before:border-r-6 before:border-t-6
-              before:border-l-transparent before:border-r-transparent before:border-t-[#012E3C]
-            "
+            className="absolute top-0 left-6 transform -translate-y-full !bg-[#012E3C] text-white px-8 py-3 rounded-t-md text-lg md:text-xl
+                       before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2
+                       before:border-l-6 before:border-r-6 before:border-t-6
+                       before:border-l-transparent before:border-r-transparent before:border-t-[#012E3C]"
           >
             Auto zoeken
           </div>
@@ -166,16 +153,7 @@ const Home: React.FC = () => {
                 placeholderMax="100k"
               />
             </div>
-            <button
-              className="
-                w-72 h-14
-                bg-[#27408B] text-white
-                rounded-md
-                flex items-center justify-center space-x-2
-                text-lg
-                hover:bg-[#0A1833] transition
-              "
-            >
+            <button className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 text-lg hover:!bg-[#0A1833] transition">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
@@ -193,27 +171,14 @@ const Home: React.FC = () => {
 
         {/* desktop (lg+) */}
         <div
-          className="
-            hidden lg:flex
-            items-center justify-between gap-x-6
-            mx-auto w-3/4 px-6 py-6
-            bg-white shadow-lg rounded-lg
-            md:mt-[-5rem]
-            relative z-20
-          "
+          className="hidden lg:flex items-center justify-between gap-x-6 mx-auto w-3/4 px-6 py-6 !bg-white shadow-lg rounded-lg md:mt-[-5rem] relative z-20"
         >
           {/* blauwbalk */}
           <div
-            className="
-              absolute top-0 left-6 transform -translate-y-full
-              bg-[#012E3C] text-white
-              px-8 py-3
-              rounded-t-md
-              text-lg md:text-xl
-              before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2
-              before:border-l-6 before:border-r-6 before:border-t-6
-              before:border-l-transparent before:border-r-transparent before:border-t-[#012E3C]
-            "
+            className="absolute top-0 left-6 transform -translate-y-full !bg-[#012E3C] text-white px-8 py-3 rounded-t-md text-lg md:text-xl
+                       before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2
+                       before:border-l-6 before:border-r-6 before:border-t-6
+                       before:border-l-transparent before:border-r-transparent before:border-t-[#012E3C]"
           >
             Auto zoeken
           </div>
@@ -259,16 +224,7 @@ const Home: React.FC = () => {
               placeholderMax="100k"
             />
           </div>
-          <button
-            className="
-              w-72 h-14
-              bg-[#27408B] text-white
-              rounded-md
-              flex items-center justify-center space-x-2
-              text-lg
-              hover:bg-[#0A1833] transition
-            "
-          >
+          <button className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 text-lg hover:!bg-[#0A1833] transition">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"
@@ -278,8 +234,8 @@ const Home: React.FC = () => {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1 0 6.75 6.75a7.5 7.5 0 0 0 10.6 10.6z" />
-            </svg>
-            <span>10 Auto’s</span>
+              </svg>
+              <span>10 Auto’s</span>
           </button>
         </div>
       </div>
