@@ -1,17 +1,106 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import FilterRangeSlider from '../components/filters/FilterRangeSlider'
 import MultiSearchSelect from '../components/filters/MultiSearchSelect'
 
-const Home: React.FC = () => {
-  const brands = ['Mercedes-Benz', 'BMW', 'Tesla']
-  const models = ['A-Klasse', 'Model S', 'Model 3']
-  const variants = ['MERVAR7', 'MERVAR8', 'TESVAR1']
+interface FacetsResponse {
+  totalCount: number
+  facets: {
+    brands: { options: string[] }
+    models: { options: string[] }
+    variants: { options: string[] }
+  }
+  ranges: {
+    price: [number, number]
+  }
+}
 
-  // nu array-states
+const Home: React.FC = () => {
+  const navigate = useNavigate()
+
+  // 👇 states voor geselecteerde filters
   const [brandSelected, setBrandSelected] = useState<string[]>([])
   const [modelSelected, setModelSelected] = useState<string[]>([])
   const [variantSelected, setVariantSelected] = useState<string[]>([])
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000])
+
+  // 👇 states voor de dropdown‐opties
+  const [brands, setBrands]     = useState<string[]>([])
+  const [models, setModels]     = useState<string[]>([])
+  const [variants, setVariants] = useState<string[]>([])
+  const [maxPrice, setMaxPrice] = useState<number>(50000)
+
+  // 🚀 Helper om facet‐API aan te roepen
+  const fetchFacets = async (filters: any) => {
+    const res = await fetch('/api/filter_cars', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filters, includeItems: false })
+    })
+    if (!res.ok) throw new Error(await res.text())
+    return (await res.json()) as FacetsResponse
+  }
+
+  // 1️⃣ Initial load: alleen merken en price‐range ophalen
+  useEffect(() => {
+    fetchFacets({})
+      .then(data => {
+        setBrands(data.facets.brands.options)
+        setMaxPrice(data.ranges.price[1])
+        setPriceRange([0, data.ranges.price[1]])
+      })
+      .catch(console.error)
+  }, [])
+
+  // 2️⃣ Zodra merk(en) gekozen: modellen laden
+  useEffect(() => {
+    if (brandSelected.length === 0) {
+      setModels([])
+      setModelSelected([])
+      return
+    }
+    fetchFacets({ brand: brandSelected })
+      .then(data => {
+        setModels(data.facets.models.options)
+        // clear downstream
+        setModelSelected([])
+        setVariants([])
+        setVariantSelected([])
+      })
+      .catch(console.error)
+  }, [brandSelected])
+
+  // 3️⃣ Zodra model(len) gekozen: varianten laden
+  useEffect(() => {
+    if (modelSelected.length === 0) {
+      setVariants([])
+      setVariantSelected([])
+      return
+    }
+    fetchFacets({ brand: brandSelected, model: modelSelected })
+      .then(data => {
+        setVariants(data.facets.variants.options)
+        setVariantSelected([])
+      })
+      .catch(console.error)
+  }, [modelSelected])
+
+  // 4️⃣ Klik op zoeken: navigeren naar Collection, met filters+includeItems
+  const onSearch = () => {
+    const filters: any = {}
+    if (brandSelected.length)   filters.brand   = brandSelected
+    if (modelSelected.length)   filters.model   = modelSelected
+    if (variantSelected.length) filters.variant = variantSelected
+    filters.price_min = priceRange[0]
+    filters.price_max = priceRange[1]
+
+    navigate('/collection', {
+      state: {
+        filters,
+        includeItems: true
+      }
+    })
+  }
 
   return (
     <>
@@ -38,7 +127,7 @@ const Home: React.FC = () => {
       </section>
 
       <div className="relative w-screen">
-        {/* mobile (sm < md) */}
+        {/* MOBILE */}
         <div className="md:hidden flex flex-col space-y-4 px-6 mt-8 mb-8">
           <h3 className="text-xl font-semibold">Auto zoeken</h3>
 
@@ -53,58 +142,45 @@ const Home: React.FC = () => {
             options={models}
             selected={modelSelected}
             onChange={setModelSelected}
+            disabled={brands.length === 0 || brandSelected.length === 0}
           />
           <MultiSearchSelect
             label="Variant"
             options={variants}
             selected={variantSelected}
             onChange={setVariantSelected}
+            disabled={models.length === 0 || modelSelected.length === 0}
           />
 
           <FilterRangeSlider
             label="Prijs"
             min={0}
-            max={100000}
+            max={maxPrice}
             value={priceRange}
             onChange={setPriceRange}
             placeholderMin="0"
-            placeholderMax="100k"
+            placeholderMax={maxPrice.toString()}
           />
 
-          <button className="w-full py-3 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 hover:!bg-[#0A1833] transition">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1 0 6.75 6.75a7.5 7.5 0 0 0 10.6 10.6z"
-              />
+          <button
+            onClick={onSearch}
+            className="w-full py-3 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 hover:!bg-[#0A1833] transition"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1 0 
+                       6.75 6.75a7.5 7.5 0 0 0 10.6 10.6z" />
             </svg>
-            <span>10 Auto’s</span>
+            <span>Zoek</span>
           </button>
         </div>
 
-        {/* tablet (md ≤ w < lg) */}
+        {/* TABLET */}
         <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 !bg-white shadow-lg rounded-lg -mt-20 relative z-20">
-          <div
-            className="
-              absolute top-0 left-6 -translate-y-full !bg-[#27408B] text-white
-              px-8 py-3 rounded-t-sm text-lg md:text-xl
-              before:content-[''] before:absolute before:top-full before:left-1/2
-              before:-translate-x-1/2 before:border-l-6 before:border-r-6
-              before:border-t-6 before:border-l-transparent
-              before:border-r-transparent before:border-t-[#27408B]
-            "
-          >
-            Auto zoeken
-          </div>
+          {/* ...zelfde inputs als hierboven... */}
           <div className="flex gap-6">
+            {/* Merk */}
             <div className="flex-1">
               <MultiSearchSelect
                 label="Merk"
@@ -113,20 +189,24 @@ const Home: React.FC = () => {
                 onChange={setBrandSelected}
               />
             </div>
+            {/* Model */}
             <div className="flex-1">
               <MultiSearchSelect
                 label="Model"
                 options={models}
                 selected={modelSelected}
                 onChange={setModelSelected}
+                disabled={brandSelected.length === 0}
               />
             </div>
+            {/* Variant */}
             <div className="flex-1">
               <MultiSearchSelect
                 label="Variant"
                 options={variants}
                 selected={variantSelected}
                 onChange={setVariantSelected}
+                disabled={modelSelected.length === 0}
               />
             </div>
           </div>
@@ -135,34 +215,24 @@ const Home: React.FC = () => {
               <FilterRangeSlider
                 label="Prijs"
                 min={0}
-                max={100000}
+                max={maxPrice}
                 value={priceRange}
                 onChange={setPriceRange}
                 placeholderMin="0"
-                placeholderMax="100k"
+                placeholderMax={maxPrice.toString()}
               />
             </div>
-            <button className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 text-lg hover:!bg-[#0A1833] transition">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1 0 6.75 6.75a7.5 7.5 0 0 0 10.6 10.6z"
-                />
-              </svg>
-              <span>10 Auto’s</span>
+            <button
+              onClick={onSearch}
+              className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 text-lg hover:!bg-[#0A1833] transition"
+            >
+              {/* icoon + label */}
+              <span>Zoek</span>
             </button>
           </div>
         </div>
 
-        {/* desktop (lg+) */}
+        {/* DESKTOP */}
         <div className="hidden lg:flex items-center justify-between gap-x-6 mx-auto w-3/4 px-6 py-6 !bg-white shadow-lg -mt-20 relative z-20">
           <div className="w-60">
             <MultiSearchSelect
@@ -178,6 +248,7 @@ const Home: React.FC = () => {
               options={models}
               selected={modelSelected}
               onChange={setModelSelected}
+              disabled={brandSelected.length === 0}
             />
           </div>
           <div className="w-60">
@@ -186,6 +257,7 @@ const Home: React.FC = () => {
               options={variants}
               selected={variantSelected}
               onChange={setVariantSelected}
+              disabled={modelSelected.length === 0}
             />
           </div>
 
@@ -193,30 +265,19 @@ const Home: React.FC = () => {
             <FilterRangeSlider
               label="Prijs"
               min={0}
-              max={100000}
+              max={maxPrice}
               value={priceRange}
               onChange={setPriceRange}
               placeholderMin="0"
-              placeholderMax="100k"
+              placeholderMax={maxPrice.toString()}
             />
           </div>
 
-          <button className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 text-lg hover:!bg-[#0A1833] transition">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1 0 6.75 6.75a7.5 7.5 0 0 0 10.6 10.6z"
-              />
-            </svg>
-            <span>10 Auto’s</span>
+          <button
+            onClick={onSearch}
+            className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 text-lg hover:!bg-[#0A1833] transition"
+          >
+            <span>Zoek</span>
           </button>
         </div>
       </div>

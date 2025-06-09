@@ -5,6 +5,7 @@ interface MultiSearchSelectProps {
   options: string[]
   selected: string[]
   onChange: (selected: string[]) => void
+  disabled?: boolean            // ⬅️ nieuw
 }
 
 const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
@@ -12,6 +13,7 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
   options,
   selected,
   onChange,
+  disabled = false,             // ⬅️ default
 }) => {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -45,17 +47,17 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
       {/* toggle button */}
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        disabled={disabled}                                       // ⬅️ hier
+        onClick={() => !disabled && setOpen((o) => !o)}           // ⬅️ hier
         className={`
           w-full text-left py-3 px-4 border bg-white rounded-sm
+          ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
           ${selected.length === 0 ? 'text-gray-400' : 'text-gray-900'}
           focus:outline-none focus:ring-2 focus:ring-blue-500
           inline-flex items-center justify-between
         `}
       >
-        {selected.length > 0
-          ? selected.join(', ')
-          : label}
+        {selected.length > 0 ? selected.join(', ') : label}
         <svg
           className="w-4 h-4 ml-2"
           fill="none"
@@ -63,17 +65,12 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
           viewBox="0 0 10 6"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="m1 1 4 4 4-4"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m1 1 4 4 4-4" />
         </svg>
       </button>
 
       {/* dropdown pane */}
-      {open && (
+      {open && !disabled && (
         <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-sm shadow-sm">
           <div className="p-2">
             <div className="relative">
@@ -85,12 +82,7 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
                   viewBox="0 0 20 20"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
                 </svg>
               </div>
               <input
@@ -117,9 +109,7 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
               </li>
             ))}
             {filtered.length === 0 && (
-              <li className="py-2 px-3 text-gray-500 italic">
-                Geen resultaten
-              </li>
+              <li className="py-2 px-3 text-gray-500 italic">Geen resultaten</li>
             )}
           </ul>
         </div>
