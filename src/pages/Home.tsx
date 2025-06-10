@@ -6,8 +6,8 @@ import MultiSearchSelect from '../components/filters/MultiSearchSelect'
 interface FacetsResponse {
   totalCount: number
   facets: {
-    brands:   { options: string[] }
-    models:   { options: string[] }
+    brands: { options: string[] }
+    models: { options: string[] }
     variants: { options: string[] }
   }
   ranges: {
@@ -18,46 +18,42 @@ interface FacetsResponse {
 const Home: React.FC = () => {
   const navigate = useNavigate()
 
-  // geselecteerde filters
-  const [brandSelected,   setBrandSelected]   = useState<string[]>([])
-  const [modelSelected,   setModelSelected]   = useState<string[]>([])
+  // 👇 states voor geselecteerde filters
+  const [brandSelected, setBrandSelected]     = useState<string[]>([])
+  const [modelSelected, setModelSelected]     = useState<string[]>([])
   const [variantSelected, setVariantSelected] = useState<string[]>([])
-  const [priceRange,      setPriceRange]      = useState<[number, number]>([0, 0])
+  const [priceRange, setPriceRange]           = useState<[number, number]>([0, 0])
 
-  // dropdown-opties + max-price
-  const [brands,   setBrands]   = useState<string[]>([])
-  const [models,   setModels]   = useState<string[]>([])
+  // 👇 states voor de dropdown-opties
+  const [brands, setBrands]     = useState<string[]>([])
+  const [models, setModels]     = useState<string[]>([])
   const [variants, setVariants] = useState<string[]>([])
   const [maxPrice, setMaxPrice] = useState<number>(0)
 
-  // loading flags (optioneel voor spinner)
-  const [loadingModels,   setLoadingModels]   = useState(false)
-  const [loadingVariants, setLoadingVariants] = useState(false)
-
-  // Helper om facets op te halen
-  const fetchFacets = async (filters: any): Promise<FacetsResponse> => {
+  // 🚀 Helper om facet-API aan te roepen
+  const fetchFacets = async (filters: any) => {
     const res = await fetch('/api/filter_cars', {
-      method:  'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ filters, includeItems: false })
+      body: JSON.stringify({ filters, includeItems: false })
     })
     if (!res.ok) throw new Error(await res.text())
-    return res.json()
+    return (await res.json()) as FacetsResponse
   }
 
-  // 1️⃣ Initial load: haal alle merken en prijs-range op
+  // 1️⃣ Initial load: merken + prijs-range
   useEffect(() => {
     fetchFacets({})
       .then(data => {
         setBrands(data.facets.brands.options)
-        const [, max] = data.ranges.price
+        const [min, max] = data.ranges.price
         setMaxPrice(max)
-        setPriceRange([0, max])
+        setPriceRange([min, max])
       })
       .catch(console.error)
   }, [])
 
-  // 2️⃣ Als merkSelect verandert: laad modellen, maar bewaar eerdere selectie die nog valid is
+  // 2️⃣ Zodra merk(en) gekozen: modellen updaten, oude modellen die niet meer bestaan eruit filteren
   useEffect(() => {
     if (brandSelected.length === 0) {
       setModels([])
@@ -66,42 +62,31 @@ const Home: React.FC = () => {
       setVariantSelected([])
       return
     }
-    setLoadingModels(true)
     fetchFacets({ brand: brandSelected })
       .then(data => {
         setModels(data.facets.models.options)
-        // bewaar enkel de modellen die nog in de nieuwe lijst zitten
-        setModelSelected(prev =>
-          prev.filter(m => data.facets.models.options.includes(m))
-        )
-        // krijg ook nieuwe varianten op basis van (mogelijk) nieuwe modellen later
-        setVariants([])
-        setVariantSelected([])
+        // bewaar alleen geselecteerde modellen die nog in de nieuwe options zitten
+        setModelSelected(prev => prev.filter(m => data.facets.models.options.includes(m)))
       })
       .catch(console.error)
-      .finally(() => setLoadingModels(false))
   }, [brandSelected])
 
-  // 3️⃣ Als modelSelected verandert: laad varianten, bewaar geldige selectie
+  // 3️⃣ Zodra model(len) gekozen: varianten updaten, oude varianten filteren
   useEffect(() => {
     if (modelSelected.length === 0) {
       setVariants([])
       setVariantSelected([])
       return
     }
-    setLoadingVariants(true)
     fetchFacets({ brand: brandSelected, model: modelSelected })
       .then(data => {
         setVariants(data.facets.variants.options)
-        setVariantSelected(prev =>
-          prev.filter(v => data.facets.variants.options.includes(v))
-        )
+        setVariantSelected(prev => prev.filter(v => data.facets.variants.options.includes(v)))
       })
       .catch(console.error)
-      .finally(() => setLoadingVariants(false))
   }, [modelSelected])
 
-  // 4️⃣ Zoek-knop: naar collectie met filters+items
+  // 4️⃣ Zoek-knop: navigeren naar Collection, met filters+includeItems
   const onSearch = () => {
     const filters: any = {}
     if (brandSelected.length)   filters.brand   = brandSelected
@@ -139,7 +124,6 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* FILTERS */}
       <div className="relative w-screen">
         {/* MOBILE */}
         <div className="md:hidden flex flex-col space-y-4 px-6 mt-8 mb-8">
@@ -156,12 +140,14 @@ const Home: React.FC = () => {
             options={models}
             selected={modelSelected}
             onChange={setModelSelected}
+            disabled={brandSelected.length === 0}
           />
           <MultiSearchSelect
             label="Variant"
             options={variants}
             selected={variantSelected}
             onChange={setVariantSelected}
+            disabled={modelSelected.length === 0}
           />
 
           <FilterRangeSlider
@@ -191,48 +177,42 @@ const Home: React.FC = () => {
         {/* TABLET */}
         <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 !bg-white shadow-lg rounded-lg -mt-20 relative z-20">
           <div className="flex gap-6">
-            <div className="flex-1">
-              <MultiSearchSelect
-                label="Merk"
-                options={brands}
-                selected={brandSelected}
-                onChange={setBrandSelected}
-              />
-            </div>
-            <div className="flex-1">
-              <MultiSearchSelect
-                label="Model"
-                options={models}
-                selected={modelSelected}
-                onChange={setModelSelected}
-              />
-            </div>
-            <div className="flex-1">
-              <MultiSearchSelect
-                label="Variant"
-                options={variants}
-                selected={variantSelected}
-                onChange={setVariantSelected}
-              />
-            </div>
+            <MultiSearchSelect
+              label="Merk"
+              options={brands}
+              selected={brandSelected}
+              onChange={setBrandSelected}
+            />
+            <MultiSearchSelect
+              label="Model"
+              options={models}
+              selected={modelSelected}
+              onChange={setModelSelected}
+              disabled={brandSelected.length === 0}
+            />
+            <MultiSearchSelect
+              label="Variant"
+              options={variants}
+              selected={variantSelected}
+              onChange={setVariantSelected}
+              disabled={modelSelected.length === 0}
+            />
           </div>
           <div className="flex items-center gap-6">
-            <div className="flex-1">
-              <FilterRangeSlider
-                label="Prijs"
-                min={0}
-                max={maxPrice}
-                value={priceRange}
-                onChange={setPriceRange}
-                placeholderMin="0"
-                placeholderMax={maxPrice.toString()}
-              />
-            </div>
+            <FilterRangeSlider
+              label="Prijs"
+              min={0}
+              max={maxPrice}
+              value={priceRange}
+              onChange={setPriceRange}
+              placeholderMin="0"
+              placeholderMax={maxPrice.toString()}
+            />
             <button
               onClick={onSearch}
               className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 text-lg hover:!bg-[#0A1833] transition"
             >
-              Zoek
+              <span>Zoek</span>
             </button>
           </div>
         </div>
@@ -253,6 +233,7 @@ const Home: React.FC = () => {
               options={models}
               selected={modelSelected}
               onChange={setModelSelected}
+              disabled={brandSelected.length === 0}
             />
           </div>
           <div className="w-60">
@@ -261,8 +242,10 @@ const Home: React.FC = () => {
               options={variants}
               selected={variantSelected}
               onChange={setVariantSelected}
+              disabled={modelSelected.length === 0}
             />
           </div>
+
           <div className="w-80">
             <FilterRangeSlider
               label="Prijs"
@@ -274,11 +257,12 @@ const Home: React.FC = () => {
               placeholderMax={maxPrice.toString()}
             />
           </div>
+
           <button
             onClick={onSearch}
             className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 text-lg hover:!bg-[#0A1833] transition"
           >
-            Zoek
+            <span>Zoek</span>
           </button>
         </div>
       </div>
