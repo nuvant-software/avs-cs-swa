@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Footer from './components/Footer';
+import Collection from './pages/Collection';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
         <main className="!flex-grow !pt-[40px]">
           <Routes>
             <Route path="/" element={<Home />} />
+             <Route path="/collection" element={<Collection />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
           </Routes>
