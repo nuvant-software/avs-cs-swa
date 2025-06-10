@@ -1,39 +1,72 @@
-import React, { useEffect, useState } from 'react'
+// src/pages/Collection.tsx
+import React, { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 
+interface LocationState {
+  filters: Record<string, any>
+  includeItems: boolean
+}
+
 const Collection: React.FC = () => {
-  const { state } = useLocation() as {
-    state: { filters: any; includeItems: boolean }
-  }
-  const [result, setResult] = useState<any>(null)
-  const [error, setError]   = useState<string|null>(null)
+  const location = useLocation()
+  const state = location.state as LocationState | undefined
+
+  const [data, setData]       = useState<any>(null)
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError]     = useState<string | null>(null)
 
   useEffect(() => {
     if (!state) {
       setError('Geen filters doorgegeven.')
+      setLoading(false)
       return
     }
-    fetch('/api/filter_cars', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(state)
-    })
-      .then(res => {
-        if (!res.ok) throw new Error(`(${res.status}) ${res.statusText}`)
-        return res.json()
-      })
-      .then(json => setResult(json))
-      .catch(err => setError(err.message))
+    const fetchData = async () => {
+      try {
+        const res = await fetch('/api/filter_cars', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filters: state.filters,
+            includeItems: true
+          })
+        })
+        if (!res.ok) {
+          const text = await res.text()
+          throw new Error(text || res.statusText)
+        }
+        const json = await res.json()
+        setData(json)
+      } catch (err: any) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
   }, [state])
 
-  if (error) return <div className="p-4 text-red-600">Fout: {error}</div>
-  if (!result) return <div className="p-4">Laden…</div>
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <p>Bezig met laden…</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <p className="text-red-500">Fout bij ophalen: {error}</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Auto Collectie</h1>
-      <pre className="bg-gray-100 p-4 rounded overflow-auto">
-        {JSON.stringify(result, null, 2)}
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">Auto Collectie</h1>
+      <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+        {JSON.stringify(data, null, 2)}
       </pre>
     </div>
   )
