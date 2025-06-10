@@ -6,8 +6,8 @@ import MultiSearchSelect from '../components/filters/MultiSearchSelect'
 interface FacetsResponse {
   totalCount: number
   facets: {
-    brands: { options: string[] }
-    models: { options: string[] }
+    brands:   { options: string[] }
+    models:   { options: string[] }
     variants: { options: string[] }
   }
   ranges: {
@@ -18,19 +18,23 @@ interface FacetsResponse {
 const Home: React.FC = () => {
   const navigate = useNavigate()
 
-  // 👇 states voor geselecteerde filters
-  const [brandSelected,  setBrandSelected]  = useState<string[]>([])
-  const [modelSelected,  setModelSelected]  = useState<string[]>([])
-  const [variantSelected,setVariantSelected]= useState<string[]>([])
-  const [priceRange,     setPriceRange]     = useState<[number, number]>([0, 0])
+  // geselecteerde filters
+  const [brandSelected,   setBrandSelected]   = useState<string[]>([])
+  const [modelSelected,   setModelSelected]   = useState<string[]>([])
+  const [variantSelected, setVariantSelected] = useState<string[]>([])
+  const [priceRange,      setPriceRange]      = useState<[number, number]>([0, 0])
 
-  // 👇 states voor de dropdown-opties
-  const [brands,  setBrands]  = useState<string[]>([])
-  const [models,  setModels]  = useState<string[]>([])
-  const [variants,setVariants]= useState<string[]>([])
-  const [maxPrice,setMaxPrice]= useState<number>(0)
+  // dropdown-opties + max-price
+  const [brands,   setBrands]   = useState<string[]>([])
+  const [models,   setModels]   = useState<string[]>([])
+  const [variants, setVariants] = useState<string[]>([])
+  const [maxPrice, setMaxPrice] = useState<number>(0)
 
-  // 🚀 Helper om facet-API aan te roepen
+  // loading flags (optioneel voor spinner)
+  const [loadingModels,   setLoadingModels]   = useState(false)
+  const [loadingVariants, setLoadingVariants] = useState(false)
+
+  // Helper om facets op te halen
   const fetchFacets = async (filters: any): Promise<FacetsResponse> => {
     const res = await fetch('/api/filter_cars', {
       method:  'POST',
@@ -41,51 +45,63 @@ const Home: React.FC = () => {
     return res.json()
   }
 
-  // 1️⃣ initial load: merken + prijs-range
+  // 1️⃣ Initial load: haal alle merken en prijs-range op
   useEffect(() => {
     fetchFacets({})
       .then(data => {
         setBrands(data.facets.brands.options)
-        const [min, max] = data.ranges.price
+        const [, max] = data.ranges.price
         setMaxPrice(max)
-        setPriceRange([min, max])
+        setPriceRange([0, max])
       })
       .catch(console.error)
   }, [])
 
-  // 2️⃣ bij merken-selectie: laad modellen
+  // 2️⃣ Als merkSelect verandert: laad modellen, maar bewaar eerdere selectie die nog valid is
   useEffect(() => {
     if (brandSelected.length === 0) {
       setModels([])
       setModelSelected([])
+      setVariants([])
+      setVariantSelected([])
       return
     }
+    setLoadingModels(true)
     fetchFacets({ brand: brandSelected })
       .then(data => {
         setModels(data.facets.models.options)
-        setModelSelected([])
+        // bewaar enkel de modellen die nog in de nieuwe lijst zitten
+        setModelSelected(prev =>
+          prev.filter(m => data.facets.models.options.includes(m))
+        )
+        // krijg ook nieuwe varianten op basis van (mogelijk) nieuwe modellen later
         setVariants([])
         setVariantSelected([])
       })
       .catch(console.error)
+      .finally(() => setLoadingModels(false))
   }, [brandSelected])
 
-  // 3️⃣ bij modellen-selectie: laad varianten
+  // 3️⃣ Als modelSelected verandert: laad varianten, bewaar geldige selectie
   useEffect(() => {
     if (modelSelected.length === 0) {
       setVariants([])
       setVariantSelected([])
       return
     }
+    setLoadingVariants(true)
     fetchFacets({ brand: brandSelected, model: modelSelected })
       .then(data => {
         setVariants(data.facets.variants.options)
-        setVariantSelected([])
+        setVariantSelected(prev =>
+          prev.filter(v => data.facets.variants.options.includes(v))
+        )
       })
       .catch(console.error)
+      .finally(() => setLoadingVariants(false))
   }, [modelSelected])
 
-  // 4️⃣ bij klikken op zoeken: naar collectie met filters + includeItems
+  // 4️⃣ Zoek-knop: naar collectie met filters+items
   const onSearch = () => {
     const filters: any = {}
     if (brandSelected.length)   filters.brand   = brandSelected
@@ -123,6 +139,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* FILTERS */}
       <div className="relative w-screen">
         {/* MOBILE */}
         <div className="md:hidden flex flex-col space-y-4 px-6 mt-8 mb-8">
@@ -161,20 +178,11 @@ const Home: React.FC = () => {
             onClick={onSearch}
             className="w-full py-3 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 hover:!bg-[#0A1833] transition"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2}
-                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1 0 
-                   6.75 6.75a7.5 7.5 0 0 0 10.6 10.6z" 
-              />
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1 0 
+                       6.75 6.75a7.5 7.5 0 0 0 10.6 10.6z" />
             </svg>
             <span>Zoek</span>
           </button>
