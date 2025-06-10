@@ -19,40 +19,41 @@ const Home: React.FC = () => {
   const navigate = useNavigate()
 
   // 👇 states voor geselecteerde filters
-  const [brandSelected, setBrandSelected] = useState<string[]>([])
-  const [modelSelected, setModelSelected] = useState<string[]>([])
-  const [variantSelected, setVariantSelected] = useState<string[]>([])
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000])
+  const [brandSelected,  setBrandSelected]  = useState<string[]>([])
+  const [modelSelected,  setModelSelected]  = useState<string[]>([])
+  const [variantSelected,setVariantSelected]= useState<string[]>([])
+  const [priceRange,     setPriceRange]     = useState<[number, number]>([0, 0])
 
-  // 👇 states voor de dropdown‐opties
-  const [brands, setBrands]     = useState<string[]>([])
-  const [models, setModels]     = useState<string[]>([])
-  const [variants, setVariants] = useState<string[]>([])
-  const [maxPrice, setMaxPrice] = useState<number>(50000)
+  // 👇 states voor de dropdown-opties
+  const [brands,  setBrands]  = useState<string[]>([])
+  const [models,  setModels]  = useState<string[]>([])
+  const [variants,setVariants]= useState<string[]>([])
+  const [maxPrice,setMaxPrice]= useState<number>(0)
 
-  // 🚀 Helper om facet‐API aan te roepen
-  const fetchFacets = async (filters: any) => {
+  // 🚀 Helper om facet-API aan te roepen
+  const fetchFacets = async (filters: any): Promise<FacetsResponse> => {
     const res = await fetch('/api/filter_cars', {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filters, includeItems: false })
+      body:    JSON.stringify({ filters, includeItems: false })
     })
     if (!res.ok) throw new Error(await res.text())
-    return (await res.json()) as FacetsResponse
+    return res.json()
   }
 
-  // 1️⃣ Initial load: alleen merken en price‐range ophalen
+  // 1️⃣ initial load: merken + prijs-range
   useEffect(() => {
     fetchFacets({})
       .then(data => {
         setBrands(data.facets.brands.options)
-        setMaxPrice(data.ranges.price[1])
-        setPriceRange([0, data.ranges.price[1]])
+        const [min, max] = data.ranges.price
+        setMaxPrice(max)
+        setPriceRange([min, max])
       })
       .catch(console.error)
   }, [])
 
-  // 2️⃣ Zodra merk(en) gekozen: modellen laden
+  // 2️⃣ bij merken-selectie: laad modellen
   useEffect(() => {
     if (brandSelected.length === 0) {
       setModels([])
@@ -62,7 +63,6 @@ const Home: React.FC = () => {
     fetchFacets({ brand: brandSelected })
       .then(data => {
         setModels(data.facets.models.options)
-        // clear downstream
         setModelSelected([])
         setVariants([])
         setVariantSelected([])
@@ -70,7 +70,7 @@ const Home: React.FC = () => {
       .catch(console.error)
   }, [brandSelected])
 
-  // 3️⃣ Zodra model(len) gekozen: varianten laden
+  // 3️⃣ bij modellen-selectie: laad varianten
   useEffect(() => {
     if (modelSelected.length === 0) {
       setVariants([])
@@ -85,7 +85,7 @@ const Home: React.FC = () => {
       .catch(console.error)
   }, [modelSelected])
 
-  // 4️⃣ Klik op zoeken: navigeren naar Collection, met filters+includeItems
+  // 4️⃣ bij klikken op zoeken: naar collectie met filters + includeItems
   const onSearch = () => {
     const filters: any = {}
     if (brandSelected.length)   filters.brand   = brandSelected
@@ -95,10 +95,7 @@ const Home: React.FC = () => {
     filters.price_max = priceRange[1]
 
     navigate('/collection', {
-      state: {
-        filters,
-        includeItems: true
-      }
+      state: { filters, includeItems: true }
     })
   }
 
@@ -142,14 +139,12 @@ const Home: React.FC = () => {
             options={models}
             selected={modelSelected}
             onChange={setModelSelected}
-            disabled={brands.length === 0 || brandSelected.length === 0}
           />
           <MultiSearchSelect
             label="Variant"
             options={variants}
             selected={variantSelected}
             onChange={setVariantSelected}
-            disabled={models.length === 0 || modelSelected.length === 0}
           />
 
           <FilterRangeSlider
@@ -166,11 +161,20 @@ const Home: React.FC = () => {
             onClick={onSearch}
             className="w-full py-3 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 hover:!bg-[#0A1833] transition"
           >
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1 0 
-                       6.75 6.75a7.5 7.5 0 0 0 10.6 10.6z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2}
+                d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1 0 
+                   6.75 6.75a7.5 7.5 0 0 0 10.6 10.6z" 
+              />
             </svg>
             <span>Zoek</span>
           </button>
@@ -178,9 +182,7 @@ const Home: React.FC = () => {
 
         {/* TABLET */}
         <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 !bg-white shadow-lg rounded-lg -mt-20 relative z-20">
-          {/* ...zelfde inputs als hierboven... */}
           <div className="flex gap-6">
-            {/* Merk */}
             <div className="flex-1">
               <MultiSearchSelect
                 label="Merk"
@@ -189,24 +191,20 @@ const Home: React.FC = () => {
                 onChange={setBrandSelected}
               />
             </div>
-            {/* Model */}
             <div className="flex-1">
               <MultiSearchSelect
                 label="Model"
                 options={models}
                 selected={modelSelected}
                 onChange={setModelSelected}
-                disabled={brandSelected.length === 0}
               />
             </div>
-            {/* Variant */}
             <div className="flex-1">
               <MultiSearchSelect
                 label="Variant"
                 options={variants}
                 selected={variantSelected}
                 onChange={setVariantSelected}
-                disabled={modelSelected.length === 0}
               />
             </div>
           </div>
@@ -226,8 +224,7 @@ const Home: React.FC = () => {
               onClick={onSearch}
               className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 text-lg hover:!bg-[#0A1833] transition"
             >
-              {/* icoon + label */}
-              <span>Zoek</span>
+              Zoek
             </button>
           </div>
         </div>
@@ -248,7 +245,6 @@ const Home: React.FC = () => {
               options={models}
               selected={modelSelected}
               onChange={setModelSelected}
-              disabled={brandSelected.length === 0}
             />
           </div>
           <div className="w-60">
@@ -257,10 +253,8 @@ const Home: React.FC = () => {
               options={variants}
               selected={variantSelected}
               onChange={setVariantSelected}
-              disabled={modelSelected.length === 0}
             />
           </div>
-
           <div className="w-80">
             <FilterRangeSlider
               label="Prijs"
@@ -272,12 +266,11 @@ const Home: React.FC = () => {
               placeholderMax={maxPrice.toString()}
             />
           </div>
-
           <button
             onClick={onSearch}
             className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 text-lg hover:!bg-[#0A1833] transition"
           >
-            <span>Zoek</span>
+            Zoek
           </button>
         </div>
       </div>
