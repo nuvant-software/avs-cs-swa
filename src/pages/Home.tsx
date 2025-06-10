@@ -18,19 +18,19 @@ interface FacetsResponse {
 const Home: React.FC = () => {
   const navigate = useNavigate()
 
-  // 👇 states voor geselecteerde filters
+  // ✨ geselecteerde filters
   const [brandSelected, setBrandSelected]     = useState<string[]>([])
   const [modelSelected, setModelSelected]     = useState<string[]>([])
   const [variantSelected, setVariantSelected] = useState<string[]>([])
   const [priceRange, setPriceRange]           = useState<[number, number]>([0, 0])
 
-  // 👇 states voor de dropdown-opties
+  // ✨ dropdown-opties
   const [brands, setBrands]     = useState<string[]>([])
   const [models, setModels]     = useState<string[]>([])
   const [variants, setVariants] = useState<string[]>([])
   const [maxPrice, setMaxPrice] = useState<number>(0)
 
-  // 🚀 Helper om facet-API aan te roepen
+  // Facet-API helper
   const fetchFacets = async (filters: any) => {
     const res = await fetch('/api/filter_cars', {
       method: 'POST',
@@ -41,7 +41,7 @@ const Home: React.FC = () => {
     return (await res.json()) as FacetsResponse
   }
 
-  // 1️⃣ Initial load: merken + prijs-range
+  // 1️⃣ initial load: merken + prijs‐range
   useEffect(() => {
     fetchFacets({})
       .then(data => {
@@ -53,7 +53,7 @@ const Home: React.FC = () => {
       .catch(console.error)
   }, [])
 
-  // 2️⃣ Zodra merk(en) gekozen: modellen updaten, oude modellen die niet meer bestaan eruit filteren
+  // 2️⃣ bij wijziging merk: update modellen (en filter oude)
   useEffect(() => {
     if (brandSelected.length === 0) {
       setModels([])
@@ -65,13 +65,12 @@ const Home: React.FC = () => {
     fetchFacets({ brand: brandSelected })
       .then(data => {
         setModels(data.facets.models.options)
-        // bewaar alleen geselecteerde modellen die nog in de nieuwe options zitten
         setModelSelected(prev => prev.filter(m => data.facets.models.options.includes(m)))
       })
       .catch(console.error)
   }, [brandSelected])
 
-  // 3️⃣ Zodra model(len) gekozen: varianten updaten, oude varianten filteren
+  // 3️⃣ bij wijziging model: update varianten (en filter oude)
   useEffect(() => {
     if (modelSelected.length === 0) {
       setVariants([])
@@ -86,7 +85,7 @@ const Home: React.FC = () => {
       .catch(console.error)
   }, [modelSelected])
 
-  // 4️⃣ Zoek-knop: navigeren naar Collection, met filters+includeItems
+  // 4️⃣ zoek-knop
   const onSearch = () => {
     const filters: any = {}
     if (brandSelected.length)   filters.brand   = brandSelected
@@ -124,6 +123,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* FILTERBAR */}
       <div className="relative w-screen">
         {/* MOBILE */}
         <div className="md:hidden flex flex-col space-y-4 px-6 mt-8 mb-8">

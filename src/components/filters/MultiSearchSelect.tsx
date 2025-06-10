@@ -5,7 +5,7 @@ interface MultiSearchSelectProps {
   options: string[]
   selected: string[]
   onChange: (selected: string[]) => void
-  disabled?: boolean            // ⬅️ nieuw
+  disabled?: boolean              // ← nieuw
 }
 
 const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
@@ -13,13 +13,13 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
   options,
   selected,
   onChange,
-  disabled = false,             // ⬅️ default
+  disabled = false,               // ← default
 }) => {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const ref = useRef<HTMLDivElement>(null)
 
-  // klik-buiten sluit dropdown
+  // klik buiten sluit dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -30,13 +30,13 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const filtered = options.filter((o) =>
+  const filtered = options.filter(o =>
     o.toLowerCase().includes(search.toLowerCase())
   )
 
   const toggleOption = (opt: string) => {
     if (selected.includes(opt)) {
-      onChange(selected.filter((s) => s !== opt))
+      onChange(selected.filter(s => s !== opt))
     } else {
       onChange([...selected, opt])
     }
@@ -44,11 +44,10 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
 
   return (
     <div className="relative w-full" ref={ref}>
-      {/* toggle button */}
       <button
         type="button"
-        disabled={disabled}                                       // ⬅️ hier
-        onClick={() => !disabled && setOpen((o) => !o)}           // ⬅️ hier
+        disabled={disabled}
+        onClick={() => !disabled && setOpen(o => !o)}
         className={`
           w-full text-left py-3 px-4 border bg-white rounded-sm
           ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
@@ -69,7 +68,6 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
         </svg>
       </button>
 
-      {/* dropdown pane */}
       {open && !disabled && (
         <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-sm shadow-sm">
           <div className="p-2">
@@ -82,7 +80,8 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
                   viewBox="0 0 20 20"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
                 </svg>
               </div>
               <input
@@ -90,12 +89,12 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
                 className="block w-full pl-10 p-2 text-sm border border-gray-300 rounded-sm bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
                 placeholder={`Zoek ${label.toLowerCase()}`}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
               />
             </div>
           </div>
           <ul className="max-h-40 overflow-y-auto text-sm text-gray-700">
-            {filtered.map((opt) => (
+            {filtered.map(opt => (
               <li key={opt}>
                 <label className="flex items-center py-2 px-3 hover:bg-gray-100 w-full cursor-pointer">
                   <input
