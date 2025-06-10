@@ -1,3 +1,4 @@
+// src/components/filters/MultiSearchSelect.tsx
 import React, { useState, useRef, useEffect } from 'react'
 
 interface MultiSearchSelectProps {
@@ -5,7 +6,7 @@ interface MultiSearchSelectProps {
   options: string[]
   selected: string[]
   onChange: (selected: string[]) => void
-  disabled?: boolean              // ← nieuw
+  disabled?: boolean
 }
 
 const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
@@ -13,7 +14,7 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
   options,
   selected,
   onChange,
-  disabled = false,               // ← default
+  disabled = false,
 }) => {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -30,9 +31,11 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const filtered = options.filter(o =>
-    o.toLowerCase().includes(search.toLowerCase())
-  )
+  // ✅ filter alleen geldige strings
+  const searchLower = search.toLowerCase()
+  const filtered = options
+    .filter(opt => typeof opt === 'string')                 // geen undefined / null
+    .filter(opt => opt.toLowerCase().includes(searchLower)) // pas dan toLowerCase
 
   const toggleOption = (opt: string) => {
     if (selected.includes(opt)) {
