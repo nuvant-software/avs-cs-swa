@@ -23,9 +23,12 @@ const Home: React.FC = () => {
   const [brandSelected, setBrandSelected]     = useState<string[]>([])
   const [modelSelected, setModelSelected]     = useState<string[]>([])
   const [variantSelected, setVariantSelected] = useState<string[]>([])
-  const [priceRange, setPriceRange]           = useState<[number,number]>([0,0])
 
-  // bij mount: alles ophalen + validatie
+  // 3️⃣ Prijs-state: bounds (vast) + selectie
+  const [priceBounds, setPriceBounds]   = useState<[number,number]>([0,0])
+  const [priceRange, setPriceRange]     = useState<[number,number]>([0,0])
+
+  // bij mount: alle auto's ophalen + init prijs-bounds
   useEffect(() => {
     fetch('/api/filter_cars', {
       method: 'POST',
@@ -56,19 +59,23 @@ const Home: React.FC = () => {
 
         setCars(valid)
 
-        // init prijs-slider (nóg geen relatie met andere filters!)
         if (valid.length) {
           const prices = valid.map(c => c.price)
-          setPriceRange([Math.min(...prices), Math.max(...prices)])
+          const mn = Math.min(...prices)
+          const mx = Math.max(...prices)
+          setPriceBounds([mn, mx])
+          setPriceRange([mn, mx])
         }
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
 
-  // 3️⃣ Facetten & instant filtering
+  // 4️⃣ Facetten (instant in‐memory)
   const brands = useMemo(
-    () => Array.from(new Set(cars.map(c => c.brand))).sort(),
+    () =>
+      Array.from(new Set(cars.map(c => c.brand)))
+           .sort(),
     [cars]
   )
 
@@ -76,7 +83,8 @@ const Home: React.FC = () => {
     const base = brandSelected.length
       ? cars.filter(c => brandSelected.includes(c.brand))
       : cars
-    return Array.from(new Set(base.map(c => c.model))).sort()
+    return Array.from(new Set(base.map(c => c.model)))
+           .sort()
   }, [cars, brandSelected])
 
   const variants = useMemo(() => {
@@ -89,10 +97,11 @@ const Home: React.FC = () => {
           ? cars.filter(c => brandSelected.includes(c.brand))
           : cars
         )
-    return Array.from(new Set(base.map(c => c.variant))).sort()
+    return Array.from(new Set(base.map(c => c.variant)))
+           .sort()
   }, [cars, brandSelected, modelSelected])
 
-  // 4️⃣ Auto-deselect: houd enkel wat nog geldig is
+  // 5️⃣ Auto-deselect ongeldige modellen/varianten
   useEffect(() => {
     setModelSelected(ms => ms.filter(m => models.includes(m)))
   }, [models])
@@ -100,7 +109,7 @@ const Home: React.FC = () => {
     setVariantSelected(vs => vs.filter(v => variants.includes(v)))
   }, [variants])
 
-  // 5️⃣ Gefilterde lijst & count
+  // 6️⃣ Gefilterde lijst & count
   const filteredCars = useMemo(
     () =>
       cars.filter(c =>
@@ -112,7 +121,7 @@ const Home: React.FC = () => {
     [cars, brandSelected, modelSelected, variantSelected, priceRange]
   )
 
-  // 6️⃣ Zoek → Collection
+  // 7️⃣ Zoek → Collection
   const onSearch = () => {
     navigate('/collection', {
       state: {
@@ -133,12 +142,14 @@ const Home: React.FC = () => {
 
   return (
     <>
-      {/* HERO (onveranderd) */}
-      <section className="
+      {/* HERO */}  
+      <section
+        className={`
           relative w-screen h-[85vh] md:h-[80vh]
           !bg-[url('/assets/hero/slide1.jpg')] !bg-cover !bg-center
           flex items-center justify-start pb-10
-        ">
+        `}
+      >
         <div className="absolute inset-0 !bg-black/60" />
         <div className="relative w-3/4 mx-auto px-6 text-left text-white">
           <h1 className="text-5xl md:text-7xl font-bold mb-4 mt-24">
@@ -153,54 +164,72 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* FILTERBAR */}
+      {/* FILTERBAR */}  
       <div className="relative w-screen">
         {/* MOBILE */}
         <div className="md:hidden flex flex-col space-y-4 px-6 mt-8 mb-8">
           <h3 className="text-xl font-semibold">Auto zoeken</h3>
-          <MultiSearchSelect label="Merk"    options={brands}   selected={brandSelected}   onChange={setBrandSelected}/>
-          <MultiSearchSelect label="Model"   options={models}   selected={modelSelected}   onChange={setModelSelected}/>
-          <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected}/>
+
+          <MultiSearchSelect
+            label="Merk"
+            options={brands}
+            selected={brandSelected}
+            onChange={setBrandSelected}
+          />
+          <MultiSearchSelect
+            label="Model"
+            options={models}
+            selected={modelSelected}
+            onChange={setModelSelected}
+          />
+          <MultiSearchSelect
+            label="Variant"
+            options={variants}
+            selected={variantSelected}
+            onChange={setVariantSelected}
+          />
+
           <FilterRangeSlider
             label="Prijs"
-            min={priceRange[0]}
-            max={priceRange[1]}
+            min={priceBounds[0]}
+            max={priceBounds[1]}
             value={priceRange}
             onChange={setPriceRange}
-            placeholderMin={priceRange[0].toString()}
-            placeholderMax={priceRange[1].toString()}
+            placeholderMin={priceBounds[0].toString()}
+            placeholderMax={priceBounds[1].toString()}
           />
+
           <button
             onClick={onSearch}
-            className="w-full py-3 bg-[#27408B] text-white rounded-md hover:bg-[#0A1833] transition"
+            className="w-full py-3 !bg-[#27408B] text-white rounded-md flex items-center justify-center hover:!bg-[#0A1833] transition"
           >
             Zoek ({filteredCars.length}) Auto’s
           </button>
         </div>
 
         {/* TABLET */}
-        <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg rounded-lg -mt-20 z-20">
+        <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg rounded-lg -mt-20 relative z-20">
           <div className="flex gap-6">
-            <MultiSearchSelect label="Merk"    options={brands}   selected={brandSelected}   onChange={setBrandSelected}/>
-            <MultiSearchSelect label="Model"   options={models}   selected={modelSelected}   onChange={setModelSelected}/>
-            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected}/>
+            <MultiSearchSelect label="Merk"    options={brands}   selected={brandSelected}   onChange={setBrandSelected} />
+            <MultiSearchSelect label="Model"   options={models}   selected={modelSelected}   onChange={setModelSelected} />
+            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected} />
           </div>
           <div className="flex gap-6">
             <div className="flex-1">
               <FilterRangeSlider
                 label="Prijs"
-                min={priceRange[0]}
-                max={priceRange[1]}
+                min={priceBounds[0]}
+                max={priceBounds[1]}
                 value={priceRange}
                 onChange={setPriceRange}
-                placeholderMin={priceRange[0].toString()}
-                placeholderMax={priceRange[1].toString()}
+                placeholderMin={priceBounds[0].toString()}
+                placeholderMax={priceBounds[1].toString()}
               />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 flex justify-center">
               <button
                 onClick={onSearch}
-                className="w-full h-14 bg-[#27408B] text-white rounded-md hover:bg-[#0A1833] transition"
+                className="w-full h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center hover:!bg-[#0A1833] transition"
               >
                 Zoek ({filteredCars.length}) Auto’s
               </button>
@@ -208,25 +237,31 @@ const Home: React.FC = () => {
           </div>
         </div>
 
-        {/* DESKTOP (onveranderd) */}
-        <div className="hidden lg:flex items-center justify-between gap-x-6 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg -mt-20 z-20">
-          <div className="w-60"><MultiSearchSelect label="Merk"    options={brands}   selected={brandSelected}   onChange={setBrandSelected}/></div>
-          <div className="w-60"><MultiSearchSelect label="Model"   options={models}   selected={modelSelected}   onChange={setModelSelected}/></div>
-          <div className="w-60"><MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected}/></div>
+        {/* DESKTOP */}
+        <div className="hidden lg:flex items-center justify-between gap-x-6 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg -mt-20 relative z-20">
+          <div className="w-60">
+            <MultiSearchSelect label="Merk"    options={brands}   selected={brandSelected}   onChange={setBrandSelected} />
+          </div>
+          <div className="w-60">
+            <MultiSearchSelect label="Model"   options={models}   selected={modelSelected}   onChange={setModelSelected} />
+          </div>
+          <div className="w-60">
+            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected} />
+          </div>
           <div className="w-80">
             <FilterRangeSlider
               label="Prijs"
-              min={priceRange[0]}
-              max={priceRange[1]}
+              min={priceBounds[0]}
+              max={priceBounds[1]}
               value={priceRange}
               onChange={setPriceRange}
-              placeholderMin={priceRange[0].toString()}
-              placeholderMax={priceRange[1].toString()}
+              placeholderMin={priceBounds[0].toString()}
+              placeholderMax={priceBounds[1].toString()}
             />
           </div>
           <button
             onClick={onSearch}
-            className="w-72 h-14 bg-[#27408B] text-white rounded-md hover:bg-[#0A1833] transition"
+            className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center hover:!bg-[#0A1833] transition"
           >
             Zoek ({filteredCars.length}) Auto’s
           </button>
