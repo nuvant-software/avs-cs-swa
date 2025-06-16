@@ -9,7 +9,6 @@ interface CarOverview {
   model: string
   variant: string
   price: number
-  // … eventueel thumbnailUrl, id, etc.
 }
 
 const Home: React.FC = () => {
@@ -73,40 +72,46 @@ const Home: React.FC = () => {
   const brands = useMemo(
     () =>
       Array.from(new Set(cars.map(c => c.brand)))
-        .filter(Boolean)
-        .sort(),
+           .filter(Boolean)
+           .sort(),
     [cars]
   )
 
   const models = useMemo(() => {
-    if (!brandSelected.length) return []
-    return Array.from(
-      new Set(
-        cars
-          .filter(c => brandSelected.includes(c.brand))
-          .map(c => c.model)
-      )
-    )
-      .filter(Boolean)
-      .sort()
+    // geen merken = alle modellen
+    const base = brandSelected.length
+      ? cars.filter(c => brandSelected.includes(c.brand))
+      : cars
+    return Array.from(new Set(base.map(c => c.model)))
+           .filter(Boolean)
+           .sort()
   }, [cars, brandSelected])
 
   const variants = useMemo(() => {
-    if (!modelSelected.length) return []
-    return Array.from(
-      new Set(
-        cars
-          .filter(c =>
-            brandSelected.includes(c.brand) &&
-            modelSelected.includes(c.model)
-          )
-          .map(c => c.variant)
-      )
-    )
-      .filter(Boolean)
-      .sort()
+    // geen modellen = alle varianten (vanuit merk-filter)
+    const base = modelSelected.length
+      ? cars.filter(c =>
+          (brandSelected.length === 0 || brandSelected.includes(c.brand)) &&
+          modelSelected.includes(c.model)
+        )
+      : (brandSelected.length
+          ? cars.filter(c => brandSelected.includes(c.brand))
+          : cars
+        )
+    return Array.from(new Set(base.map(c => c.variant)))
+           .filter(Boolean)
+           .sort()
   }, [cars, brandSelected, modelSelected])
 
+  // 4️⃣ Auto-deselect: houd enkel wat nog in de nieuwe opties zit
+  useEffect(() => {
+    setModelSelected(ms => ms.filter(m => models.includes(m)))
+  }, [models])
+  useEffect(() => {
+    setVariantSelected(vs => vs.filter(v => variants.includes(v)))
+  }, [variants])
+
+  // 5️⃣ Filterde lijst & count
   const filteredCars = useMemo(
     () =>
       cars.filter(c =>
@@ -118,7 +123,7 @@ const Home: React.FC = () => {
     [cars, brandSelected, modelSelected, variantSelected, priceRange]
   )
 
-  // 4️⃣ Zoek-button → Collection
+  // 6️⃣ Zoek-button → Collection
   const onSearch = () => {
     navigate('/collection', {
       state: {
@@ -179,14 +184,12 @@ const Home: React.FC = () => {
             options={models}
             selected={modelSelected}
             onChange={setModelSelected}
-            disabled={!brandSelected.length}
           />
           <MultiSearchSelect
             label="Variant"
             options={variants}
             selected={variantSelected}
             onChange={setVariantSelected}
-            disabled={!modelSelected.length}
           />
 
           <FilterRangeSlider
@@ -211,8 +214,8 @@ const Home: React.FC = () => {
         <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg rounded-lg -mt-20 relative z-20">
           <div className="flex gap-6">
             <MultiSearchSelect label="Merk"    options={brands}   selected={brandSelected}   onChange={setBrandSelected} />
-            <MultiSearchSelect label="Model"   options={models}   selected={modelSelected}   onChange={setModelSelected}   disabled={!brandSelected.length} />
-            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected} disabled={!modelSelected.length} />
+            <MultiSearchSelect label="Model"   options={models}   selected={modelSelected}   onChange={setModelSelected} />
+            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected} />
           </div>
           <div className="flex items-center gap-6">
             <FilterRangeSlider
@@ -235,9 +238,15 @@ const Home: React.FC = () => {
 
         {/* DESKTOP */}
         <div className="hidden lg:flex items-center justify-between gap-x-6 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg -mt-20 relative z-20">
-          <div className="w-60"><MultiSearchSelect label="Merk"    options={brands}   selected={brandSelected}   onChange={setBrandSelected} /></div>
-          <div className="w-60"><MultiSearchSelect label="Model"   options={models}   selected={modelSelected}   onChange={setModelSelected}   disabled={!brandSelected.length} /></div>
-          <div className="w-60"><MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected} disabled={!modelSelected.length} /></div>
+          <div className="w-60">
+            <MultiSearchSelect label="Merk"    options={brands}   selected={brandSelected}   onChange={setBrandSelected} />
+          </div>
+          <div className="w-60">
+            <MultiSearchSelect label="Model"   options={models}   selected={modelSelected}   onChange={setModelSelected} />
+          </div>
+          <div className="w-60">
+            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected} />
+          </div>
           <div className="w-80">
             <FilterRangeSlider
               label="Prijs"
