@@ -1,149 +1,109 @@
 // src/pages/Home.tsx
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import FilterRangeSlider from '../components/filters/FilterRangeSlider'
 import MultiSearchSelect from '../components/filters/MultiSearchSelect'
 
-interface CarOverview {
-  brand: string
-  model: string
-  variant: string
-  price: number
-  // … eventueel thumbnailUrl, id, etc.
+interface FacetsResponse {
+  totalCount: number
+  facets: {
+    brands: { options: string[] }
+    models: { options: string[] }
+    variants: { options: string[] }
+  }
+  ranges: {
+    price: [number, number]
+  }
 }
 
 const Home: React.FC = () => {
   const navigate = useNavigate()
 
-  // 1) Raw data: haal in één keer ALLE auto's
-  const [cars, setCars]       = useState<CarOverview[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState<string | null>(null)
-
-  // 2) Geselecteerde filters
+  // geselecteerde filters
   const [brandSelected, setBrandSelected]     = useState<string[]>([])
   const [modelSelected, setModelSelected]     = useState<string[]>([])
   const [variantSelected, setVariantSelected] = useState<string[]>([])
   const [priceRange, setPriceRange]           = useState<[number, number]>([0, 0])
 
-  // bij mount: alles ophalen
-  useEffect(() => {
-    fetch('/api/filter_cars', {
+  // dropdown‐opties
+  const [brands, setBrands]     = useState<string[]>([])
+  const [models, setModels]     = useState<string[]>([])
+  const [variants, setVariants] = useState<string[]>([])
+  const [maxPrice, setMaxPrice] = useState<number>(0)
+
+  // helper om facets op te halen
+  const fetchFacets = async (filters: any) => {
+    const res = await fetch('/api/filter_cars', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filters: {}, includeItems: true })
+      body: JSON.stringify({ filters, includeItems: false })
     })
-      .then(res => {
-        if (!res.ok) throw new Error(res.statusText)
-        return res.json()
-      })
-      .then((data: { items: CarOverview[] }) => {
-        // filter out eventuele incomplete records
-        const items = Array.isArray(data.items)
-          ? data.items.filter(
-              c =>
-                typeof c.brand === 'string' &&
-                typeof c.model === 'string' &&
-                typeof c.variant === 'string' &&
-                typeof c.price === 'number'
-            )
-          : []
-
-        setCars(items)
-
-        // init prijs‐slider
-        if (items.length > 0) {
-          const prices = items.map(c => c.price)
-          const mn = Math.min(...prices)
-          const mx = Math.max(...prices)
-          setPriceRange([mn, mx])
-        }
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [])
-
-  // 3) Bereken facetten en gefilterde lijst met useMemo voor instant UI
-  const brands = useMemo(
-    () =>
-      Array.from(new Set(cars.map(c => c.brand)))
-        .filter(b => b)      // extra guard
-        .sort(),
-    [cars]
-  )
-
-  const models = useMemo(() => {
-    if (!brandSelected.length) return []
-    return Array.from(
-      new Set(
-        cars
-          .filter(c => brandSelected.includes(c.brand))
-          .map(c => c.model)
-      )
-    )
-      .filter(m => m)
-      .sort()
-  }, [cars, brandSelected])
-
-  const variants = useMemo(() => {
-    if (!modelSelected.length) return []
-    return Array.from(
-      new Set(
-        cars
-          .filter(
-            c =>
-              brandSelected.includes(c.brand) &&
-              modelSelected.includes(c.model)
-          )
-          .map(c => c.variant)
-      )
-    )
-      .filter(v => v)
-      .sort()
-  }, [cars, brandSelected, modelSelected])
-
-  const filteredCars = useMemo(
-    () =>
-      cars.filter(
-        c =>
-          (!brandSelected.length || brandSelected.includes(c.brand)) &&
-          (!modelSelected.length || modelSelected.includes(c.model)) &&
-          (!variantSelected.length ||
-            variantSelected.includes(c.variant)) &&
-          c.price >= priceRange[0] &&
-          c.price <= priceRange[1]
-      ),
-    [cars, brandSelected, modelSelected, variantSelected, priceRange]
-  )
-
-  // 4) Naar collectiepagina
-  const onSearch = () => {
-    navigate('/collection', {
-      state: {
-        filters: {
-          brand: brandSelected,
-          model: modelSelected,
-          variant: variantSelected,
-          price_min: priceRange[0],
-          price_max: priceRange[1]
-        },
-        includeItems: true
-      }
-    })
+    if (!res.ok) throw new Error(await res.text())
+    return (await res.json()) as FacetsResponse
   }
 
-  if (loading)
-    return (
-      <div className="p-4">
-        <p>Bezig met laden…</p>
-      </div>
-    )
-  if (error)
-    return (
-      <div className="p-4">
-        <p className="text-red-500">Fout: {error}</p>
-      </div>
-    )
+  // 1️⃣ bij mount: alleen merken + prijsschaal
+  useEffect(() => {
+    fetchFacets({})
+      .then(data => {
+        setBrands(data.facets.brands.options)
+        const [min, max] = data.ranges.price
+        setMaxPrice(max)
+        setPriceRange([min, max])
+      })
+      .catch(console.error)
+  }, [])
+
+  // 2️⃣ wanneer merk(en) verandert: laad modellen, en filter oude selectie
+  useEffect(() => {
+    if (brandSelected.length === 0) {
+      setModels([])
+      setModelSelected([])
+      setVariants([])
+      setVariantSelected([])
+      return
+    }
+    fetchFacets({ brand: brandSelected })
+      .then(data => {
+        setModels(data.facets.models.options)
+        // bewaar alleen modellen die nog bestaan
+        setModelSelected(prev =>
+          prev.filter(m => data.facets.models.options.includes(m))
+        )
+      })
+      .catch(console.error)
+  }, [brandSelected])
+
+  // 3️⃣ wanneer model(len) verandert: laad varianten en filter oude selectie
+  useEffect(() => {
+    if (modelSelected.length === 0) {
+      setVariants([])
+      setVariantSelected([])
+      return
+    }
+    fetchFacets({ brand: brandSelected, model: modelSelected })
+      .then(data => {
+        setVariants(data.facets.variants.options)
+        setVariantSelected(prev =>
+          prev.filter(v => data.facets.variants.options.includes(v))
+        )
+      })
+      .catch(console.error)
+  }, [modelSelected])
+
+  // 4️⃣ zoek‐knop: navigeren naar collectie
+  const onSearch = () => {
+    const filters: any = {}
+    if (brandSelected.length)   filters.brand   = brandSelected
+    if (modelSelected.length)   filters.model   = modelSelected
+    if (variantSelected.length) filters.variant = variantSelected
+    filters.price_min = priceRange[0]
+    filters.price_max = priceRange[1]
+
+    navigate('/collection', {
+      state: { filters, includeItems: true }
+    })
+  }
 
   return (
     <>
@@ -210,7 +170,7 @@ const Home: React.FC = () => {
             onClick={onSearch}
             className="w-full py-3 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 hover:!bg-[#0A1833] transition"
           >
-            <span>Zoek ({filteredCars.length}) Auto’s</span>
+            <span>Zoek Auto’s</span>
           </button>
         </div>
 
@@ -252,7 +212,7 @@ const Home: React.FC = () => {
               onClick={onSearch}
               className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 text-lg hover:!bg-[#0A1833] transition"
             >
-              <span>Zoek ({filteredCars.length}) Auto’s</span>
+              <span>Zoek Auto’s</span>
             </button>
           </div>
         </div>
@@ -302,7 +262,7 @@ const Home: React.FC = () => {
             onClick={onSearch}
             className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center space-x-2 text-lg hover:!bg-[#0A1833] transition"
           >
-            <span>Zoek ({filteredCars.length}) Auto’s</span>
+            <span>Zoek Auto’s</span>
           </button>
         </div>
       </div>
