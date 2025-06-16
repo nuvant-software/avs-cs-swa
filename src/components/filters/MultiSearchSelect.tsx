@@ -31,11 +31,11 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // ✅ filter alleen geldige strings
+  // filter alleen geldige strings
   const searchLower = search.toLowerCase()
   const filtered = options
-    .filter(opt => typeof opt === 'string')                 // geen undefined / null
-    .filter(opt => opt.toLowerCase().includes(searchLower)) // pas dan toLowerCase
+    .filter(opt => typeof opt === 'string')
+    .filter(opt => opt.toLowerCase().includes(searchLower))
 
   const toggleOption = (opt: string) => {
     if (selected.includes(opt)) {
@@ -44,6 +44,18 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
       onChange([...selected, opt])
     }
   }
+
+  // helper om label te construeren met “+X meer” en afkappen
+  const labelText = React.useMemo(() => {
+    if (selected.length === 0) return label
+    // toon maximaal 2 items, daarna “…”
+    const maxShow = 2
+    const shown = selected.slice(0, maxShow)
+    const rest = selected.length - shown.length
+    return rest > 0
+      ? shown.join(', ') + ` +${rest} meer`
+      : shown.join(', ')
+  }, [label, selected])
 
   return (
     <div className="relative w-full" ref={ref}>
@@ -59,9 +71,14 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
           inline-flex items-center justify-between
         `}
       >
-        {selected.length > 0 ? selected.join(', ') : label}
+        <span
+          className="block truncate whitespace-nowrap"
+          title={selected.length > 0 ? selected.join(', ') : undefined}
+        >
+          {labelText}
+        </span>
         <svg
-          className="w-4 h-4 ml-2"
+          className="w-4 h-4 ml-2 flex-shrink-0"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 10 6"
@@ -83,8 +100,12 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
                   viewBox="0 0 20 20"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
+                  />
                 </svg>
               </div>
               <input
