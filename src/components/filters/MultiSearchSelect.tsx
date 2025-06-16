@@ -53,7 +53,7 @@ const MultiSearchSelect: React.FC<MultiSearchSelectProps> = ({
     const shown = selected.slice(0, maxShow)
     const rest = selected.length - shown.length
     return rest > 0
-      ? shown.join(', ') + ` +${rest} meer`
+      ? shown.join(', ') + ` +${rest}`
       : shown.join(', ')
   }, [label, selected])
 
