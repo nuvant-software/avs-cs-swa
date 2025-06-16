@@ -24,25 +24,25 @@ const Home: React.FC = () => {
   const [modelSelected, setModelSelected]     = useState<string[]>([])
   const [variantSelected, setVariantSelected] = useState<string[]>([])
 
-  // 3️⃣ Prijs‐slider: vaste bounds + huidige selectie
+  // 3️⃣ Prijs-slider bounds + range
   const [priceBounds, setPriceBounds] = useState<[number,number]>([0,0])
   const [priceRange, setPriceRange]   = useState<[number,number]>([0,0])
 
-  // bij mount: alle auto's ophalen + init prijs‐bounds
+  // — bij mount: haal alles op en init prijs-slider
   useEffect(() => {
     fetch('/api/filter_cars', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ filters: {}, includeItems: true })
     })
       .then(res => {
         if (!res.ok) throw new Error(res.statusText)
         return res.json()
       })
-      .then((data: { items?: any[] }) => {
+      .then((data:{ items?: any[] }) => {
         const items = Array.isArray(data.items) ? data.items : []
         const valid: CarOverview[] = items
-          .map(item => item.car_overview)
+          .map(i => i.car_overview)
           .filter(co =>
             co &&
             typeof co.brand   === 'string' &&
@@ -71,11 +71,30 @@ const Home: React.FC = () => {
       .finally(() => setLoading(false))
   }, [])
 
-  // 4️⃣ Facetten (instant, in‐memory)
-  const brands = useMemo(
-    () => Array.from(new Set(cars.map(c => c.brand))).sort(),
-    [cars]
-  )
+  // 4️⃣ Bouw maps voor per-brand/model opties
+  const brandModelsMap = useMemo(() => {
+    const m: Record<string,Set<string>> = {}
+    cars.forEach(c => {
+      if (!m[c.brand]) m[c.brand] = new Set()
+      m[c.brand].add(c.model)
+    })
+    return m
+  }, [cars])
+
+  const brandModelVariantsMap = useMemo(() => {
+    const m: Record<string,Record<string,Set<string>>> = {}
+    cars.forEach(c => {
+      if (!m[c.brand]) m[c.brand] = {}
+      if (!m[c.brand][c.model]) m[c.brand][c.model] = new Set()
+      m[c.brand][c.model].add(c.variant)
+    })
+    return m
+  }, [cars])
+
+  // 5️⃣ Compute facet-lists (voor dropdowns)
+  const brands = useMemo(() =>
+    Array.from(new Set(cars.map(c => c.brand))).sort()
+  , [cars])
 
   const models = useMemo(() => {
     const base = brandSelected.length
@@ -97,8 +116,7 @@ const Home: React.FC = () => {
     return Array.from(new Set(base.map(c => c.variant))).sort()
   }, [cars, brandSelected, modelSelected])
 
-  // 5️⃣ Auto‐deselect logica voor *alle* views
-  // Als je alle merken deselecteert → clear modellen & varianten
+  // 6️⃣ “Auto-deselect” logic — clearing downstream when upstream cleared
   useEffect(() => {
     if (brandSelected.length === 0) {
       setModelSelected([])
@@ -106,14 +124,13 @@ const Home: React.FC = () => {
     }
   }, [brandSelected])
 
-  // Als je alle modellen deselecteert → clear varianten
   useEffect(() => {
     if (modelSelected.length === 0) {
       setVariantSelected([])
     }
   }, [modelSelected])
 
-  // én filter stale keuzes eruit (reserve)
+  // bovendien altijd stale values eruit filteren (reserve)
   useEffect(() => {
     setModelSelected(ms => ms.filter(m => models.includes(m)))
   }, [models])
@@ -121,19 +138,66 @@ const Home: React.FC = () => {
     setVariantSelected(vs => vs.filter(v => variants.includes(v)))
   }, [variants])
 
-  // 6️⃣ Gefilterde lijst & count
-  const filteredCars = useMemo(
-    () =>
-      cars.filter(c =>
-        (!brandSelected.length   || brandSelected.includes(c.brand))   &&
-        (!modelSelected.length   || modelSelected.includes(c.model))   &&
-        (!variantSelected.length || variantSelected.includes(c.variant))&&
-        c.price >= priceRange[0] && c.price <= priceRange[1]
-      ),
-    [cars, brandSelected, modelSelected, variantSelected, priceRange]
-  )
+  // 7️⃣ Per-brand selected models/variants
+  const selectedModelsPerBrand = useMemo(() => {
+    const out: Record<string,string[]> = {}
+    brandSelected.forEach(b => {
+      const all = brandModelsMap[b] || new Set()
+      out[b] = modelSelected.filter(m => all.has(m))
+    })
+    return out
+  }, [brandSelected, modelSelected, brandModelsMap])
 
-  // 7️⃣ Zoek → Collection
+  const selectedVariantsPerBrandModel = useMemo(() => {
+    const out: Record<string,Record<string,string[]>> = {}
+    brandSelected.forEach(b => {
+      out[b] = {}
+      const mm = brandModelVariantsMap[b] || {}
+      Object.keys(mm).forEach(m => {
+        out[b][m] = variantSelected.filter(v => mm[m].has(v))
+      })
+    })
+    return out
+  }, [brandSelected, variantSelected, brandModelVariantsMap])
+
+  // 8️⃣ Filtered cars: per-brand OR logic
+  const filteredCars = useMemo(() => {
+    return cars.filter(c => {
+      // brand filter
+      if (brandSelected.length > 0 && !brandSelected.includes(c.brand)) {
+        return false
+      }
+      // model filter (only if user selected models *for this brand*)
+      if (modelSelected.length > 0) {
+        const selForBrand = selectedModelsPerBrand[c.brand] || []
+        if (selForBrand.length > 0 && !selForBrand.includes(c.model)) {
+          return false
+        }
+      }
+      // variant filter (only if user selected variants *for this brand/model*)
+      if (variantSelected.length > 0) {
+        const selForBM = selectedVariantsPerBrandModel[c.brand]?.[c.model] || []
+        if (selForBM.length > 0 && !selForBM.includes(c.variant)) {
+          return false
+        }
+      }
+      // prijs filter
+      if (c.price < priceRange[0] || c.price > priceRange[1]) {
+        return false
+      }
+      return true
+    })
+  }, [
+    cars,
+    brandSelected,
+    modelSelected,
+    variantSelected,
+    priceRange,
+    selectedModelsPerBrand,
+    selectedVariantsPerBrandModel
+  ])
+
+  // 9️⃣ Navigeren naar Collection
   const onSearch = () => {
     navigate('/collection', {
       state: {
@@ -219,11 +283,11 @@ const Home: React.FC = () => {
         {/* TABLET */}
         <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg rounded-lg -mt-20 relative z-20">
           <div className="flex gap-6">
-            <MultiSearchSelect label="Merk"    options={brands} selected={brandSelected}   onChange={setBrandSelected} />
-            <MultiSearchSelect label="Model"   options={models} selected={modelSelected}   onChange={setModelSelected} />
-            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected} />
+            <MultiSearchSelect label="Merk"    options={brands}    selected={brandSelected}   onChange={setBrandSelected} />
+            <MultiSearchSelect label="Model"   options={models}    selected={modelSelected}   onChange={setModelSelected} />
+            <MultiSearchSelect label="Variant" options={variants}  selected={variantSelected} onChange={setVariantSelected} />
           </div>
-          <div className="flex items-center gap-6"> {/* items-center toegevoegd */}
+          <div className="flex items-center gap-6">
             <div className="flex-1">
               <FilterRangeSlider
                 label="Prijs"
@@ -262,7 +326,7 @@ const Home: React.FC = () => {
               label="Prijs"
               min={priceBounds[0]}
               max={priceBounds[1]}
-              value={priceRange}
+              value={priceRange}  
               onChange={setPriceRange}
               placeholderMin={priceBounds[0].toString()}
               placeholderMax={priceBounds[1].toString()}
