@@ -24,11 +24,11 @@ const Home: React.FC = () => {
   const [modelSelected, setModelSelected]     = useState<string[]>([])
   const [variantSelected, setVariantSelected] = useState<string[]>([])
 
-  // 3️⃣ Prijs-state: bounds (vast) + selectie
-  const [priceBounds, setPriceBounds]   = useState<[number,number]>([0,0])
-  const [priceRange, setPriceRange]     = useState<[number,number]>([0,0])
+  // 3️⃣ Prijs‐slider: vaste bounds + huidige selectie
+  const [priceBounds, setPriceBounds] = useState<[number,number]>([0,0])
+  const [priceRange, setPriceRange]   = useState<[number,number]>([0,0])
 
-  // bij mount: alle auto's ophalen + init prijs-bounds
+  // bij mount: alle auto's ophalen + init prijs‐bounds
   useEffect(() => {
     fetch('/api/filter_cars', {
       method: 'POST',
@@ -71,11 +71,9 @@ const Home: React.FC = () => {
       .finally(() => setLoading(false))
   }, [])
 
-  // 4️⃣ Facetten (instant in‐memory)
+  // 4️⃣ Facetten (instant, in‐memory)
   const brands = useMemo(
-    () =>
-      Array.from(new Set(cars.map(c => c.brand)))
-           .sort(),
+    () => Array.from(new Set(cars.map(c => c.brand))).sort(),
     [cars]
   )
 
@@ -83,8 +81,7 @@ const Home: React.FC = () => {
     const base = brandSelected.length
       ? cars.filter(c => brandSelected.includes(c.brand))
       : cars
-    return Array.from(new Set(base.map(c => c.model)))
-           .sort()
+    return Array.from(new Set(base.map(c => c.model))).sort()
   }, [cars, brandSelected])
 
   const variants = useMemo(() => {
@@ -97,11 +94,26 @@ const Home: React.FC = () => {
           ? cars.filter(c => brandSelected.includes(c.brand))
           : cars
         )
-    return Array.from(new Set(base.map(c => c.variant)))
-           .sort()
+    return Array.from(new Set(base.map(c => c.variant))).sort()
   }, [cars, brandSelected, modelSelected])
 
-  // 5️⃣ Auto-deselect ongeldige modellen/varianten
+  // 5️⃣ Auto‐deselect logica voor *alle* views
+  // Als je alle merken deselecteert → clear modellen & varianten
+  useEffect(() => {
+    if (brandSelected.length === 0) {
+      setModelSelected([])
+      setVariantSelected([])
+    }
+  }, [brandSelected])
+
+  // Als je alle modellen deselecteert → clear varianten
+  useEffect(() => {
+    if (modelSelected.length === 0) {
+      setVariantSelected([])
+    }
+  }, [modelSelected])
+
+  // én filter stale keuzes eruit (reserve)
   useEffect(() => {
     setModelSelected(ms => ms.filter(m => models.includes(m)))
   }, [models])
@@ -142,7 +154,7 @@ const Home: React.FC = () => {
 
   return (
     <>
-      {/* HERO */}  
+      {/* HERO */}
       <section
         className={`
           relative w-screen h-[85vh] md:h-[80vh]
@@ -164,12 +176,11 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* FILTERBAR */}  
+      {/* FILTERBAR */}
       <div className="relative w-screen">
         {/* MOBILE */}
         <div className="md:hidden flex flex-col space-y-4 px-6 mt-8 mb-8">
           <h3 className="text-xl font-semibold">Auto zoeken</h3>
-
           <MultiSearchSelect
             label="Merk"
             options={brands}
@@ -188,7 +199,6 @@ const Home: React.FC = () => {
             selected={variantSelected}
             onChange={setVariantSelected}
           />
-
           <FilterRangeSlider
             label="Prijs"
             min={priceBounds[0]}
@@ -198,7 +208,6 @@ const Home: React.FC = () => {
             placeholderMin={priceBounds[0].toString()}
             placeholderMax={priceBounds[1].toString()}
           />
-
           <button
             onClick={onSearch}
             className="w-full py-3 !bg-[#27408B] text-white rounded-md flex items-center justify-center hover:!bg-[#0A1833] transition"
@@ -210,11 +219,11 @@ const Home: React.FC = () => {
         {/* TABLET */}
         <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg rounded-lg -mt-20 relative z-20">
           <div className="flex gap-6">
-            <MultiSearchSelect label="Merk"    options={brands}   selected={brandSelected}   onChange={setBrandSelected} />
-            <MultiSearchSelect label="Model"   options={models}   selected={modelSelected}   onChange={setModelSelected} />
+            <MultiSearchSelect label="Merk"    options={brands} selected={brandSelected}   onChange={setBrandSelected} />
+            <MultiSearchSelect label="Model"   options={models} selected={modelSelected}   onChange={setModelSelected} />
             <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected} />
           </div>
-          <div className="flex gap-6">
+          <div className="flex items-center gap-6"> {/* items-center toegevoegd */}
             <div className="flex-1">
               <FilterRangeSlider
                 label="Prijs"
@@ -240,13 +249,13 @@ const Home: React.FC = () => {
         {/* DESKTOP */}
         <div className="hidden lg:flex items-center justify-between gap-x-6 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg -mt-20 relative z-20">
           <div className="w-60">
-            <MultiSearchSelect label="Merk"    options={brands}   selected={brandSelected}   onChange={setBrandSelected} />
+            <MultiSearchSelect label="Merk"    options={brands}    selected={brandSelected}   onChange={setBrandSelected} />
           </div>
           <div className="w-60">
-            <MultiSearchSelect label="Model"   options={models}   selected={modelSelected}   onChange={setModelSelected} />
+            <MultiSearchSelect label="Model"   options={models}    selected={modelSelected}   onChange={setModelSelected} />
           </div>
           <div className="w-60">
-            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected} />
+            <MultiSearchSelect label="Variant" options={variants}  selected={variantSelected} onChange={setVariantSelected} />
           </div>
           <div className="w-80">
             <FilterRangeSlider
