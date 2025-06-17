@@ -1,3 +1,4 @@
+// src/pages/Collection.tsx
 import React, { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import Loader from '../components/Loader'
@@ -23,14 +24,14 @@ interface ApiResponse {
 
 const Collection: React.FC = () => {
   const location = useLocation()
-  // haal navigation-state (filters + includeItems) of gebruik defaults
+  // haal filters/state mee, of gebruik defaults
   const navState = (location.state as LocationState) ?? {}
   const filters = navState.filters ?? {}
   const includeItems = navState.includeItems ?? true
 
-  const [data, setData]       = useState<ApiResponse | null>(null)
+  const [data,    setData]    = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState<string | null>(null)
+  const [error,   setError]   = useState<string|null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,14 +49,14 @@ const Collection: React.FC = () => {
         }
         const json: ApiResponse = await res.json()
 
-        // ✅ Client-side prijs-filter (zodat 'search'-resultaten en navbar-resultaten overeenkomen)
+        // prijs-range alsnog client-side filteren
         const { price_min, price_max } = filters
         if (
           typeof price_min === 'number' &&
           typeof price_max === 'number' &&
           Array.isArray(json.items)
         ) {
-          json.items = json.items.filter((it) => {
+          json.items = json.items.filter(it => {
             const p = it.car_overview?.price
             return typeof p === 'number' && p >= price_min && p <= price_max
           })
@@ -70,7 +71,7 @@ const Collection: React.FC = () => {
     }
 
     fetchData()
-  }, [location.key /* alleen opnieuw fetchen bij échte navigatie */])
+  }, [])  // <<< éénmalig bij mount
 
   if (loading) return <Loader message="Bezig met laden…" />
   if (error)   return <Loader message={`Fout: ${error}`} />
