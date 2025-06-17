@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import Loader from '../components/Loader'
 import { useLocation } from 'react-router-dom'
+import Loader from '../components/Loader'
 
 interface LocationState {
   filters: Record<string, any>
@@ -9,18 +9,16 @@ interface LocationState {
 
 const Collection: React.FC = () => {
   const location = useLocation()
-  const state    = location.state as LocationState | undefined
+  const state = (location.state as LocationState | undefined) ?? {
+    filters: {},
+    includeItems: true,
+  }
 
   const [data,    setData]    = useState<any>(null)
-  const [loading, setLoading]= useState(true)
-  const [error,   setError]  = useState<string|null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState<string|null>(null)
 
   useEffect(() => {
-    if (!state) {
-      setError('Geen filters doorgegeven.')
-      setLoading(false)
-      return
-    }
     const fetchData = async () => {
       try {
         const res = await fetch('/api/filter_cars', {
@@ -28,8 +26,8 @@ const Collection: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             filters: state.filters,
-            includeItems: true
-          })
+            includeItems: true,
+          }),
         })
         if (!res.ok) {
           const text = await res.text()
@@ -44,15 +42,11 @@ const Collection: React.FC = () => {
       }
     }
     fetchData()
-  }, [state])
+  }, [state.filters])
 
-  // alle hooks zijn nu gedaan, daarna pas early-returns:
-  if (loading) {
-    return <Loader message="Bezig met laden…" />
-  }
-  if (error) {
-    return <Loader message={`Fout bij ophalen: ${error}`} />
-  }
+  // Early returns ná alle hooks
+  if (loading) return <Loader message="Bezig met laden…" />
+  if (error)   return <Loader message={`Fout: ${error}`} />
 
   return (
     <div className="container mx-auto px-4 py-8">

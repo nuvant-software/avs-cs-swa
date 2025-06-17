@@ -70,6 +70,10 @@ const Home: React.FC = () => {
       .finally(() => setLoading(false))
   }, [])
 
+  // ── Early returns ─────────────────────────────────────────
+  if (loading) return <Loader message="Bezig met laden…" />
+  if (error)   return <Loader message={`Fout: ${error}`} />
+
   // ── 4️⃣ Bouw maps voor per-brand/model opties ───────────────
   const brandModelsMap = useMemo(() => {
     const m: Record<string,Set<string>> = {}
@@ -209,14 +213,6 @@ const Home: React.FC = () => {
     })
   }
 
-  // ── Pas *ná* alle hooks: early-renders voor loading / error ───
-  if (loading) {
-    return <Loader message="Bezig met laden…" />
-  }
-  if (error) {
-    return <Loader message={`Fout: ${error}`} />
-  }
-
   // ── Tot slot de normale UI ───────────────────────────────────
   return (
     <>
@@ -228,7 +224,7 @@ const Home: React.FC = () => {
           flex items-center justify-start pb-10
         `}
       >
-        <div className="absolute inset-0 !bg-black/60"/>
+        <div className="absolute inset-0 !bg-black/60" />
         <div className="relative w-3/4 mx-auto px-6 text-left text-white">
           <h1 className="text-5xl md:text-7xl font-bold mb-4 mt-24">
             Welkom bij AVS Autoverkoop
@@ -285,9 +281,9 @@ const Home: React.FC = () => {
         {/* TABLET */}
         <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg rounded-lg -mt-20 relative z-20">
           <div className="flex gap-6">
-            <MultiSearchSelect label="Merk" options={brands} selected={brandSelected} onChange={setBrandSelected}/>
-            <MultiSearchSelect label="Model" options={models} selected={modelSelected} onChange={setModelSelected}/>
-            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected}/>
+            <MultiSearchSelect label="Merk"    options={brands}    selected={brandSelected}   onChange={setBrandSelected} />
+            <MultiSearchSelect label="Model"   options={models}    selected={modelSelected}   onChange={setModelSelected} />
+            <MultiSearchSelect label="Variant" options={variants}  selected={variantSelected} onChange={setVariantSelected} />
           </div>
           <div className="flex items-center gap-6">
             <div className="flex-1">
@@ -315,13 +311,13 @@ const Home: React.FC = () => {
         {/* DESKTOP */}
         <div className="hidden lg:flex items-center justify-between gap-x-6 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg -mt-20 relative z-20">
           <div className="w-60">
-            <MultiSearchSelect label="Merk" options={brands} selected={brandSelected} onChange={setBrandSelected}/>
+            <MultiSearchSelect label="Merk"    options={brands}    selected={brandSelected}   onChange={setBrandSelected} />
           </div>
           <div className="w-60">
-            <MultiSearchSelect label="Model" options={models} selected={modelSelected} onChange={setModelSelected}/>
+            <MultiSearchSelect label="Model"   options={models}    selected={modelSelected}   onChange={setModelSelected} />
           </div>
           <div className="w-60">
-            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected}/>
+            <MultiSearchSelect label="Variant" options={variants}  selected={variantSelected} onChange={setVariantSelected} />
           </div>
           <div className="w-80">
             <FilterRangeSlider
