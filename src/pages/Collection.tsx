@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom'
 import Loader from '../components/Loader'
 
 interface LocationState {
-  filters: {
+  filters?: {
     brand?: string[]
     model?: string[]
     variant?: string[]
@@ -12,7 +12,7 @@ interface LocationState {
     price_max?: number
     [key: string]: any
   }
-  includeItems: boolean
+  includeItems?: boolean
 }
 
 interface ApiResponse {
@@ -31,9 +31,9 @@ interface ApiResponse {
 
 const Collection: React.FC = () => {
   const location = useLocation()
-  // Pak filters uit state, of val terug op "alles"
-  const { filters = {}, includeItems = true } =
-    (location.state as LocationState) ?? {}
+  const state = (location.state as LocationState) ?? {}
+  const filters = state.filters ?? {}
+  const includeItems = state.includeItems ?? true
 
   const [data, setData]       = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -56,7 +56,7 @@ const Collection: React.FC = () => {
         }
         const json: ApiResponse = await res.json()
 
-        // ⬇️ Pas price filter client‐side toe als dat in filters staat
+        // --- client‐side price filtering
         const { price_min, price_max } = filters
         if (
           typeof price_min === 'number' &&
@@ -78,7 +78,7 @@ const Collection: React.FC = () => {
     }
 
     fetchData()
-  }, [filters, includeItems]) // opnieuw laden als filters veranderen
+  }, [filters, includeItems])
 
   if (loading) {
     return <Loader message="Bezig met laden…" />
@@ -87,11 +87,15 @@ const Collection: React.FC = () => {
     return <Loader message={`Fout: ${error}`} />
   }
 
+  // Toon alleen de gefilterde items
+  const items = data?.items ?? []
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Auto Collectie</h1>
+      <p className="mb-4">Aantal auto's: {items.length}</p>
       <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
-        {JSON.stringify(data, null, 2)}
+        {JSON.stringify(items, null, 2)}
       </pre>
     </div>
   )
