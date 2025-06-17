@@ -14,25 +14,25 @@ interface CarOverview {
 const Home: React.FC = () => {
   const navigate = useNavigate()
 
-  // 1️⃣ Raw data + status
+  // ── 1️⃣ Raw data + status ──────────────────────────────────
   const [cars, setCars]       = useState<CarOverview[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState<string|null>(null)
 
-  // 2️⃣ Geselecteerde filters
+  // ── 2️⃣ Geselecteerde filters ─────────────────────────────
   const [brandSelected, setBrandSelected]     = useState<string[]>([])
   const [modelSelected, setModelSelected]     = useState<string[]>([])
   const [variantSelected, setVariantSelected] = useState<string[]>([])
 
-  // 3️⃣ Prijs-slider bounds + range
+  // ── 3️⃣ Prijs-slider bounds + range ────────────────────────
   const [priceBounds, setPriceBounds] = useState<[number,number]>([0,0])
   const [priceRange, setPriceRange]   = useState<[number,number]>([0,0])
 
-  // — bij mount: haal alles op en init prijs-slider
+  // ── bij mount: haal alles op en init prijs-slider ─────────
   useEffect(() => {
     fetch('/api/filter_cars', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filters: {}, includeItems: true })
     })
       .then(res => {
@@ -58,7 +58,6 @@ const Home: React.FC = () => {
           }))
 
         setCars(valid)
-
         if (valid.length) {
           const prices = valid.map(c => c.price)
           const mn = Math.min(...prices)
@@ -71,15 +70,7 @@ const Home: React.FC = () => {
       .finally(() => setLoading(false))
   }, [])
 
-  // ─── Full-screen loader / error ─────────────────────────────
-  if (loading) {
-    return <Loader message="Bezig met laden…" />
-  }
-  if (error) {
-    return <Loader message={`Fout: ${error}`} />
-  }
-
-  // 4️⃣ Bouw maps voor per-brand/model opties
+  // ── 4️⃣ Bouw maps voor per-brand/model opties ───────────────
   const brandModelsMap = useMemo(() => {
     const m: Record<string,Set<string>> = {}
     cars.forEach(c => {
@@ -99,10 +90,11 @@ const Home: React.FC = () => {
     return m
   }, [cars])
 
-  // 5️⃣ Compute facet-lists (voor dropdowns)
-  const brands = useMemo(() =>
-    Array.from(new Set(cars.map(c => c.brand))).sort()
-  , [cars])
+  // ── 5️⃣ Compute facet-lists (dropdown-opties) ───────────────
+  const brands = useMemo(
+    () => Array.from(new Set(cars.map(c => c.brand))).sort(),
+    [cars]
+  )
 
   const models = useMemo(() => {
     const base = brandSelected.length
@@ -124,7 +116,7 @@ const Home: React.FC = () => {
     return Array.from(new Set(base.map(c => c.variant))).sort()
   }, [cars, brandSelected, modelSelected])
 
-  // 6️⃣ “Auto-deselect” logic — clearing downstream when upstream cleared
+  // ── 6️⃣ “Auto-deselect” logic ───────────────────────────────
   useEffect(() => {
     if (brandSelected.length === 0) {
       setModelSelected([])
@@ -138,7 +130,7 @@ const Home: React.FC = () => {
     }
   }, [modelSelected])
 
-  // bovendien altijd stale values eruit filteren (reserve)
+  // stale waarden eruit filteren (reserve)
   useEffect(() => {
     setModelSelected(ms => ms.filter(m => models.includes(m)))
   }, [models])
@@ -146,7 +138,7 @@ const Home: React.FC = () => {
     setVariantSelected(vs => vs.filter(v => variants.includes(v)))
   }, [variants])
 
-  // 7️⃣ Per-brand selected models/variants
+  // ── 7️⃣ Per-brand geselecteerde modellen/varianten ───────────
   const selectedModelsPerBrand = useMemo(() => {
     const out: Record<string,string[]> = {}
     brandSelected.forEach(b => {
@@ -168,28 +160,24 @@ const Home: React.FC = () => {
     return out
   }, [brandSelected, variantSelected, brandModelVariantsMap])
 
-  // 8️⃣ Filtered cars: per-brand OR logic
+  // ── 8️⃣ Filtered cars: per-brand OR-logic ────────────────────
   const filteredCars = useMemo(() => {
     return cars.filter(c => {
-      // brand filter
       if (brandSelected.length > 0 && !brandSelected.includes(c.brand)) {
         return false
       }
-      // model filter (only if user selected models *voor deze brand*)
       if (modelSelected.length > 0) {
         const selForBrand = selectedModelsPerBrand[c.brand] || []
         if (selForBrand.length > 0 && !selForBrand.includes(c.model)) {
           return false
         }
       }
-      // variant filter
       if (variantSelected.length > 0) {
         const selForBM = selectedVariantsPerBrandModel[c.brand]?.[c.model] || []
         if (selForBM.length > 0 && !selForBM.includes(c.variant)) {
           return false
         }
       }
-      // prijs filter
       if (c.price < priceRange[0] || c.price > priceRange[1]) {
         return false
       }
@@ -205,7 +193,7 @@ const Home: React.FC = () => {
     selectedVariantsPerBrandModel
   ])
 
-  // 9️⃣ Navigeren naar Collection
+  // ── 9️⃣ Navigeren naar Collection ───────────────────────────
   const onSearch = () => {
     navigate('/collection', {
       state: {
@@ -221,6 +209,15 @@ const Home: React.FC = () => {
     })
   }
 
+  // ── Pas *ná* alle hooks: early-renders voor loading / error ───
+  if (loading) {
+    return <Loader message="Bezig met laden…" />
+  }
+  if (error) {
+    return <Loader message={`Fout: ${error}`} />
+  }
+
+  // ── Tot slot de normale UI ───────────────────────────────────
   return (
     <>
       {/* HERO */}
@@ -231,7 +228,7 @@ const Home: React.FC = () => {
           flex items-center justify-start pb-10
         `}
       >
-        <div className="absolute inset-0 !bg-black/60" />
+        <div className="absolute inset-0 !bg-black/60"/>
         <div className="relative w-3/4 mx-auto px-6 text-left text-white">
           <h1 className="text-5xl md:text-7xl font-bold mb-4 mt-24">
             Welkom bij AVS Autoverkoop
@@ -288,9 +285,9 @@ const Home: React.FC = () => {
         {/* TABLET */}
         <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg rounded-lg -mt-20 relative z-20">
           <div className="flex gap-6">
-            <MultiSearchSelect label="Merk"    options={brands}    selected={brandSelected}   onChange={setBrandSelected} />
-            <MultiSearchSelect label="Model"   options={models}    selected={modelSelected}   onChange={setModelSelected} />
-            <MultiSearchSelect label="Variant" options={variants}  selected={variantSelected} onChange={setVariantSelected} />
+            <MultiSearchSelect label="Merk" options={brands} selected={brandSelected} onChange={setBrandSelected}/>
+            <MultiSearchSelect label="Model" options={models} selected={modelSelected} onChange={setModelSelected}/>
+            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected}/>
           </div>
           <div className="flex items-center gap-6">
             <div className="flex-1">
@@ -318,20 +315,20 @@ const Home: React.FC = () => {
         {/* DESKTOP */}
         <div className="hidden lg:flex items-center justify-between gap-x-6 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg -mt-20 relative z-20">
           <div className="w-60">
-            <MultiSearchSelect label="Merk"    options={brands}    selected={brandSelected}   onChange={setBrandSelected} />
+            <MultiSearchSelect label="Merk" options={brands} selected={brandSelected} onChange={setBrandSelected}/>
           </div>
           <div className="w-60">
-            <MultiSearchSelect label="Model"   options={models}    selected={modelSelected}   onChange={setModelSelected} />
+            <MultiSearchSelect label="Model" options={models} selected={modelSelected} onChange={setModelSelected}/>
           </div>
           <div className="w-60">
-            <MultiSearchSelect label="Variant" options={variants}  selected={variantSelected} onChange={setVariantSelected} />
+            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected}/>
           </div>
           <div className="w-80">
             <FilterRangeSlider
               label="Prijs"
               min={priceBounds[0]}
               max={priceBounds[1]}
-              value={priceRange}  
+              value={priceRange}
               onChange={setPriceRange}
               placeholderMin={priceBounds[0].toString()}
               placeholderMax={priceBounds[1].toString()}

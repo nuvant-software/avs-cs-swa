@@ -46,6 +46,7 @@ const Collection: React.FC = () => {
     fetchData()
   }, [state])
 
+  // alle hooks zijn nu gedaan, daarna pas early-returns:
   if (loading) {
     return <Loader message="Bezig met laden…" />
   }
