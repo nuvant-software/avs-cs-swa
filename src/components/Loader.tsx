@@ -6,7 +6,7 @@ const Loader: React.FC = () => (
   <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
     <OrbitProgress 
       variant="split-disc" 
-      color="#32cd32" 
+      color="#27408B" 
       size="medium" 
       text="" 
       textColor="" />
