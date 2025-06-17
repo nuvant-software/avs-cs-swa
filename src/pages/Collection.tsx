@@ -4,41 +4,71 @@ import { useLocation } from 'react-router-dom'
 import Loader from '../components/Loader'
 
 interface LocationState {
-  filters: Record<string, any>
+  filters: {
+    brand?: string[]
+    model?: string[]
+    variant?: string[]
+    price_min?: number
+    price_max?: number
+    [key: string]: any
+  }
   includeItems: boolean
+}
+
+interface ApiResponse {
+  items?: Array<{
+    car_overview: {
+      brand: string
+      model: string
+      variant: string
+      price: number
+      [key: string]: any
+    }
+    [key: string]: any
+  }>
+  [key: string]: any
 }
 
 const Collection: React.FC = () => {
   const location = useLocation()
-  const [data,    setData]    = useState<any>(null)
+  // Pak filters uit state, of val terug op "alles"
+  const { filters = {}, includeItems = true } =
+    (location.state as LocationState) ?? {}
+
+  const [data, setData]       = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState<string|null>(null)
+  const [error, setError]     = useState<string | null>(null)
 
   useEffect(() => {
-    // bepaal filters: óf uit location.state, óf leeg object
-    const state = (location.state as LocationState | undefined) ?? {
-      filters: {},
-      includeItems: true,
-    }
-
     const fetchData = async () => {
       try {
-        setLoading(true)  // reset loading bij elke navigatie
+        setLoading(true)
         setError(null)
 
         const res = await fetch('/api/filter_cars', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            filters: state.filters,
-            includeItems: true,
-          }),
+          body: JSON.stringify({ filters, includeItems }),
         })
         if (!res.ok) {
           const text = await res.text()
           throw new Error(text || res.statusText)
         }
-        const json = await res.json()
+        const json: ApiResponse = await res.json()
+
+        // ⬇️ Pas price filter client‐side toe als dat in filters staat
+        const { price_min, price_max } = filters
+        if (
+          typeof price_min === 'number' &&
+          typeof price_max === 'number' &&
+          Array.isArray(json.items)
+        ) {
+          json.items = json.items.filter((it) => {
+            const p = it.car_overview?.price
+            return typeof p === 'number' && p >= price_min && p <= price_max
+          })
+        }
+
         setData(json)
       } catch (err: any) {
         setError(err.message)
@@ -48,7 +78,7 @@ const Collection: React.FC = () => {
     }
 
     fetchData()
-  }, [location])  // álleen dependency op `location`
+  }, [filters, includeItems]) // opnieuw laden als filters veranderen
 
   if (loading) {
     return <Loader message="Bezig met laden…" />
