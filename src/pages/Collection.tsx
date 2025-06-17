@@ -9,6 +9,7 @@ interface LocationState {
 
 const Collection: React.FC = () => {
   const location = useLocation()
+  // Valideer: zonder state altijd ophalen van álle auto's
   const state = (location.state as LocationState | undefined) ?? {
     filters: {},
     includeItems: true,
@@ -44,7 +45,7 @@ const Collection: React.FC = () => {
     fetchData()
   }, [state.filters])
 
-  // Early returns ná alle hooks
+  // Early returns
   if (loading) return <Loader message="Bezig met laden…" />
   if (error)   return <Loader message={`Fout: ${error}`} />
 

@@ -28,7 +28,7 @@ const Home: React.FC = () => {
   const [priceBounds, setPriceBounds] = useState<[number,number]>([0,0])
   const [priceRange, setPriceRange]   = useState<[number,number]>([0,0])
 
-  // ── bij mount: haal alles op en init prijs-slider ─────────
+  // ── bij mount: haal alle auto's én prijs‐range op ─────────
   useEffect(() => {
     fetch('/api/filter_cars', {
       method: 'POST',
@@ -70,11 +70,11 @@ const Home: React.FC = () => {
       .finally(() => setLoading(false))
   }, [])
 
-  // ── 4️⃣ Bouw maps voor per-brand/model opties ───────────────
+  // Hooks voor facet‐berekeningen...
   const brandModelsMap = useMemo(() => {
     const m: Record<string,Set<string>> = {}
     cars.forEach(c => {
-      if (!m[c.brand]) m[c.brand] = new Set()
+      m[c.brand] = m[c.brand] || new Set()
       m[c.brand].add(c.model)
     })
     return m
@@ -83,14 +83,13 @@ const Home: React.FC = () => {
   const brandModelVariantsMap = useMemo(() => {
     const m: Record<string,Record<string,Set<string>>> = {}
     cars.forEach(c => {
-      if (!m[c.brand]) m[c.brand] = {}
-      if (!m[c.brand][c.model]) m[c.brand][c.model] = new Set()
+      m[c.brand] = m[c.brand] || {}
+      m[c.brand][c.model] = m[c.brand][c.model] || new Set()
       m[c.brand][c.model].add(c.variant)
     })
     return m
   }, [cars])
 
-  // ── 5️⃣ Compute facet-lists (dropdown-opties) ───────────────
   const brands = useMemo(
     () => Array.from(new Set(cars.map(c => c.brand))).sort(),
     [cars]
@@ -116,7 +115,6 @@ const Home: React.FC = () => {
     return Array.from(new Set(base.map(c => c.variant))).sort()
   }, [cars, brandSelected, modelSelected])
 
-  // ── 6️⃣ “Auto-deselect” logic ───────────────────────────────
   useEffect(() => {
     if (brandSelected.length === 0) {
       setModelSelected([])
@@ -130,7 +128,6 @@ const Home: React.FC = () => {
     }
   }, [modelSelected])
 
-  // stale waarden eruit filteren (reserve)
   useEffect(() => {
     setModelSelected(ms => ms.filter(m => models.includes(m)))
   }, [models])
@@ -138,7 +135,6 @@ const Home: React.FC = () => {
     setVariantSelected(vs => vs.filter(v => variants.includes(v)))
   }, [variants])
 
-  // ── 7️⃣ Per-brand geselecteerde modellen/varianten ───────────
   const selectedModelsPerBrand = useMemo(() => {
     const out: Record<string,string[]> = {}
     brandSelected.forEach(b => {
@@ -160,27 +156,18 @@ const Home: React.FC = () => {
     return out
   }, [brandSelected, variantSelected, brandModelVariantsMap])
 
-  // ── 8️⃣ Filtered cars: per-brand OR-logic ────────────────────
   const filteredCars = useMemo(() => {
     return cars.filter(c => {
-      if (brandSelected.length > 0 && !brandSelected.includes(c.brand)) {
-        return false
-      }
+      if (brandSelected.length > 0 && !brandSelected.includes(c.brand)) return false
       if (modelSelected.length > 0) {
-        const selForBrand = selectedModelsPerBrand[c.brand] || []
-        if (selForBrand.length > 0 && !selForBrand.includes(c.model)) {
-          return false
-        }
+        const sel = selectedModelsPerBrand[c.brand] || []
+        if (sel.length > 0 && !sel.includes(c.model)) return false
       }
       if (variantSelected.length > 0) {
-        const selForBM = selectedVariantsPerBrandModel[c.brand]?.[c.model] || []
-        if (selForBM.length > 0 && !selForBM.includes(c.variant)) {
-          return false
-        }
+        const sel = selectedVariantsPerBrandModel[c.brand]?.[c.model] || []
+        if (sel.length > 0 && !sel.includes(c.variant)) return false
       }
-      if (c.price < priceRange[0] || c.price > priceRange[1]) {
-        return false
-      }
+      if (c.price < priceRange[0] || c.price > priceRange[1]) return false
       return true
     })
   }, [
@@ -193,7 +180,6 @@ const Home: React.FC = () => {
     selectedVariantsPerBrandModel
   ])
 
-  // ── 9️⃣ Navigeren naar Collection ───────────────────────────
   const onSearch = () => {
     navigate('/collection', {
       state: {
@@ -209,11 +195,11 @@ const Home: React.FC = () => {
     })
   }
 
-  // ── Pas *ná* alle hooks: early-renders voor loading / error ───
+  // ── Early returns ná alle hooks ────────────────────────────
   if (loading) return <Loader message="Bezig met laden…" />
   if (error)   return <Loader message={`Fout: ${error}`} />
 
-  // ── Tot slot de normale UI ───────────────────────────────────
+  // ── Nú de UI ───────────────────────────────────────────────
   return (
     <>
       {/* HERO */}
@@ -232,8 +218,15 @@ const Home: React.FC = () => {
           <p className="text-lg md:text-2xl mb-6">
             Kwaliteit en betrouwbaarheid sinds 2004
           </p>
-          <button className="!bg-[#27408B] text-white px-6 py-3 rounded-lg hover:!bg-[#0A1833] transition">
-            Bekijk Onze Auto's
+          <button
+            onClick={() =>
+              navigate('/collection', {
+                state: { filters: {}, includeItems: true }
+              })
+            }
+            className="!bg-[#27408B] text-white px-6 py-3 rounded-lg hover:!bg-[#0A1833] transition"
+          >
+            Bekijk Onze Auto’s
           </button>
         </div>
       </section>
@@ -281,9 +274,9 @@ const Home: React.FC = () => {
         {/* TABLET */}
         <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg rounded-lg -mt-20 relative z-20">
           <div className="flex gap-6">
-            <MultiSearchSelect label="Merk"    options={brands}    selected={brandSelected}   onChange={setBrandSelected} />
-            <MultiSearchSelect label="Model"   options={models}    selected={modelSelected}   onChange={setModelSelected} />
-            <MultiSearchSelect label="Variant" options={variants}  selected={variantSelected} onChange={setVariantSelected} />
+            <MultiSearchSelect label="Merk"    options={brands} selected={brandSelected} onChange={setBrandSelected}/>
+            <MultiSearchSelect label="Model"   options={models} selected={modelSelected} onChange={setModelSelected}/>
+            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected}/>
           </div>
           <div className="flex items-center gap-6">
             <div className="flex-1">
