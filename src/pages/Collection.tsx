@@ -73,8 +73,8 @@ const Collection: React.FC = () => {
     fetchData()
   }, [])  // <<< éénmalig bij mount
 
-  if (loading) return <Loader message="Bezig met laden…" />
-  if (error)   return <Loader message={`Fout: ${error}`} />
+  if (loading) return <Loader/>
+  if (error)   return <Loader/>
 
   const items = data?.items ?? []
 

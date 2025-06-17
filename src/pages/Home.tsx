@@ -196,8 +196,8 @@ const Home: React.FC = () => {
   }
 
   // ── Early returns ná alle hooks ────────────────────────────
-  if (loading) return <Loader message="Bezig met laden…" />
-  if (error)   return <Loader message={`Fout: ${error}`} />
+  if (loading) return <Loader/>
+  if (error)   return <Loader />
 
   // ── Nú de UI ───────────────────────────────────────────────
   return (
