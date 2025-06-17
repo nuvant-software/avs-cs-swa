@@ -1,6 +1,6 @@
-// src/pages/Home.tsx
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Loader from '../components/Loader'
 import FilterRangeSlider from '../components/filters/FilterRangeSlider'
 import MultiSearchSelect from '../components/filters/MultiSearchSelect'
 
@@ -70,6 +70,14 @@ const Home: React.FC = () => {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
+
+  // ─── Full-screen loader / error ─────────────────────────────
+  if (loading) {
+    return <Loader message="Bezig met laden…" />
+  }
+  if (error) {
+    return <Loader message={`Fout: ${error}`} />
+  }
 
   // 4️⃣ Bouw maps voor per-brand/model opties
   const brandModelsMap = useMemo(() => {
@@ -167,14 +175,14 @@ const Home: React.FC = () => {
       if (brandSelected.length > 0 && !brandSelected.includes(c.brand)) {
         return false
       }
-      // model filter (only if user selected models *for this brand*)
+      // model filter (only if user selected models *voor deze brand*)
       if (modelSelected.length > 0) {
         const selForBrand = selectedModelsPerBrand[c.brand] || []
         if (selForBrand.length > 0 && !selForBrand.includes(c.model)) {
           return false
         }
       }
-      // variant filter (only if user selected variants *for this brand/model*)
+      // variant filter
       if (variantSelected.length > 0) {
         const selForBM = selectedVariantsPerBrandModel[c.brand]?.[c.model] || []
         if (selForBM.length > 0 && !selForBM.includes(c.variant)) {
@@ -212,9 +220,6 @@ const Home: React.FC = () => {
       }
     })
   }
-
-  if (loading) return <p className="p-4">Bezig met laden…</p>
-  if (error)   return <p className="p-4 text-red-500">Fout: {error}</p>
 
   return (
     <>

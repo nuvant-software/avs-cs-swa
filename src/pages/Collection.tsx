@@ -1,5 +1,5 @@
-// src/pages/Collection.tsx
 import React, { useState, useEffect } from 'react'
+import Loader from '../components/Loader'
 import { useLocation } from 'react-router-dom'
 
 interface LocationState {
@@ -9,11 +9,11 @@ interface LocationState {
 
 const Collection: React.FC = () => {
   const location = useLocation()
-  const state = location.state as LocationState | undefined
+  const state    = location.state as LocationState | undefined
 
-  const [data, setData]       = useState<any>(null)
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError]     = useState<string | null>(null)
+  const [data,    setData]    = useState<any>(null)
+  const [loading, setLoading]= useState(true)
+  const [error,   setError]  = useState<string|null>(null)
 
   useEffect(() => {
     if (!state) {
@@ -47,19 +47,10 @@ const Collection: React.FC = () => {
   }, [state])
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <p>Bezig met laden…</p>
-      </div>
-    )
+    return <Loader message="Bezig met laden…" />
   }
-
   if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <p className="text-red-500">Fout bij ophalen: {error}</p>
-      </div>
-    )
+    return <Loader message={`Fout bij ophalen: ${error}`} />
   }
 
   return (
