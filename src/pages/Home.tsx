@@ -70,10 +70,6 @@ const Home: React.FC = () => {
       .finally(() => setLoading(false))
   }, [])
 
-  // ── Early returns ─────────────────────────────────────────
-  if (loading) return <Loader message="Bezig met laden…" />
-  if (error)   return <Loader message={`Fout: ${error}`} />
-
   // ── 4️⃣ Bouw maps voor per-brand/model opties ───────────────
   const brandModelsMap = useMemo(() => {
     const m: Record<string,Set<string>> = {}
@@ -212,6 +208,10 @@ const Home: React.FC = () => {
       }
     })
   }
+
+  // ── Pas *ná* alle hooks: early-renders voor loading / error ───
+  if (loading) return <Loader message="Bezig met laden…" />
+  if (error)   return <Loader message={`Fout: ${error}`} />
 
   // ── Tot slot de normale UI ───────────────────────────────────
   return (
