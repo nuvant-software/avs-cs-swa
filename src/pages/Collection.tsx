@@ -1,17 +1,9 @@
-// src/pages/Collection.tsx
 import React, { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import Loader from '../components/Loader'
 
 interface LocationState {
-  filters?: {
-    brand?: string[]
-    model?: string[]
-    variant?: string[]
-    price_min?: number
-    price_max?: number
-    [key: string]: any
-  }
+  filters?: Record<string, any>
   includeItems?: boolean
 }
 
@@ -31,9 +23,10 @@ interface ApiResponse {
 
 const Collection: React.FC = () => {
   const location = useLocation()
-  const state = (location.state as LocationState) ?? {}
-  const filters = state.filters ?? {}
-  const includeItems = state.includeItems ?? true
+  // haal navigation-state (filters + includeItems) of gebruik defaults
+  const navState = (location.state as LocationState) ?? {}
+  const filters = navState.filters ?? {}
+  const includeItems = navState.includeItems ?? true
 
   const [data, setData]       = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -41,10 +34,9 @@ const Collection: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true)
+      setError(null)
       try {
-        setLoading(true)
-        setError(null)
-
         const res = await fetch('/api/filter_cars', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -56,7 +48,7 @@ const Collection: React.FC = () => {
         }
         const json: ApiResponse = await res.json()
 
-        // --- client‐side price filtering
+        // ✅ Client-side prijs-filter (zodat 'search'-resultaten en navbar-resultaten overeenkomen)
         const { price_min, price_max } = filters
         if (
           typeof price_min === 'number' &&
@@ -78,16 +70,11 @@ const Collection: React.FC = () => {
     }
 
     fetchData()
-  }, [filters, includeItems])
+  }, [location.key /* alleen opnieuw fetchen bij échte navigatie */])
 
-  if (loading) {
-    return <Loader message="Bezig met laden…" />
-  }
-  if (error) {
-    return <Loader message={`Fout: ${error}`} />
-  }
+  if (loading) return <Loader message="Bezig met laden…" />
+  if (error)   return <Loader message={`Fout: ${error}`} />
 
-  // Toon alleen de gefilterde items
   const items = data?.items ?? []
 
   return (
