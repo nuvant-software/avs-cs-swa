@@ -24,14 +24,13 @@ interface ApiResponse {
 
 const Collection: React.FC = () => {
   const location = useLocation()
-  // haal filters/state mee, of gebruik defaults
   const navState = (location.state as LocationState) ?? {}
   const filters = navState.filters ?? {}
   const includeItems = navState.includeItems ?? true
 
-  const [data,    setData]    = useState<ApiResponse | null>(null)
+  const [data, setData] = useState<ApiResponse | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState<string|null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,7 +48,6 @@ const Collection: React.FC = () => {
         }
         const json: ApiResponse = await res.json()
 
-        // prijs-range alsnog client-side filteren
         const { price_min, price_max } = filters
         if (
           typeof price_min === 'number' &&
@@ -71,21 +69,33 @@ const Collection: React.FC = () => {
     }
 
     fetchData()
-  }, [])  // <<< éénmalig bij mount
+  }, [])
 
-  if (loading) return <Loader/>
-  if (error)   return <Loader/>
+  if (loading) return <Loader />
+  if (error) return <Loader />
 
   const items = data?.items ?? []
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Auto Collectie</h1>
-      <p className="mb-4">Aantal auto's: {items.length}</p>
-      <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
-        {JSON.stringify(items, null, 2)}
-      </pre>
-    </div>
+    <>
+      {/* Hero Section */}
+      <section
+        className="relative w-full h-[250px] bg-[url('/assets/hero/slide2.jpg')] bg-cover bg-center flex items-center justify-center"
+      >
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="relative z-10 text-center text-white px-4">
+          <h1 className="text-4xl md:text-5xl font-bold">Onze Collectie</h1>
+        </div>
+      </section>
+
+      {/* Content */}
+      <div className="container mx-auto px-4 py-8">
+        <h2 className="text-2xl font-semibold mb-4">Aantal auto's: {items.length}</h2>
+        <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+          {JSON.stringify(items, null, 2)}
+        </pre>
+      </div>
+    </>
   )
 }
 
