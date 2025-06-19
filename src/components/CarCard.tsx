@@ -6,6 +6,7 @@ type Car = {
   id: string;
   brand: string;
   model: string;
+  variant: string;
   fuel: string;
   mileage: number;
   transmission: string;
