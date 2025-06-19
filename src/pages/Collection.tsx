@@ -2,32 +2,29 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import Loader from '../components/Loader'
+import CarCard from '../components/CarCard'
 
 interface LocationState {
   filters?: Record<string, any>
   includeItems?: boolean
 }
 
-interface CarOverview {
-  brand: string
-  model: string
-  variant: string
-  year?: number
-  mileage?: number
-  transmission?: string
-  fuel_type?: string
-  engine_size?: string
-  pk?: number
-  price: number
-  [key: string]: any
-}
-
 interface ApiResponse {
   items?: Array<{
-    car_overview: CarOverview
-    [key: string]: any
+    id: string
+    car_overview: {
+      brand: string
+      model: string
+      variant: string
+      price: number
+      year?: number
+      mileage?: number
+      transmission?: string
+      fuel_type?: string
+      engine_size?: string
+      pk?: number
+    }
   }>
-  [key: string]: any
 }
 
 const Collection: React.FC = () => {
@@ -86,10 +83,8 @@ const Collection: React.FC = () => {
 
   return (
     <>
-      {/* Hero Section */}
-      <section
-        className="relative w-screen h-[400px] bg-[url('/assets/hero/slide2.jpg')] bg-cover bg-center flex items-center justify-center"
-      >
+      {/* Hero */}
+      <section className="relative w-screen h-[400px] bg-[url('/assets/hero/slide2.jpg')] bg-cover bg-center flex items-center justify-center">
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative z-10 text-center text-white px-4">
           <h1 className="text-5xl md:text-6xl font-bold">Onze Collectie</h1>
@@ -100,26 +95,31 @@ const Collection: React.FC = () => {
       {/* Content */}
       <section className="w-screen py-16 bg-white">
         <div className="w-3/4 mx-auto px-4">
-          <h2 className="text-2xl font-semibold mb-4">Aantal auto's: {items.length}</h2>
+          <h2 className="text-2xl font-semibold mb-6">
+            Aantal auto's: {items.length}
+          </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {items.map((item, idx) => {
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8">
+            {items.map((item) => {
               const car = item.car_overview
               return (
-                <div key={idx} className="border rounded-lg p-4 shadow-sm bg-gray-50">
-                  <h3 className="text-xl font-bold mb-2">
-                    {car.brand} {car.model} {car.variant}
-                  </h3>
-                  <ul className="text-sm text-gray-700 space-y-1">
-                    <li><strong>Bouwjaar:</strong> {car.year ?? 'Onbekend'}</li>
-                    <li><strong>Kilometerstand:</strong> {car.mileage ? `${car.mileage.toLocaleString()} km` : 'Onbekend'}</li>
-                    <li><strong>Transmissie:</strong> {car.transmission ?? 'Onbekend'}</li>
-                    <li><strong>Brandstof:</strong> {car.fuel_type ?? 'Onbekend'}</li>
-                    <li><strong>Motorinhoud:</strong> {car.engine_size ?? 'Onbekend'}</li>
-                    <li><strong>Vermogen:</strong> {car.pk ? `${car.pk} PK` : 'Onbekend'}</li>
-                    <li><strong>Prijs:</strong> € {car.price.toLocaleString()}</li>
-                  </ul>
-                </div>
+                <CarCard
+                  key={item.id}
+                  car={{
+                    id: item.id,
+                    brand: car.brand,
+                    model: car.model,
+                    variant: car.variant,
+                    fuel: car.fuel_type ?? '',
+                    mileage: car.mileage ?? 0,
+                    transmission: car.transmission ?? '',
+                    price: car.price,
+                    year: car.year ?? 0,
+                    engine_size: car.engine_size ?? '',
+                    pk: car.pk ?? 0
+                  }}
+                  layout="grid"
+                />
               )
             })}
           </div>
