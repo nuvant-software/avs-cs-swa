@@ -80,21 +80,24 @@ const Collection: React.FC = () => {
     <>
       {/* Hero Section */}
       <section
-        className="relative w-full h-[250px] bg-[url('/assets/hero/slide2.jpg')] bg-cover bg-center flex items-center justify-center"
+        className="relative w-screen h-[400px] bg-[url('/assets/hero/slide2.jpg')] bg-cover bg-center flex items-center justify-center"
       >
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative z-10 text-center text-white px-4">
-          <h1 className="text-4xl md:text-5xl font-bold">Onze Collectie</h1>
+          <h1 className="text-5xl md:text-6xl font-bold">Onze Collectie</h1>
+          <p className="text-lg mt-2">Bekijk het volledige aanbod</p>
         </div>
       </section>
 
       {/* Content */}
-      <div className="container mx-auto px-4 py-8">
-        <h2 className="text-2xl font-semibold mb-4">Aantal auto's: {items.length}</h2>
-        <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
-          {JSON.stringify(items, null, 2)}
-        </pre>
-      </div>
+      <section className="w-screen py-16 bg-white">
+        <div className="w-3/4 mx-auto px-4">
+          <h2 className="text-2xl font-semibold mb-4">Aantal auto's: {items.length}</h2>
+          <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+            {JSON.stringify(items, null, 2)}
+          </pre>
+        </div>
+      </section>
     </>
   )
 }
