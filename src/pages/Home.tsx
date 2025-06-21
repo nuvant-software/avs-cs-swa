@@ -195,11 +195,11 @@ const Home: React.FC = () => {
     })
   }
 
-  // ── Early returns ná alle hooks ────────────────────────────
+  // ── Early returns na alle hooks ────────────────────────────
   if (loading) return <Loader/>
   if (error)   return <Loader />
 
-  // ── Nú de UI ───────────────────────────────────────────────
+  // ── UI ───────────────────────────────────────────────
   return (
     <>
       {/* HERO */}
@@ -272,7 +272,7 @@ const Home: React.FC = () => {
         </div>
 
         {/* TABLET */}
-        <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg rounded-lg -mt-20 relative z-20">
+        <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 !bg-white shadow-lg rounded-lg -mt-20 relative z-20">
           <div className="flex gap-6">
             <MultiSearchSelect label="Merk"    options={brands} selected={brandSelected} onChange={setBrandSelected}/>
             <MultiSearchSelect label="Model"   options={models} selected={modelSelected} onChange={setModelSelected}/>
@@ -293,7 +293,7 @@ const Home: React.FC = () => {
             <div className="flex-1 flex justify-center">
               <button
                 onClick={onSearch}
-                className="w-full h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center hover:!bg-[#0A1833] transition"
+                className="w-full h-14 !bg-[#27408B] !text-white rounded-md flex items-center justify-center hover:!bg-[#0A1833] transition"
               >
                 Zoek ({filteredCars.length}) Auto’s
               </button>
@@ -302,7 +302,7 @@ const Home: React.FC = () => {
         </div>
 
         {/* DESKTOP */}
-        <div className="hidden lg:flex items-center justify-between gap-x-6 mx-auto w-3/4 px-6 py-6 bg-white shadow-lg -mt-20 relative z-20">
+        <div className="hidden lg:flex items-center justify-between gap-x-6 mx-auto w-3/4 px-6 py-6 !bg-white shadow-lg -mt-20 relative z-20">
           <div className="w-60">
             <MultiSearchSelect label="Merk"    options={brands}    selected={brandSelected}   onChange={setBrandSelected} />
           </div>
@@ -333,7 +333,7 @@ const Home: React.FC = () => {
       </div>
 
       {/* OVER ONS */}
-      <section className="bg-gray-50 py-16">
+      <section className="!bg-gray-50 py-16">
         <div className="w-3/4 mx-auto text-center">
           <h2 className="text-4xl font-bold mb-4">Over Ons</h2>
           <p className="text-lg text-gray-700">

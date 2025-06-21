@@ -67,14 +67,14 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
         const extra = totalPhotos - 2;
         return (
           <div
-            className="w-full h-full bg-[#1a1a1a] flex flex-col items-center justify-center cursor-pointer"
+            className="w-full h-full !bg-[#1a1a1a] flex flex-col items-center justify-center cursor-pointer"
             onClick={() => {
               setCurrentSlide(2);
               setLightboxOpen(true);
             }}
           >
-            <i className="icon-Group4 text-[3rem] text-[#bfbfbf] mb-1" />
-            <span className="text-sm text-[#bfbfbf] font-medium">
+            <i className="icon-Group4 text-[3rem] !text-[#bfbfbf] mb-1" />
+            <span className="text-sm !text-[#bfbfbf] font-medium">
               +{extra} EXTRA FOTO{extra !== 1 ? "'S" : ""}
             </span>
           </div>
@@ -109,12 +109,12 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
               />
             )}
           </div>
-          <div className="w-full md:w-2/3 p-5 flex flex-col justify-between bg-white border border-t-0 md:border-l-0 border-gray-300 rounded-b-[6px] md:rounded-r-[6px] md:rounded-bl-none">
+          <div className="w-full md:w-2/3 p-5 flex flex-col justify-between !bg-white border border-t-0 md:border-l-0 border-gray-300 rounded-b-[6px] md:rounded-r-[6px] md:rounded-bl-none">
             <div>
-              <h3 className="text-xl font-semibold text-[#1C448E] mb-2">
+              <h3 className="text-xl font-semibold !text-[#1C448E] mb-2">
                 {car.brand} – {car.model}
               </h3>
-              <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm text-[#6e6e6e] mb-4">
+              <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm !text-[#6e6e6e] mb-4">
                 <div className="flex items-center gap-2">
                   <i className="icon-Vector-13 text-[1.2rem]" />
                   <span>{car.year}</span>
@@ -142,10 +142,10 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
               </div>
             </div>
             <div className="flex justify-between items-center mt-auto pt-4 border-t border-gray-200">
-              <p className="text-xl font-semibold text-[#1C448E]">
+              <p className="text-xl font-semibold !text-[#1C448E]">
                 € {car.price.toLocaleString()}
               </p>
-              <button className="inline-flex h-8 items-center justify-center rounded bg-white px-4 py-1 font-semibold text-[#1C448E] transition-opacity hover:opacity-90 group cursor-pointer">
+              <button className="inline-flex h-8 items-center justify-center rounded !bg-white px-4 py-1 font-semibold !text-[#1C448E] transition-opacity hover:opacity-90 group cursor-pointer">
                 MEER WETEN
                 <div className="relative ml-2 h-5 w-5 overflow-hidden">
                   <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
@@ -224,18 +224,18 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
                 <div
                   key={zone}
                   className={`h-[3px] flex-1 transition-colors duration-300 ${
-                    (hoverZone ?? 0) === zone ? "bg-[#1C448E]" : "bg-white/60"
+                    (hoverZone ?? 0) === zone ? "!bg-[#1C448E]" : "!bg-white/60"
                   } ${i === 1 ? "mx-[6px]" : ""}`}
                 />
               ))}
             </div>
           </div>
 
-          <div className="p-5 bg-white border border-gray-300 rounded-b-[6px] border-t-0">
-            <h3 className="text-xl font-bold text-[#1C448E] mb-4 truncate">
+          <div className="p-5 !bg-white border !border-gray-300 rounded-b-[6px] border-t-0">
+            <h3 className="text-xl font-bold !text-[#1C448E] mb-4 truncate">
               {car.brand} – {car.model}
             </h3>
-            <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm text-[#6e6e6e] mb-4">
+            <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm !text-[#6e6e6e] mb-4">
               <div className="flex items-center gap-2">
                 <i className="icon-Vector-13 text-[1.2rem]" />
                 <span>{car.year}</span>
@@ -262,13 +262,13 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
               </div>
             </div>
 
-            <div className="border-t border-gray-300 my-4" />
+            <div className="border-t !border-gray-300 my-4" />
 
             <div className="flex items-center justify-between">
               <p className="text-xl font-semibold">
                 € {car.price.toLocaleString()}
               </p>
-              <button className="inline-flex h-8 items-center justify-center rounded bg-white px-4 py-1 font-semibold text-[#1C448E] transition-opacity hover:opacity-90 group cursor-pointer">
+              <button className="inline-flex h-8 items-center justify-center rounded !bg-white px-4 py-1 font-semibold !text-[#1C448E] transition-opacity hover:opacity-90 group cursor-pointer">
                 MEER WETEN
                 <div className="relative ml-2 h-5 w-5 overflow-hidden">
                   <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
