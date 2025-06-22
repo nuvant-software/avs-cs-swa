@@ -37,11 +37,11 @@ export const Lightbox: FC<Props> = ({
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 p-4">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center !bg-black/80 p-4">
       {/* Close */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 text-white text-3xl transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+        className="absolute top-4 right-4 !text-white text-3xl transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer"
       >
         &times;
       </button>
@@ -49,7 +49,7 @@ export const Lightbox: FC<Props> = ({
       {/* Prev */}
       <button
         onClick={onPrev}
-        className="absolute left-4 text-white text-3xl transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+        className="absolute left-4 !text-white text-3xl transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer"
       >
         &#10094;
       </button>
@@ -74,7 +74,7 @@ export const Lightbox: FC<Props> = ({
       {/* Next */}
       <button
         onClick={onNext}
-        className="absolute right-4 text-white text-3xl transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+        className="absolute right-4 !text-white text-3xl transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer"
       >
         &#10095;
       </button>
@@ -87,7 +87,7 @@ export const Lightbox: FC<Props> = ({
             src={src}
             alt={`Thumb ${i + 1}`}
             className={`h-16 object-cover rounded cursor-pointer border-2 ${
-              i === index ? "border-white" : "border-transparent"
+              i === index ? "!border-white" : "border-transparent"
             } transition-opacity hover:opacity-70`}
             onClick={() => onSelect(i)}
           />

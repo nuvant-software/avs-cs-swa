@@ -284,7 +284,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
             <p className="text-xl font-semibold">
               € {car.price.toLocaleString()}
             </p>
-            <button className="inline-flex h-8 items-center justify-center rounded !bg-white px-4 py-1 font-semibold !text-[#1C448E] transition-opacity hover:opacity-90 group cursor-pointer">
+            <button className="!border-none inline-flex h-8 items-center justify-center rounded !bg-white px-4 py-1 font-semibold !text-[#1C448E] transition-opacity hover:!opacity-90 group cursor-pointer">
               MEER WETEN
               <div className="relative ml-2 h-5 w-5 overflow-hidden">
                 <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
