@@ -20,7 +20,8 @@ interface ApiResponse {
       year?: number
       mileage?: number
       transmission?: string
-      fuel_type?: string
+      /** hier veranderd van fuel_type naar gewoon fuel */
+      fuel?: string
       engine_size?: string
       pk?: number
     }
@@ -77,7 +78,7 @@ const Collection: React.FC = () => {
   }, [])
 
   if (loading) return <Loader />
-  if (error) return <Loader />
+  if (error)   return <Loader />
 
   const items = data?.items ?? []
 
@@ -110,7 +111,8 @@ const Collection: React.FC = () => {
                     brand: car.brand,
                     model: car.model,
                     variant: car.variant,
-                    fuel: car.fuel_type ?? '',
+                    /** hier de echte fuel uit de JSON pakken */
+                    fuel: car.fuel ?? '',
                     mileage: car.mileage ?? 0,
                     transmission: car.transmission ?? '',
                     price: car.price,
