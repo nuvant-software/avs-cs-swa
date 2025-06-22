@@ -23,6 +23,7 @@ type Props = {
 
 const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
   const [hoverZone, setHoverZone] = useState<number | null>(null);
+  const [lastPreviewZone, setLastPreviewZone] = useState<number>(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [allImages, setAllImages] = useState<string[]>([]);
@@ -74,7 +75,9 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
   );
 
   const getZoneContent = () => {
-    if (hoverZone === 2) {
+    const zone = hoverZone ?? lastPreviewZone;
+    
+    if (zone === 2) {
       if (totalPhotos === 3 && allImages[2]) {
         return renderImg(allImages[2], 2);
       }
@@ -98,9 +101,8 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
       return null;
     }
 
-    const idx = hoverZone === 1 ? 1 : 0;
-    return allImages[idx]
-      ? renderImg(allImages[idx], idx)
+    return allImages[zone]
+      ? renderImg(allImages[zone], zone)
       : allImages[0]
       ? renderImg(allImages[0], 0)
       : null;
@@ -216,7 +218,6 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
       <div className="w-full max-w-[340px] mx-auto transition-shadow duration-300 hover:shadow-lg">
         <div
           className="relative w-full h-56 overflow-hidden group rounded-t-[6px]"
-          onMouseLeave={() => setHoverZone(null)}
         >
           {getZoneContent()}
           <div className="absolute inset-0 flex">
@@ -224,7 +225,10 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
               <div
                 key={zone}
                 className="w-1/3 h-full"
-                onMouseEnter={() => setHoverZone(zone)}
+                onMouseEnter={() => {
+                  setHoverZone(zone);
+                  setLastPreviewZone(zone);
+                }}
                 onClick={() => {
                   const idx = zone < 2 ? zone : 2;
                   setCurrentSlide(idx);
@@ -238,7 +242,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
               <div
                 key={zone}
                 className={`h-[3px] flex-1 transition-colors duration-300 ${
-                  (hoverZone ?? 0) === zone ? "!bg-[#1C448E]" : "!bg-white/60"
+                  (hoverZone ?? lastPreviewZone) === zone ? "!bg-[#1C448E]" : "!bg-white/60"
                 } ${i === 1 ? "mx-[6px]" : ""}`}
               />
             ))}
