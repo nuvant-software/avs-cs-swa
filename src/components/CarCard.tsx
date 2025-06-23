@@ -255,27 +255,27 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
           </h3>
           <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm !text-[#6e6e6e] mb-4">
             <div className="flex items-center gap-2">
-              <i className="icon-Vector-13 text-[1.2rem]" />
+              <i className="icon-Vector-13 text-[1.2rem] !text-[#1C448E]" />
               <span>{car.year}</span>
             </div>
             <div className="flex items-center gap-2">
-              <i className="icon-dashboard-2 text-[1.2rem]" />
+              <i className="icon-dashboard-2 text-[1.2rem] !text-[#1C448E]" />
               <span>{car.mileage.toLocaleString()} km</span>
             </div>
             <div className="flex items-center gap-2">
-              <i className="icon-gearbox-1 text-[1.2rem]" />
+              <i className="icon-gearbox-1 text-[1.2rem] !text-[#1C448E]" />
               <span>{car.transmission}</span>
             </div>
             <div className="flex items-center gap-2">
-              <i className="icon-gasoline-pump-1 text-[1.2rem]" />
+              <i className="icon-gasoline-pump-1 text-[1.2rem] !text-[#1C448E]" />
               <span>{car.fuel}</span>
             </div>
             <div className="flex items-center gap-2">
-              <i className="icon-dashboard-2 text-[1.2rem]" />
+              <i className="icon-dashboard-2 text-[1.2rem] !text-[#1C448E]" />
               <span>{car.pk} PK</span>
             </div>
             <div className="flex items-center gap-2">
-              <i className="icon-engine-1 text-[1.2rem]" />
+              <i className="icon-engine-1 text-[1.2rem] !text-[#1C448E]" />
               <span>{car.engine_size}</span>
             </div>
           </div>
@@ -284,7 +284,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
             <p className="text-xl font-semibold">
               € {car.price.toLocaleString()}
             </p>
-            <button className="!border-none inline-flex h-8 items-center justify-center rounded !bg-white px-4 py-1 font-semibold !text-[#1C448E] transition-opacity hover:!opacity-90 group cursor-pointer">
+            <button className="!border-none inline-flex h-8 items-center justify-center rounded !bg-white px-4 py-1 font-bold !text-[#1C448E] transition-opacity hover:!opacity-90 group cursor-pointer">
               MEER WETEN
               <div className="relative ml-2 h-5 w-5 overflow-hidden">
                 <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
