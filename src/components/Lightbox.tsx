@@ -41,7 +41,7 @@ export const Lightbox: FC<Props> = ({
       {/* Close */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 !text-white text-3xl transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+        className="absolute top-4 right-4 bg-transparent border-none text-white text-3xl transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none"
       >
         &times;
       </button>
@@ -49,7 +49,7 @@ export const Lightbox: FC<Props> = ({
       {/* Prev */}
       <button
         onClick={onPrev}
-        className="absolute left-4 !text-white text-3xl transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+        className="absolute left-4 bg-transparent border-none text-white text-3xl transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none"
       >
         &#10094;
       </button>
@@ -74,7 +74,7 @@ export const Lightbox: FC<Props> = ({
       {/* Next */}
       <button
         onClick={onNext}
-        className="absolute right-4 !text-white text-3xl transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer"
+        className="absolute right-4 bg-transparent border-none text-white text-3xl transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer focus:outline-none"
       >
         &#10095;
       </button>
