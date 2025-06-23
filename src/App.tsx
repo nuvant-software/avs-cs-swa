@@ -13,7 +13,6 @@ function App() {
       <div className="min-h-screen flex flex-col">
         <TopBar />
         <Navbar />
-        {/* alleen padding voor de TopBar (40px hoogte) */}
         <main className="!flex-grow !pt-[40px]">
           <Routes>
             <Route path="/" element={<Home />} />
