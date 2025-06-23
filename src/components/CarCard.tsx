@@ -129,7 +129,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
           <div className="w-full md:w-2/3 p-5 flex flex-col justify-between !bg-white border border-t-0 md:border-l-0 border-gray-300 rounded-b-[6px] md:rounded-r-[6px] md:rounded-bl-none">
             <div>
               <h3 className="text-xl font-semibold !text-[#1C448E] mb-2">
-                {car.brand} – {car.model}
+                {car.brand} {car.model} - {car.variant}
               </h3>
               <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm !text-[#6e6e6e] mb-4">
                 <div className="flex items-center gap-2">
