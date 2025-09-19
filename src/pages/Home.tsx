@@ -115,6 +115,7 @@ const Home: React.FC = () => {
     return Array.from(new Set(base.map(c => c.variant))).sort()
   }, [cars, brandSelected, modelSelected])
 
+  // Parent → child resets
   useEffect(() => {
     if (brandSelected.length === 0) {
       setModelSelected([])
@@ -128,6 +129,7 @@ const Home: React.FC = () => {
     }
   }, [modelSelected])
 
+  // Re-clamp selections to available options
   useEffect(() => {
     setModelSelected(ms => ms.filter(m => models.includes(m)))
   }, [models])
@@ -195,11 +197,11 @@ const Home: React.FC = () => {
     })
   }
 
-  // ── Early returns na alle hooks ────────────────────────────
+  // ── Early returns ────────────────────────────
   if (loading) return <Loader/>
   if (error)   return <Loader />
 
-  // ── UI ───────────────────────────────────────────────
+  // ── UI ───────────────────────────────────────
   return (
     <>
       {/* HERO */}
@@ -236,24 +238,30 @@ const Home: React.FC = () => {
         {/* MOBILE */}
         <div className="md:hidden flex flex-col space-y-4 px-6 mt-8 mb-8">
           <h3 className="text-xl font-semibold">Auto zoeken</h3>
+
           <MultiSearchSelect
             label="Merk"
             options={brands}
             selected={brandSelected}
             onChange={setBrandSelected}
           />
+
           <MultiSearchSelect
             label="Model"
             options={models}
             selected={modelSelected}
             onChange={setModelSelected}
+            disabled={brandSelected.length === 0}              // ← blokkeer zonder merk
           />
+
           <MultiSearchSelect
             label="Variant"
             options={variants}
             selected={variantSelected}
             onChange={setVariantSelected}
+            disabled={modelSelected.length === 0}              // ← blokkeer zonder model
           />
+
           <FilterRangeSlider
             label="Prijs"
             min={priceBounds[0]}
@@ -263,6 +271,7 @@ const Home: React.FC = () => {
             placeholderMin={priceBounds[0].toString()}
             placeholderMax={priceBounds[1].toString()}
           />
+
           <button
             onClick={onSearch}
             className="w-full py-3 !bg-[#27408B] text-white rounded-md flex items-center justify-center hover:!bg-[#0A1833] transition"
@@ -274,9 +283,26 @@ const Home: React.FC = () => {
         {/* TABLET */}
         <div className="hidden md:flex lg:hidden flex-col space-y-4 mx-auto w-3/4 px-6 py-6 !bg-white shadow-lg rounded-lg -mt-20 relative z-20">
           <div className="flex gap-6">
-            <MultiSearchSelect label="Merk"    options={brands} selected={brandSelected} onChange={setBrandSelected}/>
-            <MultiSearchSelect label="Model"   options={models} selected={modelSelected} onChange={setModelSelected}/>
-            <MultiSearchSelect label="Variant" options={variants} selected={variantSelected} onChange={setVariantSelected}/>
+            <MultiSearchSelect
+              label="Merk"
+              options={brands}
+              selected={brandSelected}
+              onChange={setBrandSelected}
+            />
+            <MultiSearchSelect
+              label="Model"
+              options={models}
+              selected={modelSelected}
+              onChange={setModelSelected}
+              disabled={brandSelected.length === 0}            // ← blokkeer zonder merk
+            />
+            <MultiSearchSelect
+              label="Variant"
+              options={variants}
+              selected={variantSelected}
+              onChange={setVariantSelected}
+              disabled={modelSelected.length === 0}            // ← blokkeer zonder model
+            />
           </div>
           <div className="flex items-center gap-6">
             <div className="flex-1">
@@ -304,13 +330,30 @@ const Home: React.FC = () => {
         {/* DESKTOP */}
         <div className="hidden lg:flex items-center justify-between gap-x-6 mx-auto w-3/4 px-6 py-6 !bg-white shadow-lg -mt-20 relative z-20">
           <div className="w-60">
-            <MultiSearchSelect label="Merk"    options={brands}    selected={brandSelected}   onChange={setBrandSelected} />
+            <MultiSearchSelect
+              label="Merk"
+              options={brands}
+              selected={brandSelected}
+              onChange={setBrandSelected}
+            />
           </div>
           <div className="w-60">
-            <MultiSearchSelect label="Model"   options={models}    selected={modelSelected}   onChange={setModelSelected} />
+            <MultiSearchSelect
+              label="Model"
+              options={models}
+              selected={modelSelected}
+              onChange={setModelSelected}
+              disabled={brandSelected.length === 0}            // ← blokkeer zonder merk
+            />
           </div>
           <div className="w-60">
-            <MultiSearchSelect label="Variant" options={variants}  selected={variantSelected} onChange={setVariantSelected} />
+            <MultiSearchSelect
+              label="Variant"
+              options={variants}
+              selected={variantSelected}
+              onChange={setVariantSelected}
+              disabled={modelSelected.length === 0}            // ← blokkeer zonder model
+            />
           </div>
           <div className="w-80">
             <FilterRangeSlider
@@ -336,7 +379,7 @@ const Home: React.FC = () => {
       <section className="!bg-gray-50 py-16">
         <div className="w-3/4 mx-auto text-center">
           <h2 className="text-4xl font-bold mb-4">Over Ons</h2>
-          <p className="text-lg text-gray-700">
+        <p className="text-lg text-gray-700">
             AVS Autoverkoop is al meer dan 20 jaar dé specialist in kwalitatieve tweedehands auto's.
           </p>
         </div>
