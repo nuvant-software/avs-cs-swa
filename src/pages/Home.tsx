@@ -159,19 +159,22 @@ const Home: React.FC = () => {
   }, [brandSelected, variantSelected, brandModelVariantsMap])
 
   const filteredCars = useMemo(() => {
-    return cars.filter(c => {
-      if (brandSelected.length > 0 && !brandSelected.includes(c.brand)) return false
-      if (modelSelected.length > 0) {
-        const sel = selectedModelsPerBrand[c.brand] || []
-        if (sel.length > 0 && !sel.includes(c.model)) return false
-      }
-      if (variantSelected.length > 0) {
-        const sel = selectedVariantsPerBrandModel[c.brand]?.[c.model] || []
-        if (sel.length > 0 && !sel.includes(c.variant)) return false
-      }
-      if (c.price < priceRange[0] || c.price > priceRange[1]) return false
-      return true
-    })
+  return cars.filter(c => {
+    if (brandSelected.length   && !brandSelected.includes(c.brand))   return false
+
+    if (modelSelected.length) {
+      const selModels = selectedModelsPerBrand[c.brand] || []
+      if (!selModels.includes(c.model)) return false
+    }
+
+    if (variantSelected.length) {
+      const selVariants = selectedVariantsPerBrandModel[c.brand]?.[c.model] || []
+      if (!selVariants.includes(c.variant)) return false
+    }
+
+    if (c.price < priceRange[0] || c.price > priceRange[1]) return false
+    return true
+  })
   }, [
     cars,
     brandSelected,
