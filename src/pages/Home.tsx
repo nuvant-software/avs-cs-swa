@@ -4,11 +4,18 @@ import Loader from '../components/Loader'
 import FilterRangeSlider from '../components/filters/FilterRangeSlider'
 import MultiSearchSelect from '../components/filters/MultiSearchSelect'
 
+interface CarOverview {
+  brand: string
+  model: string
+  variant: string
+  price: number
+}
 
 const Home: React.FC = () => {
   const navigate = useNavigate()
 
   // ── 1️⃣ Raw data + status ──────────────────────────────────
+  const [cars, setCars]       = useState<CarOverview[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState<string|null>(null)
 
@@ -23,6 +30,31 @@ const Home: React.FC = () => {
   const [priceBounds, setPriceBounds] = useState<[number,number]>([0,0])
   const [priceRange, setPriceRange]   = useState<[number,number]>([0,0])
 
+  // ── Helpers: tokens parsen ────────────────────────────────
+  function parseModelTokens(tokens: string[]) {
+    // tokens zoals "Brand — Model"
+    const map: Record<string, Set<string>> = {}
+    tokens.forEach(t => {
+      const [brand, model] = t.split(' — ')
+      if (!brand || !model) return
+      if (!map[brand]) map[brand] = new Set()
+      map[brand].add(model)
+    })
+    return map
+  }
+
+  function parseVariantTokens(tokens: string[]) {
+    // tokens zoals "Brand — Model — Variant"
+    const map: Record<string, Record<string, Set<string>>> = {}
+    tokens.forEach(t => {
+      const [brand, model, variant] = t.split(' — ')
+      if (!brand || !model || !variant) return
+      if (!map[brand]) map[brand] = {}
+      if (!map[brand][model]) map[brand][model] = new Set()
+      map[brand][model].add(variant)
+    })
+    return map
+  }
 
   // 👉 Helper: bouw backend-vriendelijke filters (gescope’d)
   function buildApiFilters() {
@@ -50,45 +82,80 @@ const Home: React.FC = () => {
     }
   }
 
-  // ── bij mount: haal alleen metadata op (geen items) ─────────
+  // ── bij mount: haal alle auto's én prijs‐range op ─────────
   useEffect(() => {
     fetch('/api/filter_cars', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filters: {}, includeItems: false })
+      body: JSON.stringify({ filters: {}, includeItems: true })
     })
       .then(res => {
         if (!res.ok) throw new Error(res.statusText)
         return res.json()
       })
-      .then((data:{ facets?: any, price_range?: [number, number] }) => {
-        // Haal alleen de prijs range op voor de slider
-        if (data.price_range && Array.isArray(data.price_range) && data.price_range.length === 2) {
-          setPriceBounds(data.price_range)
-          setPriceRange(data.price_range)
-        } else {
-          // Fallback prijzen als er geen data is
-          setPriceBounds([0, 100000])
-          setPriceRange([0, 100000])
+      .then((data:{ items?: any[] }) => {
+        const items = Array.isArray(data.items) ? data.items : []
+        const valid: CarOverview[] = items
+          .map(i => i.car_overview)
+          .filter(co =>
+            co &&
+            typeof co.brand   === 'string' &&
+            typeof co.model   === 'string' &&
+            typeof co.variant === 'string' &&
+            typeof co.price   === 'number'
+          )
+          .map(co => ({
+            brand:   co.brand,
+            model:   co.model,
+            variant: co.variant,
+            price:   co.price
+          }))
+
+        setCars(valid)
+        if (valid.length) {
+          const prices = valid.map(c => c.price)
+          const mn = Math.min(...prices)
+          const mx = Math.max(...prices)
+          setPriceBounds([mn, mx])
+          setPriceRange([mn, mx])
         }
-        
-        // Data wordt geladen in Collection pagina
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
 
   // ── Facets ────────────────────────────────────────────────
-  // Voor nu hardcoded opties - deze zouden uit de API moeten komen
-  const brands = useMemo(() => [
-    'Audi', 'BMW', 'Mercedes-Benz', 'Volkswagen', 'Ford', 'Opel', 'Peugeot', 'Renault'
-  ], [])
+  const brands = useMemo(
+    () => Array.from(new Set(cars.map(c => c.brand))).sort(),
+    [cars]
+  )
 
-  // Model-opties als "Brand — Model" - voor nu leeg
-  const modelOptions = useMemo(() => [], [])
+  // Model-opties als "Brand — Model"
+  const modelOptions = useMemo(() => {
+    const base = brandSelected.length
+      ? cars.filter(c => brandSelected.includes(c.brand))
+      : cars
 
-  // Variant-opties als "Brand — Model — Variant" - voor nu leeg  
-  const variantOptions = useMemo(() => [], [])
+    const uniq = new Set<string>()
+    base.forEach(c => uniq.add(`${c.brand} — ${c.model}`))
+
+    return Array.from(uniq).sort((a,b) => a.localeCompare(b, 'nl', {sensitivity:'base'}))
+  }, [cars, brandSelected])
+
+  // Variant-opties als "Brand — Model — Variant", alleen voor gekozen (Brand — Model)
+  const variantOptions = useMemo(() => {
+    if (!modelSelected.length) return []
+    const chosenBM = new Set(modelSelected)
+
+    const uniq = new Set<string>()
+    cars.forEach(c => {
+      const bm = `${c.brand} — ${c.model}`
+      if (!chosenBM.has(bm)) return
+      uniq.add(`${c.brand} — ${c.model} — ${c.variant}`)
+    })
+
+    return Array.from(uniq).sort((a,b) => a.localeCompare(b, 'nl', {sensitivity:'base'}))
+  }, [cars, modelSelected])
 
   // ── Parent → child resets ─────────────────────────────────
   useEffect(() => {
@@ -105,10 +172,37 @@ const Home: React.FC = () => {
   }, [modelSelected])
 
   // Houd geselecteerde model/variant in sync met beschikbare opties
-  // Voor nu uitgeschakeld omdat we geen dynamische opties hebben
+  useEffect(() => {
+    setModelSelected(ms => ms.filter(m => modelOptions.includes(m)))
+  }, [modelOptions])
+
+  useEffect(() => {
+    setVariantSelected(vs => vs.filter(v => variantOptions.includes(v)))
+  }, [variantOptions])
 
   // ── Per-merk scoping m.b.v. token-maps ───────────────────
-  // Deze worden gebruikt in buildApiFilters maar niet meer in filtering
+  const modelsByBrand = useMemo(() => parseModelTokens(modelSelected), [modelSelected])
+  const variantsByBrandModel = useMemo(() => parseVariantTokens(variantSelected), [variantSelected])
+
+  const filteredCars = useMemo(() => {
+    return cars.filter(c => {
+      // 1) Merk (globaal)
+      if (brandSelected.length && !brandSelected.includes(c.brand)) return false
+
+      // 2) Model: alleen toepassen binnen merken waarvoor modellen gekozen zijn
+      const mset = modelsByBrand[c.brand]
+      if (mset && mset.size > 0 && !mset.has(c.model)) return false
+
+      // 3) Variant: alleen toepassen binnen gekozen brand+model
+      const vset = variantsByBrandModel[c.brand]?.[c.model]
+      if (vset && vset.size > 0 && !vset.has(c.variant)) return false
+
+      // 4) Prijs
+      if (c.price < priceRange[0] || c.price > priceRange[1]) return false
+
+      return true
+    })
+  }, [cars, brandSelected, modelsByBrand, variantsByBrandModel, priceRange])
 
   // 👉 Gebruik de gescope’de payload richting collectie/backend
   const onSearch = () => {
@@ -200,7 +294,7 @@ const Home: React.FC = () => {
             onClick={onSearch}
             className="w-full py-3 !bg-[#27408B] text-white rounded-md flex items-center justify-center hover:!bg-[#0A1833] transition"
           >
-            Zoek Auto's
+            Zoek ({filteredCars.length}) Auto’s
           </button>
         </div>
 
@@ -245,7 +339,7 @@ const Home: React.FC = () => {
                 onClick={onSearch}
                 className="w-full h-14 !bg-[#27408B] !text-white rounded-md flex items-center justify-center hover:!bg-[#0A1833] transition"
               >
-                Zoek Auto's
+                Zoek ({filteredCars.length}) Auto’s
               </button>
             </div>
           </div>
@@ -294,7 +388,7 @@ const Home: React.FC = () => {
             onClick={onSearch}
             className="w-72 h-14 !bg-[#27408B] text-white rounded-md flex items-center justify-center hover:!bg-[#0A1833] transition"
           >
-            Zoek Auto's
+            Zoek ({filteredCars.length}) Auto’s
           </button>
         </div>
       </div>
