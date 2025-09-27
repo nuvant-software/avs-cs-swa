@@ -27,12 +27,17 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [allImages, setAllImages] = useState<string[]>([]);
+  const [imagesLoading, setImagesLoading] = useState(true);
 
-  // 📸 Laden uit Azure Blob (fallback naar car_001)
+  // 📸 Laden uit Azure Blob (fallback naar car_001) - met lazy loading
   useEffect(() => {
     const baseFolder = "car_001"; // TODO: vervang door car.id zodra er per-auto mappen zijn
     const listBlobs = async () => {
       try {
+        // Toon eerst een placeholder/loading state
+        setAllImages([]);
+        setImagesLoading(true);
+        
         const res = await fetch(
           `https://avsapisa.blob.core.windows.net/carimages?restype=container&comp=list&prefix=${baseFolder}/`
         );
@@ -48,8 +53,12 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
               `https://avsapisa.blob.core.windows.net/carimages/${name}`
           );
         setAllImages(urls);
+        setImagesLoading(false);
       } catch (e) {
         console.error("Blob list error:", e);
+        // Fallback naar placeholder image
+        setAllImages(['/assets/placeholder-car.jpg']);
+        setImagesLoading(false);
       }
     };
     listBlobs();
@@ -76,6 +85,16 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
 
   const getZoneContent = () => {
     const zone = hoverZone ?? lastPreviewZone;
+    
+    // Loading state
+    if (imagesLoading) {
+      return (
+        <div className="w-full h-full !bg-gray-200 flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1C448E]"></div>
+          <span className="text-sm text-gray-600 mt-2">Laden...</span>
+        </div>
+      );
+    }
     
     if (zone === 2) {
       if (totalPhotos === 3 && allImages[2]) {
