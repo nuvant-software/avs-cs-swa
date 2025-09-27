@@ -21,7 +21,6 @@ const Home: React.FC = () => {
 
   // ── 2️⃣ Geselecteerde filters ─────────────────────────────
   const [brandSelected, setBrandSelected]     = useState<string[]>([])
-  // LET OP: model/variant waarden worden tokens met leesbare labels:
   // Model:   "Brand — Model"
   // Variant: "Brand — Model — Variant"
   const [modelSelected, setModelSelected]     = useState<string[]>([])
@@ -31,7 +30,7 @@ const Home: React.FC = () => {
   const [priceBounds, setPriceBounds] = useState<[number,number]>([0,0])
   const [priceRange, setPriceRange]   = useState<[number,number]>([0,0])
 
-  // ── Helpers om tokens te parsen ───────────────────────────
+  // ── Helpers: tokens parsen ────────────────────────────────
   function parseModelTokens(tokens: string[]) {
     // tokens zoals "Brand — Model"
     const map: Record<string, Set<string>> = {}
@@ -55,6 +54,32 @@ const Home: React.FC = () => {
       map[brand][model].add(variant)
     })
     return map
+  }
+
+  // 👉 Helper: bouw backend-vriendelijke filters (gescope’d)
+  function buildApiFilters() {
+    const models_by_brand: Record<string, string[]> = {}
+    modelSelected.forEach(t => {
+      const [brand, model] = t.split(' — ')
+      if (!brand || !model) return
+      ;(models_by_brand[brand] ||= []).push(model)
+    })
+
+    const variants_by_brand_model: Record<string, Record<string, string[]>> = {}
+    variantSelected.forEach(t => {
+      const [brand, model, variant] = t.split(' — ')
+      if (!brand || !model || !variant) return
+      ;(variants_by_brand_model[brand] ||= {})
+      ;(variants_by_brand_model[brand][model] ||= []).push(variant)
+    })
+
+    return {
+      brands: brandSelected,
+      models_by_brand,
+      variants_by_brand_model,
+      price_min: priceRange[0],
+      price_max: priceRange[1],
+    }
   }
 
   // ── bij mount: haal alle auto's én prijs‐range op ─────────
@@ -179,17 +204,12 @@ const Home: React.FC = () => {
     })
   }, [cars, brandSelected, modelsByBrand, variantsByBrandModel, priceRange])
 
+  // 👉 Gebruik de gescope’de payload richting collectie/backend
   const onSearch = () => {
+    const apiFilters = buildApiFilters()
     navigate('/collection', {
       state: {
-        filters: {
-          // Je kunt dit nu al meesturen; collectie kan het later oppakken
-          brand:     brandSelected,
-          model:     modelSelected,     // tokens "Brand — Model"
-          variant:   variantSelected,   // tokens "Brand — Model — Variant"
-          price_min: priceRange[0],
-          price_max: priceRange[1]
-        },
+        filters: apiFilters,     // { brands, models_by_brand, variants_by_brand_model, price_min, price_max }
         includeItems: true
       }
     })
