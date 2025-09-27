@@ -1,4 +1,3 @@
-// src/components/filters/MultiSearchSelect.tsx
 import React, { useState, useRef, useEffect } from 'react'
 
 interface MultiSearchSelectProps {

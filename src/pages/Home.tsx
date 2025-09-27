@@ -21,12 +21,41 @@ const Home: React.FC = () => {
 
   // ── 2️⃣ Geselecteerde filters ─────────────────────────────
   const [brandSelected, setBrandSelected]     = useState<string[]>([])
+  // LET OP: model/variant waarden worden tokens met leesbare labels:
+  // Model:   "Brand — Model"
+  // Variant: "Brand — Model — Variant"
   const [modelSelected, setModelSelected]     = useState<string[]>([])
   const [variantSelected, setVariantSelected] = useState<string[]>([])
 
   // ── 3️⃣ Prijs-slider bounds + range ────────────────────────
   const [priceBounds, setPriceBounds] = useState<[number,number]>([0,0])
   const [priceRange, setPriceRange]   = useState<[number,number]>([0,0])
+
+  // ── Helpers om tokens te parsen ───────────────────────────
+  function parseModelTokens(tokens: string[]) {
+    // tokens zoals "Brand — Model"
+    const map: Record<string, Set<string>> = {}
+    tokens.forEach(t => {
+      const [brand, model] = t.split(' — ')
+      if (!brand || !model) return
+      if (!map[brand]) map[brand] = new Set()
+      map[brand].add(model)
+    })
+    return map
+  }
+
+  function parseVariantTokens(tokens: string[]) {
+    // tokens zoals "Brand — Model — Variant"
+    const map: Record<string, Record<string, Set<string>>> = {}
+    tokens.forEach(t => {
+      const [brand, model, variant] = t.split(' — ')
+      if (!brand || !model || !variant) return
+      if (!map[brand]) map[brand] = {}
+      if (!map[brand][model]) map[brand][model] = new Set()
+      map[brand][model].add(variant)
+    })
+    return map
+  }
 
   // ── bij mount: haal alle auto's én prijs‐range op ─────────
   useEffect(() => {
@@ -70,52 +99,40 @@ const Home: React.FC = () => {
       .finally(() => setLoading(false))
   }, [])
 
-  // Hooks voor facet‐berekeningen...
-  const brandModelsMap = useMemo(() => {
-    const m: Record<string,Set<string>> = {}
-    cars.forEach(c => {
-      m[c.brand] = m[c.brand] || new Set()
-      m[c.brand].add(c.model)
-    })
-    return m
-  }, [cars])
-
-  const brandModelVariantsMap = useMemo(() => {
-    const m: Record<string,Record<string,Set<string>>> = {}
-    cars.forEach(c => {
-      m[c.brand] = m[c.brand] || {}
-      m[c.brand][c.model] = m[c.brand][c.model] || new Set()
-      m[c.brand][c.model].add(c.variant)
-    })
-    return m
-  }, [cars])
-
+  // ── Facets ────────────────────────────────────────────────
   const brands = useMemo(
     () => Array.from(new Set(cars.map(c => c.brand))).sort(),
     [cars]
   )
 
-  const models = useMemo(() => {
+  // Model-opties als "Brand — Model"
+  const modelOptions = useMemo(() => {
     const base = brandSelected.length
       ? cars.filter(c => brandSelected.includes(c.brand))
       : cars
-    return Array.from(new Set(base.map(c => c.model))).sort()
+
+    const uniq = new Set<string>()
+    base.forEach(c => uniq.add(`${c.brand} — ${c.model}`))
+
+    return Array.from(uniq).sort((a,b) => a.localeCompare(b, 'nl', {sensitivity:'base'}))
   }, [cars, brandSelected])
 
-  const variants = useMemo(() => {
-    const base = modelSelected.length
-      ? cars.filter(c =>
-          (brandSelected.length === 0 || brandSelected.includes(c.brand)) &&
-          modelSelected.includes(c.model)
-        )
-      : (brandSelected.length
-          ? cars.filter(c => brandSelected.includes(c.brand))
-          : cars
-        )
-    return Array.from(new Set(base.map(c => c.variant))).sort()
-  }, [cars, brandSelected, modelSelected])
+  // Variant-opties als "Brand — Model — Variant", alleen voor gekozen (Brand — Model)
+  const variantOptions = useMemo(() => {
+    if (!modelSelected.length) return []
+    const chosenBM = new Set(modelSelected)
 
-  // Parent → child resets
+    const uniq = new Set<string>()
+    cars.forEach(c => {
+      const bm = `${c.brand} — ${c.model}`
+      if (!chosenBM.has(bm)) return
+      uniq.add(`${c.brand} — ${c.model} — ${c.variant}`)
+    })
+
+    return Array.from(uniq).sort((a,b) => a.localeCompare(b, 'nl', {sensitivity:'base'}))
+  }, [cars, modelSelected])
+
+  // ── Parent → child resets ─────────────────────────────────
   useEffect(() => {
     if (brandSelected.length === 0) {
       setModelSelected([])
@@ -129,69 +146,47 @@ const Home: React.FC = () => {
     }
   }, [modelSelected])
 
-  // Re-clamp selections to available options
+  // Houd geselecteerde model/variant in sync met beschikbare opties
   useEffect(() => {
-    setModelSelected(ms => ms.filter(m => models.includes(m)))
-  }, [models])
+    setModelSelected(ms => ms.filter(m => modelOptions.includes(m)))
+  }, [modelOptions])
+
   useEffect(() => {
-    setVariantSelected(vs => vs.filter(v => variants.includes(v)))
-  }, [variants])
+    setVariantSelected(vs => vs.filter(v => variantOptions.includes(v)))
+  }, [variantOptions])
 
-  const selectedModelsPerBrand = useMemo(() => {
-    const out: Record<string,string[]> = {}
-    brandSelected.forEach(b => {
-      const all = brandModelsMap[b] || new Set()
-      out[b] = modelSelected.filter(m => all.has(m))
-    })
-    return out
-  }, [brandSelected, modelSelected, brandModelsMap])
-
-  const selectedVariantsPerBrandModel = useMemo(() => {
-    const out: Record<string,Record<string,string[]>> = {}
-    brandSelected.forEach(b => {
-      out[b] = {}
-      const mm = brandModelVariantsMap[b] || {}
-      Object.keys(mm).forEach(m => {
-        out[b][m] = variantSelected.filter(v => mm[m].has(v))
-      })
-    })
-    return out
-  }, [brandSelected, variantSelected, brandModelVariantsMap])
+  // ── Per-merk scoping m.b.v. token-maps ───────────────────
+  const modelsByBrand = useMemo(() => parseModelTokens(modelSelected), [modelSelected])
+  const variantsByBrandModel = useMemo(() => parseVariantTokens(variantSelected), [variantSelected])
 
   const filteredCars = useMemo(() => {
-  return cars.filter(c => {
-    if (brandSelected.length   && !brandSelected.includes(c.brand))   return false
+    return cars.filter(c => {
+      // 1) Merk (globaal)
+      if (brandSelected.length && !brandSelected.includes(c.brand)) return false
 
-    if (modelSelected.length) {
-      const selModels = selectedModelsPerBrand[c.brand] || []
-      if (!selModels.includes(c.model)) return false
-    }
+      // 2) Model: alleen toepassen binnen merken waarvoor modellen gekozen zijn
+      const mset = modelsByBrand[c.brand]
+      if (mset && mset.size > 0 && !mset.has(c.model)) return false
 
-    if (variantSelected.length) {
-      const selVariants = selectedVariantsPerBrandModel[c.brand]?.[c.model] || []
-      if (!selVariants.includes(c.variant)) return false
-    }
+      // 3) Variant: alleen toepassen binnen gekozen brand+model
+      const vset = variantsByBrandModel[c.brand]?.[c.model]
+      if (vset && vset.size > 0 && !vset.has(c.variant)) return false
 
-    if (c.price < priceRange[0] || c.price > priceRange[1]) return false
-    return true
-  })
-  }, [
-    cars,
-    brandSelected,
-    modelSelected,
-    variantSelected,
-    priceRange,
-    selectedModelsPerBrand,
-    selectedVariantsPerBrandModel
-  ])
+      // 4) Prijs
+      if (c.price < priceRange[0] || c.price > priceRange[1]) return false
+
+      return true
+    })
+  }, [cars, brandSelected, modelsByBrand, variantsByBrandModel, priceRange])
 
   const onSearch = () => {
     navigate('/collection', {
       state: {
         filters: {
+          // Je kunt dit nu al meesturen; collectie kan het later oppakken
           brand:     brandSelected,
-          model:     modelSelected,
-          variant:   variantSelected,
+          model:     modelSelected,     // tokens "Brand — Model"
+          variant:   variantSelected,   // tokens "Brand — Model — Variant"
           price_min: priceRange[0],
           price_max: priceRange[1]
         },
@@ -251,18 +246,18 @@ const Home: React.FC = () => {
 
           <MultiSearchSelect
             label="Model"
-            options={models}
+            options={modelOptions}                // "Brand — Model"
             selected={modelSelected}
             onChange={setModelSelected}
-            disabled={brandSelected.length === 0}              // ← blokkeer zonder merk
+            disabled={brandSelected.length === 0}
           />
 
           <MultiSearchSelect
             label="Variant"
-            options={variants}
+            options={variantOptions}              // "Brand — Model — Variant"
             selected={variantSelected}
             onChange={setVariantSelected}
-            disabled={modelSelected.length === 0}              // ← blokkeer zonder model
+            disabled={modelSelected.length === 0}
           />
 
           <FilterRangeSlider
@@ -294,17 +289,17 @@ const Home: React.FC = () => {
             />
             <MultiSearchSelect
               label="Model"
-              options={models}
+              options={modelOptions}
               selected={modelSelected}
               onChange={setModelSelected}
-              disabled={brandSelected.length === 0}            // ← blokkeer zonder merk
+              disabled={brandSelected.length === 0}
             />
             <MultiSearchSelect
               label="Variant"
-              options={variants}
+              options={variantOptions}
               selected={variantSelected}
               onChange={setVariantSelected}
-              disabled={modelSelected.length === 0}            // ← blokkeer zonder model
+              disabled={modelSelected.length === 0}
             />
           </div>
           <div className="flex items-center gap-6">
@@ -343,19 +338,19 @@ const Home: React.FC = () => {
           <div className="w-60">
             <MultiSearchSelect
               label="Model"
-              options={models}
+              options={modelOptions}
               selected={modelSelected}
               onChange={setModelSelected}
-              disabled={brandSelected.length === 0}            // ← blokkeer zonder merk
+              disabled={brandSelected.length === 0}
             />
           </div>
           <div className="w-60">
             <MultiSearchSelect
               label="Variant"
-              options={variants}
+              options={variantOptions}
               selected={variantSelected}
               onChange={setVariantSelected}
-              disabled={modelSelected.length === 0}            // ← blokkeer zonder model
+              disabled={modelSelected.length === 0}
             />
           </div>
           <div className="w-80">
@@ -382,7 +377,7 @@ const Home: React.FC = () => {
       <section className="!bg-gray-50 py-16">
         <div className="w-3/4 mx-auto text-center">
           <h2 className="text-4xl font-bold mb-4">Over Ons</h2>
-        <p className="text-lg text-gray-700">
+          <p className="text-lg text-gray-700">
             AVS Autoverkoop is al meer dan 20 jaar dé specialist in kwalitatieve tweedehands auto's.
           </p>
         </div>
