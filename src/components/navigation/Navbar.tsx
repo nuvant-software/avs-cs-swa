@@ -85,7 +85,7 @@ const Navbar: React.FC = () => {
       {/* Mobile sidebar */}
       <div className={`
         fixed top-0 left-0 h-full w-64 !bg-white shadow-lg transform
-        transition-transform duration-300 ease-in-out lg:hidden z-[110]
+        transition-transform duration-300 ease-in-out hidden max-[1300px]:block
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex items-center justify-between px-6 py-4 border-b">
