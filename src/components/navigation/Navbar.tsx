@@ -32,7 +32,7 @@ const Navbar: React.FC = () => {
         </NavLink>
 
         {/* Desktop links */}
-        <ul className="flex gap-8 max-[1300px]:hidden">
+        <ul className="flex gap-8 max-[1366px]:hidden">
           <li><NavLink href="/">Home</NavLink></li>
           <li>
             {/* door state mee te geven weten we in Collection dat we écht items willen */}
@@ -61,7 +61,7 @@ const Navbar: React.FC = () => {
         </ul>
 
         {/* Desktop login */}
-        <div className="block max-[1300px]:hidden">
+        <div className="block max-[1366px]:hidden">
           <NavLink href="#" className="inline-flex items-center gap-2">
             <UserIcon className="w-5 h-5 !text-[#0A0A0A]" /> Inloggen
           </NavLink>
@@ -71,7 +71,7 @@ const Navbar: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsMobileMenuOpen(true)}
-          className="hidden max-[1300px]:block !bg-transparent border-none z-50"
+          className="hidden max-[1366px]:block !bg-transparent border-none z-50"
         >
           <Bars3Icon
             className={`
@@ -85,7 +85,7 @@ const Navbar: React.FC = () => {
       {/* Mobile sidebar */}
       <div className={`
         fixed top-0 left-0 h-full w-64 !bg-white shadow-lg transform
-        transition-transform duration-300 ease-in-out hidden max-[1300px]:block
+        transition-transform duration-300 ease-in-out hidden max-[1366px]:block z-[110]
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex items-center justify-between px-6 py-4 border-b">
