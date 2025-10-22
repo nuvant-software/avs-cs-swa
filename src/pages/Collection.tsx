@@ -35,6 +35,10 @@ type IncomingFilters =
     }
   | undefined
 
+const NAV_H_MOBILE = 64  // px, hou gelijk aan je echte navbar-hoogte
+const NAV_H_MD = 80
+const NAV_H_LG = 96
+
 const Collection: React.FC = () => {
   const location = useLocation()
   const navState = (location.state as { filters?: IncomingFilters; includeItems?: boolean } | undefined) || {}
@@ -47,7 +51,7 @@ const Collection: React.FC = () => {
   // MOBILE drawer
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
-  // ── UI filterstate (ongewijzigd, maar laat staan) ─────────────────────────────
+  // ── UI filterstate (ongewijzigd) ─────────────────────────────
   const [brandSelected, setBrandSelected] = useState<string[]>(
     ('brands' in initialFilters && Array.isArray(initialFilters.brands))
       ? (initialFilters.brands as string[])
@@ -357,95 +361,120 @@ const Collection: React.FC = () => {
 
   return (
     <div className="w-full bg-gray-50">
-      {/* NAVBAR-SPACER: duwt content onder je (zwevende) navbar */}
+      {/* ───────── Spacer voor topbar + navbar ───────── */}
       <div className="h-16 md:h-20 lg:h-24" aria-hidden />
 
-      {/* Volledige breedte, filterkolom start écht links */}
-      <div className="w-full py-6 grid grid-cols-1 md:grid-cols-[33%_67%] lg:grid-cols-[25%_75%] gap-0">
-
-        {/* DESKTOP/TABLET SIDEBAR (zichtbaar vanaf md) */}
-        <aside className="hidden md:block md:border-r md:border-gray-200">
-          <div className="sticky top-16 md:top-20 lg:top-24 p-4 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-            {renderFilters()}
+      {/* ───────── Hero met collectie titel (foto/achtergrond) ───────── */}
+      <section className="relative">
+        <div
+          className="h-40 md:h-56 lg:h-64 w-full bg-center bg-cover"
+          style={{
+            backgroundImage: `url('/images/collection-hero.jpg')`
+          }}
+        />
+        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
+            <h1 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow">Collectie</h1>
           </div>
-        </aside>
+        </div>
+      </section>
 
-        {/* CONTENT */}
-        <section className="min-w-0">
-          {/* Mobiele topbar met Filters-button */}
-          <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 mb-4 md:mb-6">
-            <h1 className="text-2xl font-bold">Collectie</h1>
-            <div className="text-sm text-gray-600 hidden md:block">{filteredCars.length} resultaten</div>
+      {/* ───────── Content container (centreert & begrenst breedte) ───────── */}
+      <div className="w-full max-w-screen-2xl mx-auto py-6">
+        {/* Grid: sidebar + content.
+            - md: 33% / 67%
+            - lg+: sidebar clamped: min 260px, max 360px; rest = content */}
+        <div className="grid grid-cols-1 md:grid-cols-[33%_67%] lg:grid-cols-[minmax(260px,360px)_1fr]">
 
-            {/* Alleen op mobiel zichtbaar */}
-            <button
-              type="button"
-              className="md:hidden inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white shadow-sm active:scale-[.99]"
-              onClick={() => setMobileFiltersOpen(true)}
-              aria-label="Open filters"
+          {/* DESKTOP/TABLET SIDEBAR */}
+          <aside className="hidden md:block border-r border-gray-200">
+            <div
+              className="sticky p-4 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60"
+              style={{
+                top: `clamp(${NAV_H_MOBILE}px, ${NAV_H_MD}px, ${NAV_H_LG}px)` // matched met spacer/ navbar
+              }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M3 5h18M6 12h12M10 19h4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Filters
-            </button>
-          </div>
+              {renderFilters()}
+            </div>
+          </aside>
 
-          {/* Mobiele teller (onder de titel) */}
-          <div className="px-4 md:px-6 lg:px-8 md:hidden mb-4 text-sm text-gray-600">
-            {filteredCars.length} resultaten
-          </div>
+          {/* CONTENT */}
+          <section className="min-w-0">
+            {/* Mobiele rij: filterknop LINKS + teller rechts */}
+            <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 mb-4 md:mb-6">
+              <button
+                type="button"
+                className="md:hidden inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white shadow-sm active:scale-[.99]"
+                onClick={() => setMobileFiltersOpen(true)}
+                aria-label="Open filters"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M3 5h18M6 12h12M10 19h4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Filters
+              </button>
 
-          {/* RESULT GRID */}
-          <div className="px-4 md:px-6 lg:px-8 pb-8">
-            {filteredCars.length === 0 ? (
-              <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
-                Geen resultaten met de huidige filters.
-              </div>
-            ) : (
-              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {filteredCars.map((c, idx) => {
-                  const mappedCar = {
-                    id: (c as any).id || (c as any)._id || `${c.brand}-${c.model}-${idx}`,
-                    brand: c.brand,
-                    model: c.model,
-                    variant: c.variant,
-                    fuel: (c as any).fuel || (c as any).brandstof || "Onbekend",
-                    mileage: typeof c.km === "number" ? c.km : (c as any).mileage || 0,
-                    transmission: c.transmission || (c as any).gearbox || "Onbekend",
-                    price: c.price,
-                    year: (c as any).year || (c as any).bouwjaar || 0,
-                    engine_size: (c as any).engine_size || (c as any).motorinhoud || "",
-                    pk: typeof c.pk === "number" ? c.pk : (c as any).pk || 0,
-                  };
-                  return <CarCard key={mappedCar.id} car={mappedCar} layout="grid" imageFolder="car_001" />;
-                })}
-              </div>
-            )}
-          </div>
-        </section>
+              <div className="text-sm text-gray-600 md:hidden">{filteredCars.length} resultaten</div>
+
+              {/* Op grotere schermen tonen we de teller rechts */}
+              <div className="hidden md:block ml-auto text-sm text-gray-600">{filteredCars.length} resultaten</div>
+            </div>
+
+            {/* RESULT GRID (auto-fit -> schaalt lekker op grote schermen) */}
+            <div className="px-4 md:px-6 lg:px-8 pb-8">
+              {filteredCars.length === 0 ? (
+                <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
+                  Geen resultaten met de huidige filters.
+                </div>
+              ) : (
+                <div className="grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] sm:[grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
+                  {filteredCars.map((c, idx) => {
+                    const mappedCar = {
+                      id: (c as any).id || (c as any)._id || `${c.brand}-${c.model}-${idx}`,
+                      brand: c.brand,
+                      model: c.model,
+                      variant: c.variant,
+                      fuel: (c as any).fuel || (c as any).brandstof || "Onbekend",
+                      mileage: typeof c.km === "number" ? c.km : (c as any).mileage || 0,
+                      transmission: c.transmission || (c as any).gearbox || "Onbekend",
+                      price: c.price,
+                      year: (c as any).year || (c as any).bouwjaar || 0,
+                      engine_size: (c as any).engine_size || (c as any).motorinhoud || "",
+                      pk: typeof c.pk === "number" ? c.pk : (c as any).pk || 0,
+                    };
+                    return <CarCard key={mappedCar.id} car={mappedCar} layout="grid" imageFolder="car_001" />;
+                  })}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
 
-      {/* ──────────────── MOBIELE FULLSCREEN FILTERS ──────────────── */}
+      {/* ───────── MOBIELE FULLSCREEN FILTERS (onder navbar!) ───────── */}
       {mobileFiltersOpen && (
-        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true">
-          {/* Backdrop */}
+        <>
+          {/* Backdrop: begint onder navbar-hoogte, zodat hamburger zichtbaar blijft */}
           <div
-            className="absolute inset-0 bg-black/40"
+            className="fixed inset-x-0 bottom-0 md:hidden bg-black/40"
+            style={{ top: NAV_H_MOBILE }}
             onClick={() => setMobileFiltersOpen(false)}
             aria-label="Sluit filters"
           />
-          {/* Fullscreen panel */}
+          {/* Panel: ook onder navbar; fullscreen daaronder */}
           <div
-            className="absolute inset-0 bg-white flex flex-col"
+            className="fixed inset-x-0 bottom-0 md:hidden bg-white flex flex-col"
             style={{
-              paddingTop: 'max(env(safe-area-inset-top), 0px)',
+              top: NAV_H_MOBILE,
               paddingBottom: 'max(env(safe-area-inset-bottom), 0px)'
             }}
+            role="dialog"
+            aria-modal="true"
           >
-            {/* Header met eigen spacer zodat hij niet onder navbar valt */}
-            <div className="h-16 flex items-center justify-between px-4 border-b">
-              <h2 className="text-lg font-semibold">Filters</h2>
+            {/* Header van de filter, met kleine eigen hoogte i.p.v. nogmaals navbar */}
+            <div className="h-12 flex items-center justify-between px-4 border-b">
+              <h2 className="text-base font-semibold">Filters</h2>
               <button
                 type="button"
                 className="rounded-md p-2 hover:bg-gray-100"
@@ -463,18 +492,18 @@ const Collection: React.FC = () => {
               {renderFilters()}
             </div>
 
-            {/* Footer met Zoeken-knop (sluit panel; filters zijn live) */}
-            <div className="p-4 border-t bg-white">
+            {/* Footer met kleinere, blauwe Zoeken-knop */}
+            <div className="p-3 border-t bg-white">
               <button
                 type="button"
-                className="w-full rounded-lg bg-black text-white py-3 font-medium active:scale-[.99]"
+                className="w-full rounded-md bg-blue-600 hover:bg-blue-700 text-white py-2 text-sm font-medium active:scale-[.99]"
                 onClick={() => setMobileFiltersOpen(false)}
               >
                 Zoeken
               </button>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
