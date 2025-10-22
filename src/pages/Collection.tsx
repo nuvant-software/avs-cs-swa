@@ -35,10 +35,6 @@ type IncomingFilters =
     }
   | undefined
 
-// Fallback navbar-hoogte als je geen CSS variable zet in je layout:
-// In je layout kun je bv. doen: <div style={{'--nav-h':'80px'} as React.CSSProperties}>...
-const NAV_FALLBACK = 64 // px
-
 const Collection: React.FC = () => {
   const location = useLocation()
   const navState = (location.state as { filters?: IncomingFilters; includeItems?: boolean } | undefined) || {}
@@ -361,63 +357,53 @@ const Collection: React.FC = () => {
 
   return (
     <div className="w-full bg-white">
-      {/* ───────── Hero / Titel direct onder navbar ───────── */}
-      <section
-        className="relative"
-        style={{
-          // duw de hero onder de (fixed) navbar; gebruikt CSS var met fallback
-          paddingTop: `calc(var(--nav-h, ${NAV_FALLBACK}px))`
-        }}
-      >
+      {/* ───────── Hero alleen op md+; op mobiel direct naar resultaten ───────── */}
+      <section className="relative hidden md:block">
         <div
-          className="h-40 md:h-48 lg:h-56 w-full bg-center bg-cover"
+          className="h-48 lg:h-56 w-full bg-center bg-cover"
           style={{ backgroundImage: `url('/images/collection-hero.jpg')` }}
         />
         <div className="absolute inset-0 bg-black/25" />
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
-            <h1 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow">Collectie</h1>
+          <div className="w-full max-w-screen-2xl mx-auto px-6 lg:px-8">
+            <h1 className="text-white text-4xl lg:text-5xl font-bold drop-shadow">Collectie</h1>
           </div>
         </div>
       </section>
 
       {/* ───────── Content container ───────── */}
-      <div className="w-full max-w-screen-2xl mx-auto py-6">
+      <div className="w-full max-w-screen-2xl mx-auto py-4 md:py-6">
         <div className="grid grid-cols-1 md:grid-cols-[33%_67%] lg:grid-cols-[minmax(260px,360px)_1fr]">
           {/* Sidebar (desktop/tablet) */}
           <aside className="hidden md:block border-r border-gray-200">
-            <div
-              className="sticky p-4 bg-white"
-              style={{
-                top: `calc(var(--nav-h, ${NAV_FALLBACK}px))`
-              }}
-            >
+            <div className="sticky top-0 p-4 bg-white">
               {renderFilters()}
             </div>
           </aside>
 
           {/* Resultaten */}
           <section className="min-w-0">
-            {/* ── Mobiel: STICKY filter-knop bovenaan, onder navbar ── */}
-            <div
-              className="md:hidden sticky z-[60] bg-white/95 backdrop-blur-sm border-b"
-              style={{ top: `calc(var(--nav-h, ${NAV_FALLBACK}px) + 1px)` }}
-            >
-              <div className="flex items-center justify-between px-4 py-2">
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white shadow-sm active:scale-[.99]"
-                  onClick={() => setMobileFiltersOpen(true)}
-                  aria-label="Open filters"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path d="M3 5h18M6 12h12M10 19h4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  Filters
-                </button>
-                <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
+            {/* ── Mobiel: STICKY filter-knop onder navbar (top:0) ──
+                - zichtbaar alleen als overlay DICHT is
+            */}
+            {!mobileFiltersOpen && (
+              <div className="md:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b">
+                <div className="flex items-center justify-between px-4 py-2">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white shadow-sm active:scale-[.99]"
+                    onClick={() => setMobileFiltersOpen(true)}
+                    aria-label="Open filters"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M3 5h18M6 12h12M10 19h4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Filters
+                  </button>
+                  <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Desktop/tablet teller-balk */}
             <div className="hidden md:flex items-center justify-end px-6 lg:px-8 mb-4 md:mb-6">
@@ -455,56 +441,40 @@ const Collection: React.FC = () => {
         </div>
       </div>
 
-      {/* ───────── Mobiele fullscreen filters (onder navbar zichtbaar) ───────── */}
+      {/* ───────── Mobiele fullscreen filters ───────── */}
       {mobileFiltersOpen && (
-        <>
-          {/* Backdrop start onder navbar */}
-          <div
-            className="fixed inset-x-0 bottom-0 md:hidden bg-black/40"
-            style={{ top: `calc(var(--nav-h, ${NAV_FALLBACK}px))` }}
-            onClick={() => setMobileFiltersOpen(false)}
-            aria-label="Sluit filters"
-          />
-          {/* Panel */}
-          <div
-            className="fixed inset-x-0 bottom-0 md:hidden bg-white flex flex-col"
-            style={{
-              top: `calc(var(--nav-h, ${NAV_FALLBACK}px))`,
-              paddingBottom: 'max(env(safe-area-inset-bottom), 0px)'
-            }}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div className="h-12 flex items-center justify-between px-4 border-b">
-              <h2 className="text-base font-semibold">Filters</h2>
-              <button
-                type="button"
-                className="rounded-md p-2 hover:bg-gray-100"
-                onClick={() => setMobileFiltersOpen(false)}
-                aria-label="Sluit"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M6 18L18 6M6 6l12 12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4">
-              {renderFilters()}
-            </div>
-
-            {/* Blauwe zoeken-knop */}
-            <div className="p-3 border-t bg-white">
-              <button
-                type="button"
-                className="w-full rounded-md !bg-[#27408B] hover:!bg-[#0A1833] text-white py-2 text-sm font-medium active:scale-[.99]"
-                onClick={() => setMobileFiltersOpen(false)}
-              >
-                Zoeken
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 md:hidden bg-white flex flex-col" role="dialog" aria-modal="true">
+          {/* Header */}
+          <div className="h-12 flex items-center justify-between px-4 border-b">
+            <h2 className="text-base font-semibold">Filters</h2>
+            <button
+              type="button"
+              className="rounded-md p-2 hover:bg-gray-100"
+              onClick={() => setMobileFiltersOpen(false)}
+              aria-label="Sluit"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M6 18L18 6M6 6l12 12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
           </div>
-        </>
+
+          {/* Inhoud */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {renderFilters()}
+          </div>
+
+          {/* Blauwe zoeken-knop */}
+          <div className="p-3 border-t bg-white">
+            <button
+              type="button"
+              className="w-full rounded-md !bg-[#27408B] hover:!bg-[#0A1833] text-white py-2 text-sm font-medium active:scale-[.99]"
+              onClick={() => setMobileFiltersOpen(false)}
+            >
+              Zoeken
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
