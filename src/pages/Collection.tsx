@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom'
 import Loader from '../components/Loader'
 import FilterRangeSlider from '../components/filters/FilterRangeSlider'
 import MultiSearchSelect from '../components/filters/MultiSearchSelect'
+import CarCard from '../components/CarCard'
 
 /**
  * Pas dit type aan indien je meer velden hebt.
@@ -409,31 +410,29 @@ const Collection: React.FC = () => {
           <h1 className="text-2xl font-bold">Collectie</h1>
           <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
         </div>
-
         {filteredCars.length === 0 ? (
           <div className="border rounded-xl p-8 text-center text-gray-600">
             Geen resultaten met de huidige filters.
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredCars.map((c, idx) => (
-              <article key={idx} className="border rounded-xl overflow-hidden bg-white">
-                {/* placeholder image logic if you have images per car, else static */}
-                <div className="h-44 bg-gray-100" />
-                <div className="p-4">
-                  <div className="text-lg font-semibold">{c.brand} {c.model}</div>
-                  <div className="text-sm text-gray-600">{c.variant}</div>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700">
-                    {typeof c.km === 'number' && <span>{c.km.toLocaleString()} km</span>}
-                    {typeof c.pk === 'number' && <span>{c.pk} pk</span>}
-                    {c.body && <span>{c.body}</span>}
-                    {c.transmission && <span>{c.transmission}</span>}
-                    {typeof c.doors === 'number' && <span>{c.doors} deuren</span>}
-                  </div>
-                  <div className="mt-3 font-bold">€ {c.price.toLocaleString()}</div>
-                </div>
-              </article>
-            ))}
+            {filteredCars.map((c, idx) => {
+              // Map onze CarOverview → CarCard's Car type
+              const mappedCar = {
+                id: (c as any).id || (c as any)._id || `${c.brand}-${c.model}-${idx}`,
+                brand: c.brand,
+                model: c.model,
+                variant: c.variant,
+                fuel: (c as any).fuel || (c as any).brandstof || "Onbekend",
+                mileage: typeof c.km === "number" ? c.km : (c as any).mileage || 0,
+                transmission: c.transmission || (c as any).gearbox || "Onbekend",
+                price: c.price,
+                year: (c as any).year || (c as any).bouwjaar || 0,
+                engine_size: (c as any).engine_size || (c as any).motorinhoud || "",
+                pk: typeof c.pk === "number" ? c.pk : (c as any).pk || 0,
+              };
+              return <CarCard key={mappedCar.id} car={mappedCar} layout="grid" />;
+            })}
           </div>
         )}
       </section>
