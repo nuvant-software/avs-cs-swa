@@ -35,10 +35,9 @@ type IncomingFilters =
     }
   | undefined
 
-// Stel gelijk aan je echte fixed navbar-hoogte(n)
-const NAV_H_MOBILE = 64 // px
-const NAV_H_MD     = 80
-const NAV_H_LG     = 96
+// Fallback navbar-hoogte als je geen CSS variable zet in je layout:
+// In je layout kun je bv. doen: <div style={{'--nav-h':'80px'} as React.CSSProperties}>...
+const NAV_FALLBACK = 64 // px
 
 const Collection: React.FC = () => {
   const location = useLocation()
@@ -362,12 +361,12 @@ const Collection: React.FC = () => {
 
   return (
     <div className="w-full bg-white">
-      {/* ───────── Hero / Titel direct onder navbar (zonder extra spacer) ───────── */}
+      {/* ───────── Hero / Titel direct onder navbar ───────── */}
       <section
         className="relative"
         style={{
-          // duw de hero subtiel onder de fixed navbar; werkt van mobile -> desktop
-          paddingTop: `clamp(${NAV_H_MOBILE}px, ${NAV_H_MD}px, ${NAV_H_LG}px)`
+          // duw de hero onder de (fixed) navbar; gebruikt CSS var met fallback
+          paddingTop: `calc(var(--nav-h, ${NAV_FALLBACK}px))`
         }}
       >
         <div
@@ -390,7 +389,7 @@ const Collection: React.FC = () => {
             <div
               className="sticky p-4 bg-white"
               style={{
-                top: `clamp(${NAV_H_MOBILE}px, ${NAV_H_MD}px, ${NAV_H_LG}px)`
+                top: `calc(var(--nav-h, ${NAV_FALLBACK}px))`
               }}
             >
               {renderFilters()}
@@ -399,10 +398,10 @@ const Collection: React.FC = () => {
 
           {/* Resultaten */}
           <section className="min-w-0">
-            {/* ── Mobiel: STICKY filter-knop bovenaan ── */}
+            {/* ── Mobiel: STICKY filter-knop bovenaan, onder navbar ── */}
             <div
-              className="md:hidden sticky z-30 bg-white/95 backdrop-blur-sm border-b"
-              style={{ top: NAV_H_MOBILE }}
+              className="md:hidden sticky z-[60] bg-white/95 backdrop-blur-sm border-b"
+              style={{ top: `calc(var(--nav-h, ${NAV_FALLBACK}px) + 1px)` }}
             >
               <div className="flex items-center justify-between px-4 py-2">
                 <button
@@ -459,10 +458,10 @@ const Collection: React.FC = () => {
       {/* ───────── Mobiele fullscreen filters (onder navbar zichtbaar) ───────── */}
       {mobileFiltersOpen && (
         <>
-          {/* Backdrop start onder navbar, zodat hamburger zichtbaar blijft */}
+          {/* Backdrop start onder navbar */}
           <div
             className="fixed inset-x-0 bottom-0 md:hidden bg-black/40"
-            style={{ top: NAV_H_MOBILE }}
+            style={{ top: `calc(var(--nav-h, ${NAV_FALLBACK}px))` }}
             onClick={() => setMobileFiltersOpen(false)}
             aria-label="Sluit filters"
           />
@@ -470,7 +469,7 @@ const Collection: React.FC = () => {
           <div
             className="fixed inset-x-0 bottom-0 md:hidden bg-white flex flex-col"
             style={{
-              top: NAV_H_MOBILE,
+              top: `calc(var(--nav-h, ${NAV_FALLBACK}px))`,
               paddingBottom: 'max(env(safe-area-inset-bottom), 0px)'
             }}
             role="dialog"
@@ -494,7 +493,7 @@ const Collection: React.FC = () => {
               {renderFilters()}
             </div>
 
-            {/* Kleine, BLAUWE zoeken-knop */}
+            {/* Blauwe zoeken-knop */}
             <div className="p-3 border-t bg-white">
               <button
                 type="button"
