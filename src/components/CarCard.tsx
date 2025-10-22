@@ -19,50 +19,60 @@ type Car = {
 type Props = {
   car: Car;
   layout?: "grid" | "list";
+  /** Optioneel: forceer mapnaam in Azure Blob container (bv. 'car_001') */
+  imageFolder?: string;
 };
 
-const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
+const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder }) => {
   const [hoverZone, setHoverZone] = useState<number | null>(null);
   const [lastPreviewZone, setLastPreviewZone] = useState<number>(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [allImages, setAllImages] = useState<string[]>([]);
 
-  // 📸 Laden uit Azure Blob (fallback naar car_001)
+  // 📸 Laden uit Azure Blob
   useEffect(() => {
-    const baseFolder = "car_001";
+    // 1) Als imageFolder is meegegeven -> gebruik die
+    // 2) Anders probeer een map per auto-id
+    // 3) Fallback naar 'car_001'
+    const baseFolder =
+      imageFolder?.trim() ||
+      (car.id ? `car_${car.id}` : "") ||
+      "car_001";
+
     const listBlobs = async () => {
       try {
-        const url = `https://avsapisa.blob.core.windows.net/carimages?restype=container&comp=list&prefix=${baseFolder}/`;
+        const url = `https://avsapisa.blob.core.windows.net/carimages?restype=container&comp=list&prefix=${encodeURIComponent(
+          baseFolder + "/"
+        )}`;
+
         const res = await fetch(url);
         if (!res.ok) throw new Error(res.statusText);
+
         const xmlText = await res.text();
         const doc = new DOMParser().parseFromString(xmlText, "application/xml");
         const blobs = Array.from(doc.getElementsByTagName("Blob"));
-        // Accepteer meerdere extensies en ook hoofdletters
-         const exts = [".jpg", ".jpeg", ".png", ".webp"];
-         const urls = blobs
-           .map((b) => b.getElementsByTagName("Name")[0]?.textContent || "")
-           .filter((n) => n && exts.some(ext => n.toLowerCase().endsWith(ext)))
-           .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-           .map((name) => `https://avsapisa.blob.core.windows.net/carimages/${name}`);
- 
-        console.log("[CarCard] listing URL:", url, "| found:", urls.length);
+        const urls = blobs
+          .map((b) => b.getElementsByTagName("Name")[0]?.textContent)
+          .filter((n): n is string => !!n && n.toLowerCase().match(/\.(jpg|jpeg|png|webp)$/))
+          .map(
+            (name) =>
+              `https://avsapisa.blob.core.windows.net/carimages/${name}`
+          );
+
         setAllImages(urls);
       } catch (e) {
         console.error("Blob list error:", e);
-        setAllImages([]); // graceful fallback
+        setAllImages([]); // zorg dat UI blijft werken
       }
     };
+
     listBlobs();
-    // Omdat we *hardcoded* naar 'car_001' kijken, is een dependency op car.id niet nodig.
-    }, []); 
+  }, [car.id, imageFolder]);
 
   const totalPhotos = allImages.length;
-  const prevSlide = () =>
-    setCurrentSlide((s) => (s - 1 + totalPhotos) % totalPhotos);
-  const nextSlide = () =>
-    setCurrentSlide((s) => (s + 1) % totalPhotos);
+  const prevSlide = () => setCurrentSlide((s) => (s - 1 + totalPhotos) % totalPhotos);
+  const nextSlide = () => setCurrentSlide((s) => (s + 1) % totalPhotos);
 
   const renderImg = (src: string, idx: number) => (
     <img
@@ -79,13 +89,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
 
   const getZoneContent = () => {
     const zone = hoverZone ?? lastPreviewZone;
-       if (!allImages.length) {
-     return (
-       <div className="w-full h-full bg-gray-100 flex items-center justify-center text-sm text-gray-500">
-         Geen afbeeldingen
-       </div>
-     );
-   }
+
     if (zone === 2) {
       if (totalPhotos === 3 && allImages[2]) {
         return renderImg(allImages[2], 2);
@@ -137,10 +141,10 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
           </div>
           <div className="w-full md:w-2/3 p-5 flex flex-col justify-between !bg-white border border-t-0 md:border-l-0 border-gray-300 rounded-b-[6px] md:rounded-r-[6px] md:rounded-bl-none">
             <div>
-                <h3 className="text-xl font-semibold !text-[#1C448E] mb-2">
-                  {car.brand} {car.model}
-                  {car.variant && ` – ${car.variant}`}
-                </h3>
+              <h3 className="text-xl font-semibold !text-[#1C448E] mb-2">
+                {car.brand} {car.model}
+                {car.variant && ` – ${car.variant}`}
+              </h3>
               <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm !text-[#6e6e6e] mb-4">
                 <div className="flex items-center gap-2">
                   <i className="icon-Vector-13 text-[1.2rem]" />
@@ -176,31 +180,11 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
                 MEER WETEN
                 <div className="relative ml-2 h-5 w-5 overflow-hidden">
                   <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
-                    <svg
-                      width="15"
-                      height="15"
-                      viewBox="0 0 15 15"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                    >
-                      <path
-                        d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z"
-                        fill="currentColor"
-                      />
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5">
+                      <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
                     </svg>
-                    <svg
-                      width="15"
-                      height="15"
-                      viewBox="0 0 15 15"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 -translate-x-4"
-                    >
-                      <path
-                        d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z"
-                        fill="currentColor"
-                      />
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 -translate-x-4">
+                      <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
                     </svg>
                   </div>
                 </div>
@@ -220,15 +204,13 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
         />
       </>
     );
-  } // <-- deze haak sluit de if-block!
+  }
 
   // ─── Grid Layout (standaard) ─────────────────────────────────
   return (
     <>
       <div className="w-full max-w-[340px] mx-auto transition-shadow duration-300 hover:shadow-lg">
-        <div
-          className="relative w-full h-56 overflow-hidden group rounded-t-[6px]"
-        >
+        <div className="relative w-full h-56 overflow-hidden group rounded-t-[6px]">
           {getZoneContent()}
           <div className="absolute inset-0 flex">
             {[0, 1, 2].map((zone) => (
@@ -260,10 +242,10 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
         </div>
 
         <div className="p-5 !bg-white !border-gray-300 rounded-b-[6px] border-t-0 !border">
-            <h3 className="text-xl font-bold !text-[#1C448E] mb-4 truncate">
-              {car.brand} {car.model}
-              {car.variant && ` – ${car.variant}`}
-            </h3>
+          <h3 className="text-xl font-bold !text-[#1C448E] mb-4 truncate">
+            {car.brand} {car.model}
+            {car.variant && ` – ${car.variant}`}
+          </h3>
           <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm !text-[#6e6e6e] mb-4">
             <div className="flex items-center gap-2">
               <i className="icon-Vector-13 text-[1.2rem] !text-[#1C448E]" />
@@ -299,31 +281,11 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
               MEER WETEN
               <div className="relative ml-2 h-5 w-5 overflow-hidden">
                 <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 15 15"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z"
-                      fill="currentColor"
-                    />
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5">
+                    <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
                   </svg>
-                  <svg
-                    width="15"
-                    height="15"
-                    viewBox="0 0 15 15"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 -translate-x-4"
-                  >
-                    <path
-                      d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z"
-                      fill="currentColor"
-                    />
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 -translate-x-4">
+                    <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
                   </svg>
                 </div>
               </div>
@@ -331,6 +293,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
           </div>
         </div>
       </div>
+
       <Lightbox
         images={allImages}
         index={currentSlide}
