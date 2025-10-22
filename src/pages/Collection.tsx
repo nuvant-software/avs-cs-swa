@@ -5,10 +5,7 @@ import FilterRangeSlider from '../components/filters/FilterRangeSlider'
 import MultiSearchSelect from '../components/filters/MultiSearchSelect'
 import CarCard from '../components/CarCard'
 
-/**
- * Pas dit type aan indien je meer velden hebt.
- * We lezen defensief uit de API en vullen undefined-safe.
- */
+// --- types blijven zoals jij ze had ---
 interface CarOverview {
   brand: string
   model: string
@@ -16,14 +13,13 @@ interface CarOverview {
   price: number
   km?: number
   pk?: number
-  body?: string            // Carrosserie
-  transmission?: string    // Transmissie
-  doors?: number           // Aantal deuren
+  body?: string
+  transmission?: string
+  doors?: number
 }
 
 type IncomingFilters =
   | {
-      // nieuwe gescope’de payload vanaf Home
       brands?: string[]
       models_by_brand?: Record<string, string[]>
       variants_by_brand_model?: Record<string, Record<string, string[]>>
@@ -31,7 +27,6 @@ type IncomingFilters =
       price_max?: number
     }
   | {
-      // legacy vorm (blijft ook werken)
       brand?: string[]
       model?: string[]
       variant?: string[]
@@ -45,27 +40,21 @@ const Collection: React.FC = () => {
   const navState = (location.state as { filters?: IncomingFilters; includeItems?: boolean } | undefined) || {}
   const initialFilters = navState.filters || {}
 
-  // ─────────────────────────────────────────────────────────────
-  // DATA
-  // ─────────────────────────────────────────────────────────────
   const [cars, setCars] = useState<CarOverview[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // ─────────────────────────────────────────────────────────────
-  // UI FILTER STATE (client-side)
-  // ─────────────────────────────────────────────────────────────
-  // Merk → simpele strings
+  // MOBILE drawer
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+
+  // ── UI filterstate (ongewijzigd, maar laat staan) ─────────────────────────────
   const [brandSelected, setBrandSelected] = useState<string[]>(
     ('brands' in initialFilters && Array.isArray(initialFilters.brands))
       ? (initialFilters.brands as string[])
       : (Array.isArray((initialFilters as any).brand) ? (initialFilters as any).brand : [])
   )
-  // Model/Variant tokens:
-  // Model   = "Brand — Model"
-  // Variant = "Brand — Model — Variant"
+
   const [modelSelected, setModelSelected] = useState<string[]>(() => {
-    // haal tokens uit models_by_brand of uit legacy model[]
     const out: string[] = []
     if ('models_by_brand' in initialFilters && initialFilters.models_by_brand) {
       Object.entries(initialFilters.models_by_brand!).forEach(([b, arr]) => {
@@ -74,11 +63,8 @@ const Collection: React.FC = () => {
       return out
     }
     if ((initialFilters as any).model && Array.isArray((initialFilters as any).model)) {
-      // legacy (globaal): deze kunnen we helaas niet aan brands koppelen → toon als losse model-strings
-      // We laten ze leeg tenzij er ook brands zijn; anders weten we de brand niet.
       const ms: string[] = (initialFilters as any).model
       const bset = new Set(brandSelected)
-      // Als je bv. 1 brand gekozen had, mappen we model op die brand
       if (bset.size === 1) {
         const b = Array.from(bset)[0]
         return ms.map(m => `${b} — ${m}`)
@@ -86,6 +72,7 @@ const Collection: React.FC = () => {
     }
     return out
   })
+
   const [variantSelected, setVariantSelected] = useState<string[]>(() => {
     const out: string[] = []
     if ('variants_by_brand_model' in initialFilters && initialFilters.variants_by_brand_model) {
@@ -99,24 +86,18 @@ const Collection: React.FC = () => {
     return out
   })
 
-  // Range sliders
   const [priceBounds, setPriceBounds] = useState<[number, number]>([0, 0])
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 0])
 
   const [kmBounds, setKmBounds] = useState<[number, number]>([0, 0])
   const [kmRange, setKmRange] = useState<[number, number]>([0, 0])
 
-  // Checkbox-filters
-  const [pkSelected, setPkSelected] = useState<string[]>([]) // strings van pk (we tonen unieke getallen als string)
+  const [pkSelected, setPkSelected] = useState<string[]>([])
   const [bodySelected, setBodySelected] = useState<string[]>([])
   const [transSelected, setTransSelected] = useState<string[]>([])
   const [doorsSelected, setDoorsSelected] = useState<string[]>([])
 
-  // ─────────────────────────────────────────────────────────────
-  // HELPERS
-  // ─────────────────────────────────────────────────────────────
   function parseModelTokens(tokens: string[]) {
-    // "Brand — Model"
     const map: Record<string, Set<string>> = {}
     tokens.forEach(t => {
       const [brand, model] = t.split(' — ')
@@ -126,9 +107,7 @@ const Collection: React.FC = () => {
     })
     return map
   }
-
   function parseVariantTokens(tokens: string[]) {
-    // "Brand — Model — Variant"
     const map: Record<string, Record<string, Set<string>>> = {}
     tokens.forEach(t => {
       const [brand, model, variant] = t.split(' — ')
@@ -140,15 +119,12 @@ const Collection: React.FC = () => {
     return map
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // FETCH
-  // ─────────────────────────────────────────────────────────────
+  // ── FETCH ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     setLoading(true)
     fetch('/api/filter_cars', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // We kunnen hier alle items ophalen; filtering doen we client-side
       body: JSON.stringify({ filters: {}, includeItems: true })
     })
       .then(res => {
@@ -176,7 +152,6 @@ const Collection: React.FC = () => {
         setCars(valid)
 
         if (valid.length) {
-          // price bounds
           const prices = valid.map(c => c.price)
           const mn = Math.min(...prices)
           const mx = Math.max(...prices)
@@ -186,7 +161,6 @@ const Collection: React.FC = () => {
             typeof (initialFilters as any).price_max === 'number' ? (initialFilters as any).price_max : mx
           ])
 
-          // km bounds (default 0..max)
           const kms = valid.map(c => (typeof c.km === 'number' ? c.km : 0))
           const kmMax = Math.max(...kms, 0)
           setKmBounds([0, kmMax])
@@ -197,15 +171,12 @@ const Collection: React.FC = () => {
       .finally(() => setLoading(false))
   }, []) // fetch 1x
 
-  // ─────────────────────────────────────────────────────────────
-  // FACET OPTIONS
-  // Merk: alle uit dataset
+  // ── FACETS/DERIVED ──────────────────────────────────────────────────────────
   const brandOptions = useMemo(
     () => Array.from(new Set(cars.map(c => c.brand))).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' })),
     [cars]
   )
 
-  // Model-opties (tokens "Brand — Model") afhankelijk van gekozen merken
   const modelOptions = useMemo(() => {
     const base = brandSelected.length ? cars.filter(c => brandSelected.includes(c.brand)) : cars
     const uniq = new Set<string>()
@@ -213,7 +184,6 @@ const Collection: React.FC = () => {
     return Array.from(uniq).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [cars, brandSelected])
 
-  // Variant-opties (tokens "Brand — Model — Variant") afhankelijk van gekozen (Brand — Model)
   const variantOptions = useMemo(() => {
     if (!modelSelected.length) return []
     const chosenBM = new Set(modelSelected)
@@ -226,33 +196,23 @@ const Collection: React.FC = () => {
     return Array.from(uniq).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [cars, modelSelected])
 
-  // ─────────────────────────────────────────────────────────────
-  // SCOPING MAPS
   const modelsByBrand = useMemo(() => parseModelTokens(modelSelected), [modelSelected])
   const variantsByBrandModel = useMemo(() => parseVariantTokens(variantSelected), [variantSelected])
 
-  // ─────────────────────────────────────────────────────────────
-  // 1) EERST BMV + SLIDERS toepassen → basisset voor facetten
   const baseAfterBMVAndSliders = useMemo(() => {
     return cars.filter(c => {
       if (brandSelected.length && !brandSelected.includes(c.brand)) return false
-
       const mset = modelsByBrand[c.brand]
       if (mset && mset.size > 0 && !mset.has(c.model)) return false
-
       const vset = variantsByBrandModel[c.brand]?.[c.model]
       if (vset && vset.size > 0 && !vset.has(c.variant)) return false
-
       if (typeof c.price !== 'number' || c.price < priceRange[0] || c.price > priceRange[1]) return false
-
       const km = typeof c.km === 'number' ? c.km : 0
       if (km < kmRange[0] || km > kmRange[1]) return false
-
       return true
     })
   }, [cars, brandSelected, modelsByBrand, variantsByBrandModel, priceRange, kmRange])
 
-  // Facet-opties (checkboxen) afgeleid van baseAfterBMVAndSliders
   const pkOptions = useMemo(() => {
     const set = new Set<string>()
     baseAfterBMVAndSliders.forEach(c => {
@@ -281,13 +241,11 @@ const Collection: React.FC = () => {
     return Array.from(set).sort((a, b) => Number(a) - Number(b))
   }, [baseAfterBMVAndSliders])
 
-  // Houd gekozen checkbox-filters in sync met opties (als opties kleiner worden)
   useEffect(() => setPkSelected(sel => sel.filter(v => pkOptions.includes(v))), [pkOptions])
   useEffect(() => setBodySelected(sel => sel.filter(v => bodyOptions.includes(v))), [bodyOptions])
   useEffect(() => setTransSelected(sel => sel.filter(v => transOptions.includes(v))), [transOptions])
   useEffect(() => setDoorsSelected(sel => sel.filter(v => doorsOptions.includes(v))), [doorsOptions])
 
-  // 2) Daarna pas checkbox-filters toepassen → eindresultaat
   const filteredCars = useMemo(() => {
     return baseAfterBMVAndSliders.filter(c => {
       if (pkSelected.length && !(c.pk != null && pkSelected.includes(String(c.pk)))) return false
@@ -298,151 +256,216 @@ const Collection: React.FC = () => {
     })
   }, [baseAfterBMVAndSliders, pkSelected, bodySelected, transSelected, doorsSelected])
 
-  // ─────────────────────────────────────────────────────────────
   if (loading) return <Loader />
   if (error)   return <Loader />
 
-    return (
+  // — Render van de filtervelden (hergebruikt) —
+  const renderFilters = () => (
+    <>
+      <h2 className="text-lg font-semibold mb-3">Filters</h2>
+
+      <div className="mb-4">
+        <MultiSearchSelect
+          label="Merk"
+          options={brandOptions}
+          selected={brandSelected}
+          onChange={setBrandSelected}
+        />
+      </div>
+
+      <div className="mb-4">
+        <MultiSearchSelect
+          label="Model"
+          options={modelOptions}
+          selected={modelSelected}
+          onChange={setModelSelected}
+          disabled={brandSelected.length === 0}
+        />
+      </div>
+
+      <div className="mb-4">
+        <MultiSearchSelect
+          label="Variant"
+          options={variantOptions}
+          selected={variantSelected}
+          onChange={setVariantSelected}
+          disabled={modelSelected.length === 0}
+        />
+      </div>
+
+      <div className="mb-4">
+        <FilterRangeSlider
+          label="Prijs"
+          min={priceBounds[0]}
+          max={priceBounds[1]}
+          value={priceRange}
+          onChange={setPriceRange}
+          placeholderMin={priceBounds[0].toString()}
+          placeholderMax={priceBounds[1].toString()}
+        />
+      </div>
+
+      <div className="mb-6">
+        <FilterRangeSlider
+          label="Kilometerstand"
+          min={kmBounds[0]}
+          max={kmBounds[1]}
+          value={kmRange}
+          onChange={setKmRange}
+          placeholderMin={kmBounds[0].toString()}
+          placeholderMax={kmBounds[1].toString()}
+        />
+      </div>
+
+      <div className="mb-4">
+        <MultiSearchSelect
+          label="PK"
+          options={pkOptions}
+          selected={pkSelected}
+          onChange={setPkSelected}
+        />
+      </div>
+
+      <div className="mb-4">
+        <MultiSearchSelect
+          label="Carrosserie"
+          options={bodyOptions}
+          selected={bodySelected}
+          onChange={setBodySelected}
+        />
+      </div>
+
+      <div className="mb-4">
+        <MultiSearchSelect
+          label="Transmissie"
+          options={transOptions}
+          selected={transSelected}
+          onChange={setTransSelected}
+        />
+      </div>
+
+      <div>
+        <MultiSearchSelect
+          label="Aantal deuren"
+          options={doorsOptions}
+          selected={doorsSelected}
+          onChange={setDoorsSelected}
+        />
+      </div>
+    </>
+  )
+
+  return (
     <div className="w-full bg-gray-50">
-      {/* gecentreerde content */}
-      <div className="w-full px-4 md:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-6">
-        
-        {/* FILTERBAR LEFT */}
-        <aside className="bg-white shadow-sm border border-gray-200 rounded-xl p-4 h-max lg:sticky lg:top-28">
-          <h2 className="text-lg font-semibold mb-3">Filters</h2>
+      {/* Volledige breedte, geen horizontale padding zodat de filterkolom écht links begint */}
+      <div className="w-full py-6 grid grid-cols-1 md:grid-cols-[33%_67%] lg:grid-cols-[25%_75%] gap-0">
 
-          {/* Merk */}
-          <div className="mb-4">
-            <MultiSearchSelect
-              label="Merk"
-              options={brandOptions}
-              selected={brandSelected}
-              onChange={setBrandSelected}
-            />
-          </div>
-
-          {/* Model (tokens) */}
-          <div className="mb-4">
-            <MultiSearchSelect
-              label="Model"
-              options={modelOptions}
-              selected={modelSelected}
-              onChange={setModelSelected}
-              disabled={brandSelected.length === 0}
-            />
-          </div>
-
-          {/* Variant (tokens) */}
-          <div className="mb-4">
-            <MultiSearchSelect
-              label="Variant"
-              options={variantOptions}
-              selected={variantSelected}
-              onChange={setVariantSelected}
-              disabled={modelSelected.length === 0}
-            />
-          </div>
-
-          {/* Prijs */}
-          <div className="mb-4">
-            <FilterRangeSlider
-              label="Prijs"
-              min={priceBounds[0]}
-              max={priceBounds[1]}
-              value={priceRange}
-              onChange={setPriceRange}
-              placeholderMin={priceBounds[0].toString()}
-              placeholderMax={priceBounds[1].toString()}
-            />
-          </div>
-
-          {/* Kilometerstand */}
-          <div className="mb-6">
-            <FilterRangeSlider
-              label="Kilometerstand"
-              min={kmBounds[0]}
-              max={kmBounds[1]}
-              value={kmRange}
-              onChange={setKmRange}
-              placeholderMin={kmBounds[0].toString()}
-              placeholderMax={kmBounds[1].toString()}
-            />
-          </div>
-
-          {/* Checkbox-facetten */}
-          <div className="mb-4">
-            <MultiSearchSelect
-              label="PK"
-              options={pkOptions}
-              selected={pkSelected}
-              onChange={setPkSelected}
-            />
-          </div>
-
-          <div className="mb-4">
-            <MultiSearchSelect
-              label="Carrosserie"
-              options={bodyOptions}
-              selected={bodySelected}
-              onChange={setBodySelected}
-            />
-          </div>
-
-          <div className="mb-4">
-            <MultiSearchSelect
-              label="Transmissie"
-              options={transOptions}
-              selected={transSelected}
-              onChange={setTransSelected}
-            />
-          </div>
-
-          <div>
-            <MultiSearchSelect
-              label="Aantal deuren"
-              options={doorsOptions}
-              selected={doorsSelected}
-              onChange={setDoorsSelected}
-            />
+        {/* DESKTOP/TABLET SIDEBAR (zichtbaar vanaf md) */}
+        <aside className="hidden md:block md:border-r md:border-gray-200">
+          <div className="sticky top-20 p-4 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+            {renderFilters()}
           </div>
         </aside>
 
-        {/* RESULTS RIGHT */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
+        {/* CONTENT */}
+        <section className="min-w-0">
+          {/* Mobiele topbar met Filters-button */}
+          <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 mb-4 md:mb-6">
             <h1 className="text-2xl font-bold">Collectie</h1>
-            <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
+            <div className="text-sm text-gray-600 hidden md:block">{filteredCars.length} resultaten</div>
+
+            {/* Alleen op mobiel zichtbaar */}
+            <button
+              type="button"
+              className="md:hidden inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white shadow-sm active:scale-[.99]"
+              onClick={() => setMobileFiltersOpen(true)}
+              aria-label="Open filters"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M3 5h18M6 12h12M10 19h4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Filters
+            </button>
           </div>
 
-          {filteredCars.length === 0 ? (
-            <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
-              Geen resultaten met de huidige filters.
-            </div>
-          ) : (
-            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {filteredCars.map((c, idx) => {
-                const mappedCar = {
-                  id: (c as any).id || (c as any)._id || `${c.brand}-${c.model}-${idx}`,
-                  brand: c.brand,
-                  model: c.model,
-                  variant: c.variant,
-                  fuel: (c as any).fuel || (c as any).brandstof || "Onbekend",
-                  mileage: typeof c.km === "number" ? c.km : (c as any).mileage || 0,
-                  transmission: c.transmission || (c as any).gearbox || "Onbekend",
-                  price: c.price,
-                  year: (c as any).year || (c as any).bouwjaar || 0,
-                  engine_size: (c as any).engine_size || (c as any).motorinhoud || "",
-                  pk: typeof c.pk === "number" ? c.pk : (c as any).pk || 0,
-                };
-                // Hardcoded imageFolder voor nu → zeker foto’s
-                return <CarCard key={mappedCar.id} car={mappedCar} layout="grid" imageFolder="car_001" />;
-              })}
-            </div>
-          )}
+          {/* Mobiele teller (onder de titel) */}
+          <div className="px-4 md:px-6 lg:px-8 md:hidden mb-4 text-sm text-gray-600">
+            {filteredCars.length} resultaten
+          </div>
+
+          {/* RESULT GRID */}
+          <div className="px-4 md:px-6 lg:px-8 pb-8">
+            {filteredCars.length === 0 ? (
+              <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
+                Geen resultaten met de huidige filters.
+              </div>
+            ) : (
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {filteredCars.map((c, idx) => {
+                  const mappedCar = {
+                    id: (c as any).id || (c as any)._id || `${c.brand}-${c.model}-${idx}`,
+                    brand: c.brand,
+                    model: c.model,
+                    variant: c.variant,
+                    fuel: (c as any).fuel || (c as any).brandstof || "Onbekend",
+                    mileage: typeof c.km === "number" ? c.km : (c as any).mileage || 0,
+                    transmission: c.transmission || (c as any).gearbox || "Onbekend",
+                    price: c.price,
+                    year: (c as any).year || (c as any).bouwjaar || 0,
+                    engine_size: (c as any).engine_size || (c as any).motorinhoud || "",
+                    pk: typeof c.pk === "number" ? c.pk : (c as any).pk || 0,
+                  };
+                  return <CarCard key={mappedCar.id} car={mappedCar} layout="grid" imageFolder="car_001" />;
+                })}
+              </div>
+            )}
+          </div>
         </section>
       </div>
+
+      {/* ──────────────── MOBIELE SLIDE-OVER FILTERS ──────────────── */}
+      {mobileFiltersOpen && (
+        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true">
+          {/* backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setMobileFiltersOpen(false)}
+          />
+          {/* panel */}
+          <div className="absolute inset-y-0 left-0 w-[86%] max-w-[420px] bg-white shadow-xl flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold">Filters</h2>
+              <button
+                type="button"
+                className="rounded-md p-2 hover:bg-gray-100"
+                onClick={() => setMobileFiltersOpen(false)}
+                aria-label="Sluit"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M6 18L18 6M6 6l12 12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {renderFilters()}
+            </div>
+
+            <div className="p-4 border-t bg-white">
+              {/* UX: 'Zoeken' sluit het paneel; filters zijn al live toegepast */}
+              <button
+                type="button"
+                className="w-full rounded-lg bg-black text-white py-3 font-medium active:scale-[.99]"
+                onClick={() => setMobileFiltersOpen(false)}
+              >
+                Zoeken
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
-  }
+  )
+}
 
 export default Collection
