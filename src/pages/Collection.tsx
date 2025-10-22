@@ -5,7 +5,7 @@ import FilterRangeSlider from '../components/filters/FilterRangeSlider'
 import MultiSearchSelect from '../components/filters/MultiSearchSelect'
 import CarCard from '../components/CarCard'
 
-// --- types blijven zoals jij ze had ---
+// --- types ---
 interface CarOverview {
   brand: string
   model: string
@@ -35,9 +35,10 @@ type IncomingFilters =
     }
   | undefined
 
-const NAV_H_MOBILE = 64  // px, hou gelijk aan je echte navbar-hoogte
-const NAV_H_MD = 80
-const NAV_H_LG = 96
+// Stel deze gelijk aan je echte (fixed) navbar-hoogte zodat de mobiele filter eronder begint.
+const NAV_H_MOBILE = 64 // px
+const NAV_H_MD     = 80
+const NAV_H_LG     = 96
 
 const Collection: React.FC = () => {
   const location = useLocation()
@@ -48,10 +49,10 @@ const Collection: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // MOBILE drawer
+  // Mobile overlay
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
-  // ── UI filterstate (ongewijzigd) ─────────────────────────────
+  // ── UI filterstate ─────────────────────────────────────────────
   const [brandSelected, setBrandSelected] = useState<string[]>(
     ('brands' in initialFilters && Array.isArray(initialFilters.brands))
       ? (initialFilters.brands as string[])
@@ -360,19 +361,13 @@ const Collection: React.FC = () => {
   )
 
   return (
-    <div className="w-full bg-gray-50">
-      {/* ───────── Spacer voor topbar + navbar ───────── */}
-      <div className="h-16 md:h-20 lg:h-24" aria-hidden />
-
-      {/* ───────── Hero met collectie titel (foto/achtergrond) ───────── */}
+    <div className="w-full bg-white"> {/* overal wit */}
+      {/* ───────── Hero / Titel direct onder navbar ───────── */}
       <section className="relative">
-        <div
-          className="h-40 md:h-56 lg:h-64 w-full bg-center bg-cover"
-          style={{
-            backgroundImage: `url('/images/collection-hero.jpg')`
-          }}
-        />
-        <div className="absolute inset-0 bg-black/30" />
+        {/* Gebruik een vaste (lage) hero-hoogte met titel; geen slider */}
+        <div className="h-40 md:h-48 lg:h-56 w-full bg-center bg-cover"
+             style={{ backgroundImage: `url('/images/collection-hero.jpg')` }} />
+        <div className="absolute inset-0 bg-black/25" />
         <div className="absolute inset-0 flex items-center">
           <div className="w-full max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
             <h1 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow">Collectie</h1>
@@ -380,28 +375,24 @@ const Collection: React.FC = () => {
         </div>
       </section>
 
-      {/* ───────── Content container (centreert & begrenst breedte) ───────── */}
+      {/* ───────── Content container ───────── */}
       <div className="w-full max-w-screen-2xl mx-auto py-6">
-        {/* Grid: sidebar + content.
-            - md: 33% / 67%
-            - lg+: sidebar clamped: min 260px, max 360px; rest = content */}
         <div className="grid grid-cols-1 md:grid-cols-[33%_67%] lg:grid-cols-[minmax(260px,360px)_1fr]">
-
-          {/* DESKTOP/TABLET SIDEBAR */}
+          {/* Sidebar (desktop/tablet) */}
           <aside className="hidden md:block border-r border-gray-200">
             <div
-              className="sticky p-4 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60"
+              className="sticky p-4 bg-white"
               style={{
-                top: `clamp(${NAV_H_MOBILE}px, ${NAV_H_MD}px, ${NAV_H_LG}px)` // matched met spacer/ navbar
+                top: `clamp(${NAV_H_MOBILE}px, ${NAV_H_MD}px, ${NAV_H_LG}px)`
               }}
             >
               {renderFilters()}
             </div>
           </aside>
 
-          {/* CONTENT */}
+          {/* Resultaten */}
           <section className="min-w-0">
-            {/* Mobiele rij: filterknop LINKS + teller rechts */}
+            {/* Mobiele rij: filterknop linksboven + teller rechts */}
             <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 mb-4 md:mb-6">
               <button
                 type="button"
@@ -416,12 +407,10 @@ const Collection: React.FC = () => {
               </button>
 
               <div className="text-sm text-gray-600 md:hidden">{filteredCars.length} resultaten</div>
-
-              {/* Op grotere schermen tonen we de teller rechts */}
               <div className="hidden md:block ml-auto text-sm text-gray-600">{filteredCars.length} resultaten</div>
             </div>
 
-            {/* RESULT GRID (auto-fit -> schaalt lekker op grote schermen) */}
+            {/* Cards grid: auto-fit schaalt soepel op grote schermen */}
             <div className="px-4 md:px-6 lg:px-8 pb-8">
               {filteredCars.length === 0 ? (
                 <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
@@ -442,8 +431,8 @@ const Collection: React.FC = () => {
                       year: (c as any).year || (c as any).bouwjaar || 0,
                       engine_size: (c as any).engine_size || (c as any).motorinhoud || "",
                       pk: typeof c.pk === "number" ? c.pk : (c as any).pk || 0,
-                    };
-                    return <CarCard key={mappedCar.id} car={mappedCar} layout="grid" imageFolder="car_001" />;
+                    }
+                    return <CarCard key={mappedCar.id} car={mappedCar} layout="grid" imageFolder="car_001" />
                   })}
                 </div>
               )}
@@ -452,17 +441,17 @@ const Collection: React.FC = () => {
         </div>
       </div>
 
-      {/* ───────── MOBIELE FULLSCREEN FILTERS (onder navbar!) ───────── */}
+      {/* ───────── Mobiele fullscreen filters (onder navbar zichtbaar) ───────── */}
       {mobileFiltersOpen && (
         <>
-          {/* Backdrop: begint onder navbar-hoogte, zodat hamburger zichtbaar blijft */}
+          {/* Backdrop start onder navbar, zodat hamburger zichtbaar blijft */}
           <div
             className="fixed inset-x-0 bottom-0 md:hidden bg-black/40"
             style={{ top: NAV_H_MOBILE }}
             onClick={() => setMobileFiltersOpen(false)}
             aria-label="Sluit filters"
           />
-          {/* Panel: ook onder navbar; fullscreen daaronder */}
+          {/* Panel */}
           <div
             className="fixed inset-x-0 bottom-0 md:hidden bg-white flex flex-col"
             style={{
@@ -472,7 +461,6 @@ const Collection: React.FC = () => {
             role="dialog"
             aria-modal="true"
           >
-            {/* Header van de filter, met kleine eigen hoogte i.p.v. nogmaals navbar */}
             <div className="h-12 flex items-center justify-between px-4 border-b">
               <h2 className="text-base font-semibold">Filters</h2>
               <button
@@ -487,16 +475,15 @@ const Collection: React.FC = () => {
               </button>
             </div>
 
-            {/* Scrollbare inhoud */}
             <div className="flex-1 overflow-y-auto p-4">
               {renderFilters()}
             </div>
 
-            {/* Footer met kleinere, blauwe Zoeken-knop */}
+            {/* Kleinere, BLAUWE zoeken-knop (brandkleur) */}
             <div className="p-3 border-t bg-white">
               <button
                 type="button"
-                className="w-full rounded-md bg-blue-600 hover:bg-blue-700 text-white py-2 text-sm font-medium active:scale-[.99]"
+                className="w-full rounded-md !bg-[#27408B] hover:!bg-[#0A1833] text-white py-2 text-sm font-medium active:scale-[.99]"
                 onClick={() => setMobileFiltersOpen(false)}
               >
                 Zoeken
