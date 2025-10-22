@@ -30,30 +30,33 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
 
   // 📸 Laden uit Azure Blob (fallback naar car_001)
   useEffect(() => {
-    const baseFolder = car.id || "car_001";
+    const baseFolder = "car_001";
     const listBlobs = async () => {
       try {
-        const res = await fetch(
-          `https://avsapisa.blob.core.windows.net/carimages?restype=container&comp=list&prefix=${baseFolder}/`
-        );
+        const url = `https://avsapisa.blob.core.windows.net/carimages?restype=container&comp=list&prefix=${baseFolder}/`;
+        const res = await fetch(url);
         if (!res.ok) throw new Error(res.statusText);
         const xmlText = await res.text();
         const doc = new DOMParser().parseFromString(xmlText, "application/xml");
         const blobs = Array.from(doc.getElementsByTagName("Blob"));
-        const urls = blobs
-          .map((b) => b.getElementsByTagName("Name")[0]?.textContent)
-          .filter((n): n is string => !!n && n.toLowerCase().endsWith(".jpg"))
-          .map(
-            (name) =>
-              `https://avsapisa.blob.core.windows.net/carimages/${name}`
-          );
+        // Accepteer meerdere extensies en ook hoofdletters
+         const exts = [".jpg", ".jpeg", ".png", ".webp"];
+         const urls = blobs
+           .map((b) => b.getElementsByTagName("Name")[0]?.textContent || "")
+           .filter((n) => n && exts.some(ext => n.toLowerCase().endsWith(ext)))
+           .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+           .map((name) => `https://avsapisa.blob.core.windows.net/carimages/${name}`);
+ 
+        console.log("[CarCard] listing URL:", url, "| found:", urls.length);
         setAllImages(urls);
       } catch (e) {
         console.error("Blob list error:", e);
+        setAllImages([]); // graceful fallback
       }
     };
     listBlobs();
-  }, [car.id]);
+    // Omdat we *hardcoded* naar 'car_001' kijken, is een dependency op car.id niet nodig.
+    }, []); 
 
   const totalPhotos = allImages.length;
   const prevSlide = () =>
@@ -76,7 +79,13 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
 
   const getZoneContent = () => {
     const zone = hoverZone ?? lastPreviewZone;
-    
+       if (!allImages.length) {
+     return (
+       <div className="w-full h-full bg-gray-100 flex items-center justify-center text-sm text-gray-500">
+         Geen afbeeldingen
+       </div>
+     );
+   }
     if (zone === 2) {
       if (totalPhotos === 3 && allImages[2]) {
         return renderImg(allImages[2], 2);
