@@ -357,12 +357,15 @@ const Collection: React.FC = () => {
 
   return (
     <div className="w-full bg-gray-50">
-      {/* Volledige breedte, geen horizontale padding zodat de filterkolom écht links begint */}
+      {/* NAVBAR-SPACER: duwt content onder je (zwevende) navbar */}
+      <div className="h-16 md:h-20 lg:h-24" aria-hidden />
+
+      {/* Volledige breedte, filterkolom start écht links */}
       <div className="w-full py-6 grid grid-cols-1 md:grid-cols-[33%_67%] lg:grid-cols-[25%_75%] gap-0">
 
         {/* DESKTOP/TABLET SIDEBAR (zichtbaar vanaf md) */}
         <aside className="hidden md:block md:border-r md:border-gray-200">
-          <div className="sticky top-20 p-4 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+          <div className="sticky top-16 md:top-20 lg:top-24 p-4 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60">
             {renderFilters()}
           </div>
         </aside>
@@ -423,17 +426,25 @@ const Collection: React.FC = () => {
         </section>
       </div>
 
-      {/* ──────────────── MOBIELE SLIDE-OVER FILTERS ──────────────── */}
+      {/* ──────────────── MOBIELE FULLSCREEN FILTERS ──────────────── */}
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true">
-          {/* backdrop */}
+          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setMobileFiltersOpen(false)}
+            aria-label="Sluit filters"
           />
-          {/* panel */}
-          <div className="absolute inset-y-0 left-0 w-[86%] max-w-[420px] bg-white shadow-xl flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b">
+          {/* Fullscreen panel */}
+          <div
+            className="absolute inset-0 bg-white flex flex-col"
+            style={{
+              paddingTop: 'max(env(safe-area-inset-top), 0px)',
+              paddingBottom: 'max(env(safe-area-inset-bottom), 0px)'
+            }}
+          >
+            {/* Header met eigen spacer zodat hij niet onder navbar valt */}
+            <div className="h-16 flex items-center justify-between px-4 border-b">
               <h2 className="text-lg font-semibold">Filters</h2>
               <button
                 type="button"
@@ -447,12 +458,13 @@ const Collection: React.FC = () => {
               </button>
             </div>
 
+            {/* Scrollbare inhoud */}
             <div className="flex-1 overflow-y-auto p-4">
               {renderFilters()}
             </div>
 
+            {/* Footer met Zoeken-knop (sluit panel; filters zijn live) */}
             <div className="p-4 border-t bg-white">
-              {/* UX: 'Zoeken' sluit het paneel; filters zijn al live toegepast */}
               <button
                 type="button"
                 className="w-full rounded-lg bg-black text-white py-3 font-medium active:scale-[.99]"
