@@ -95,11 +95,6 @@ const Collection: React.FC = () => {
       })
       return out
     }
-    if ((initialFilters as any).variant && Array.isArray((initialFilters as any).variant)) {
-      const vs: string[] = (initialFilters as any).variant
-      // zonder mapping naar brand+model kunnen we variants niet betrouwbaar tokenizen; overslaan
-      return out
-    }
     return out
   })
 

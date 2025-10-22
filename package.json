@@ -9,6 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@kiwicom/orbit-components": "^25.0.0",
