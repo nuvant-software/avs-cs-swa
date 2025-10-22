@@ -302,142 +302,147 @@ const Collection: React.FC = () => {
   if (loading) return <Loader />
   if (error)   return <Loader />
 
-  return (
-    <div className="w-11/12 max-w-7xl mx-auto py-8 grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-      {/* FILTERBAR LEFT */}
-      <aside className="bg-white shadow-sm border border-gray-200 rounded-xl p-4 h-max sticky top-24">
-        <h2 className="text-lg font-semibold mb-3">Filters</h2>
+    return (
+    <div className="w-full bg-gray-50">
+      {/* gecentreerde content */}
+      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-6">
+        
+        {/* FILTERBAR LEFT */}
+        <aside className="bg-white shadow-sm border border-gray-200 rounded-xl p-4 h-max lg:sticky lg:top-28">
+          <h2 className="text-lg font-semibold mb-3">Filters</h2>
 
-        {/* Merk */}
-        <div className="mb-4">
-          <MultiSearchSelect
-            label="Merk"
-            options={brandOptions}
-            selected={brandSelected}
-            onChange={setBrandSelected}
-          />
-        </div>
-
-        {/* Model (tokens) */}
-        <div className="mb-4">
-          <MultiSearchSelect
-            label="Model"
-            options={modelOptions}
-            selected={modelSelected}
-            onChange={setModelSelected}
-            disabled={brandSelected.length === 0}
-          />
-        </div>
-
-        {/* Variant (tokens) */}
-        <div className="mb-4">
-          <MultiSearchSelect
-            label="Variant"
-            options={variantOptions}
-            selected={variantSelected}
-            onChange={setVariantSelected}
-            disabled={modelSelected.length === 0}
-          />
-        </div>
-
-        {/* Prijs */}
-        <div className="mb-4">
-          <FilterRangeSlider
-            label="Prijs"
-            min={priceBounds[0]}
-            max={priceBounds[1]}
-            value={priceRange}
-            onChange={setPriceRange}
-            placeholderMin={priceBounds[0].toString()}
-            placeholderMax={priceBounds[1].toString()}
-          />
-        </div>
-
-        {/* Kilometerstand */}
-        <div className="mb-6">
-          <FilterRangeSlider
-            label="Kilometerstand"
-            min={kmBounds[0]}
-            max={kmBounds[1]}
-            value={kmRange}
-            onChange={setKmRange}
-            placeholderMin={kmBounds[0].toString()}
-            placeholderMax={kmBounds[1].toString()}
-          />
-        </div>
-
-        {/* Checkbox-facetten gebruiken dezelfde MultiSearchSelect (heeft checkboxes) */}
-        <div className="mb-4">
-          <MultiSearchSelect
-            label="PK"
-            options={pkOptions}
-            selected={pkSelected}
-            onChange={setPkSelected}
-          />
-        </div>
-
-        <div className="mb-4">
-          <MultiSearchSelect
-            label="Carrosserie"
-            options={bodyOptions}
-            selected={bodySelected}
-            onChange={setBodySelected}
-          />
-        </div>
-
-        <div className="mb-4">
-          <MultiSearchSelect
-            label="Transmissie"
-            options={transOptions}
-            selected={transSelected}
-            onChange={setTransSelected}
-          />
-        </div>
-
-        <div>
-          <MultiSearchSelect
-            label="Aantal deuren"
-            options={doorsOptions}
-            selected={doorsSelected}
-            onChange={setDoorsSelected}
-          />
-        </div>
-      </aside>
-
-      {/* RESULTS RIGHT */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold">Collectie</h1>
-          <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
-        </div>
-        {filteredCars.length === 0 ? (
-          <div className="border rounded-xl p-8 text-center text-gray-600">
-            Geen resultaten met de huidige filters.
+          {/* Merk */}
+          <div className="mb-4">
+            <MultiSearchSelect
+              label="Merk"
+              options={brandOptions}
+              selected={brandSelected}
+              onChange={setBrandSelected}
+            />
           </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredCars.map((c, idx) => {
-              // Map onze CarOverview → CarCard's Car type
-              const mappedCar = {
-                id: (c as any).id || (c as any)._id || `${c.brand}-${c.model}-${idx}`,
-                brand: c.brand,
-                model: c.model,
-                variant: c.variant,
-                fuel: (c as any).fuel || (c as any).brandstof || "Onbekend",
-                mileage: typeof c.km === "number" ? c.km : (c as any).mileage || 0,
-                transmission: c.transmission || (c as any).gearbox || "Onbekend",
-                price: c.price,
-                year: (c as any).year || (c as any).bouwjaar || 0,
-                engine_size: (c as any).engine_size || (c as any).motorinhoud || "",
-                pk: typeof c.pk === "number" ? c.pk : (c as any).pk || 0,
-              };
-              return <CarCard key={mappedCar.id} car={mappedCar} layout="grid" />;
-            })}
+
+          {/* Model (tokens) */}
+          <div className="mb-4">
+            <MultiSearchSelect
+              label="Model"
+              options={modelOptions}
+              selected={modelSelected}
+              onChange={setModelSelected}
+              disabled={brandSelected.length === 0}
+            />
           </div>
-        )}
-      </section>
+
+          {/* Variant (tokens) */}
+          <div className="mb-4">
+            <MultiSearchSelect
+              label="Variant"
+              options={variantOptions}
+              selected={variantSelected}
+              onChange={setVariantSelected}
+              disabled={modelSelected.length === 0}
+            />
+          </div>
+
+          {/* Prijs */}
+          <div className="mb-4">
+            <FilterRangeSlider
+              label="Prijs"
+              min={priceBounds[0]}
+              max={priceBounds[1]}
+              value={priceRange}
+              onChange={setPriceRange}
+              placeholderMin={priceBounds[0].toString()}
+              placeholderMax={priceBounds[1].toString()}
+            />
+          </div>
+
+          {/* Kilometerstand */}
+          <div className="mb-6">
+            <FilterRangeSlider
+              label="Kilometerstand"
+              min={kmBounds[0]}
+              max={kmBounds[1]}
+              value={kmRange}
+              onChange={setKmRange}
+              placeholderMin={kmBounds[0].toString()}
+              placeholderMax={kmBounds[1].toString()}
+            />
+          </div>
+
+          {/* Checkbox-facetten */}
+          <div className="mb-4">
+            <MultiSearchSelect
+              label="PK"
+              options={pkOptions}
+              selected={pkSelected}
+              onChange={setPkSelected}
+            />
+          </div>
+
+          <div className="mb-4">
+            <MultiSearchSelect
+              label="Carrosserie"
+              options={bodyOptions}
+              selected={bodySelected}
+              onChange={setBodySelected}
+            />
+          </div>
+
+          <div className="mb-4">
+            <MultiSearchSelect
+              label="Transmissie"
+              options={transOptions}
+              selected={transSelected}
+              onChange={setTransSelected}
+            />
+          </div>
+
+          <div>
+            <MultiSearchSelect
+              label="Aantal deuren"
+              options={doorsOptions}
+              selected={doorsSelected}
+              onChange={setDoorsSelected}
+            />
+          </div>
+        </aside>
+
+        {/* RESULTS RIGHT */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold">Collectie</h1>
+            <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
+          </div>
+
+          {filteredCars.length === 0 ? (
+            <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
+              Geen resultaten met de huidige filters.
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {filteredCars.map((c, idx) => {
+                const mappedCar = {
+                  id: (c as any).id || (c as any)._id || `${c.brand}-${c.model}-${idx}`,
+                  brand: c.brand,
+                  model: c.model,
+                  variant: c.variant,
+                  fuel: (c as any).fuel || (c as any).brandstof || "Onbekend",
+                  mileage: typeof c.km === "number" ? c.km : (c as any).mileage || 0,
+                  transmission: c.transmission || (c as any).gearbox || "Onbekend",
+                  price: c.price,
+                  year: (c as any).year || (c as any).bouwjaar || 0,
+                  engine_size: (c as any).engine_size || (c as any).motorinhoud || "",
+                  pk: typeof c.pk === "number" ? c.pk : (c as any).pk || 0,
+                };
+                // Hardcoded imageFolder voor nu → zeker foto’s
+                return <CarCard key={mappedCar.id} car={mappedCar} layout="grid" imageFolder="car_001" />;
+              })}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
-  )
-}
+  );
+  }
 
 export default Collection
