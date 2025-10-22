@@ -305,7 +305,7 @@ const Collection: React.FC = () => {
     return (
     <div className="w-full bg-gray-50">
       {/* gecentreerde content */}
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-6">
+      <div className="w-full px-4 md:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-6">
         
         {/* FILTERBAR LEFT */}
         <aside className="bg-white shadow-sm border border-gray-200 rounded-xl p-4 h-max lg:sticky lg:top-28">
