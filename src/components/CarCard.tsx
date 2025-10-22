@@ -54,7 +54,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder }) => {
         const blobs = Array.from(doc.getElementsByTagName("Blob"));
         const urls = blobs
           .map((b) => b.getElementsByTagName("Name")[0]?.textContent)
-          .filter((n): n is string => !!n && n.toLowerCase().match(/\.(jpg|jpeg|png|webp)$/))
+          .filter((n): n is string => !!n && /\.(jpg|jpeg|png|webp)$/i.test(n))
           .map(
             (name) =>
               `https://avsapisa.blob.core.windows.net/carimages/${name}`
