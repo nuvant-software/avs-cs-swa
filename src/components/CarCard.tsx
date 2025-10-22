@@ -30,7 +30,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid" }) => {
 
   // 📸 Laden uit Azure Blob (fallback naar car_001)
   useEffect(() => {
-    const baseFolder = "car_001"; // TODO: vervang door car.id zodra er per-auto mappen zijn
+    const baseFolder = car.id || "car_001";
     const listBlobs = async () => {
       try {
         const res = await fetch(
