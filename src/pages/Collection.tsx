@@ -35,7 +35,7 @@ type IncomingFilters =
     }
   | undefined
 
-// Stel deze gelijk aan je echte (fixed) navbar-hoogte zodat de mobiele filter eronder begint.
+// Stel gelijk aan je echte fixed navbar-hoogte(n)
 const NAV_H_MOBILE = 64 // px
 const NAV_H_MD     = 80
 const NAV_H_LG     = 96
@@ -361,12 +361,19 @@ const Collection: React.FC = () => {
   )
 
   return (
-    <div className="w-full bg-white"> {/* overal wit */}
-      {/* ───────── Hero / Titel direct onder navbar ───────── */}
-      <section className="relative">
-        {/* Gebruik een vaste (lage) hero-hoogte met titel; geen slider */}
-        <div className="h-40 md:h-48 lg:h-56 w-full bg-center bg-cover"
-             style={{ backgroundImage: `url('/images/collection-hero.jpg')` }} />
+    <div className="w-full bg-white">
+      {/* ───────── Hero / Titel direct onder navbar (zonder extra spacer) ───────── */}
+      <section
+        className="relative"
+        style={{
+          // duw de hero subtiel onder de fixed navbar; werkt van mobile -> desktop
+          paddingTop: `clamp(${NAV_H_MOBILE}px, ${NAV_H_MD}px, ${NAV_H_LG}px)`
+        }}
+      >
+        <div
+          className="h-40 md:h-48 lg:h-56 w-full bg-center bg-cover"
+          style={{ backgroundImage: `url('/images/collection-hero.jpg')` }}
+        />
         <div className="absolute inset-0 bg-black/25" />
         <div className="absolute inset-0 flex items-center">
           <div className="w-full max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
@@ -392,25 +399,33 @@ const Collection: React.FC = () => {
 
           {/* Resultaten */}
           <section className="min-w-0">
-            {/* Mobiele rij: filterknop linksboven + teller rechts */}
-            <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 mb-4 md:mb-6">
-              <button
-                type="button"
-                className="md:hidden inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white shadow-sm active:scale-[.99]"
-                onClick={() => setMobileFiltersOpen(true)}
-                aria-label="Open filters"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M3 5h18M6 12h12M10 19h4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Filters
-              </button>
-
-              <div className="text-sm text-gray-600 md:hidden">{filteredCars.length} resultaten</div>
-              <div className="hidden md:block ml-auto text-sm text-gray-600">{filteredCars.length} resultaten</div>
+            {/* ── Mobiel: STICKY filter-knop bovenaan ── */}
+            <div
+              className="md:hidden sticky z-30 bg-white/95 backdrop-blur-sm border-b"
+              style={{ top: NAV_H_MOBILE }}
+            >
+              <div className="flex items-center justify-between px-4 py-2">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white shadow-sm active:scale-[.99]"
+                  onClick={() => setMobileFiltersOpen(true)}
+                  aria-label="Open filters"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M3 5h18M6 12h12M10 19h4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  Filters
+                </button>
+                <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
+              </div>
             </div>
 
-            {/* Cards grid: auto-fit schaalt soepel op grote schermen */}
+            {/* Desktop/tablet teller-balk */}
+            <div className="hidden md:flex items-center justify-end px-6 lg:px-8 mb-4 md:mb-6">
+              <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
+            </div>
+
+            {/* Cards grid */}
             <div className="px-4 md:px-6 lg:px-8 pb-8">
               {filteredCars.length === 0 ? (
                 <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
@@ -479,7 +494,7 @@ const Collection: React.FC = () => {
               {renderFilters()}
             </div>
 
-            {/* Kleinere, BLAUWE zoeken-knop (brandkleur) */}
+            {/* Kleine, BLAUWE zoeken-knop */}
             <div className="p-3 border-t bg-white">
               <button
                 type="button"
