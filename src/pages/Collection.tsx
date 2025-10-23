@@ -5,6 +5,10 @@ import FilterRangeSlider from '../components/filters/FilterRangeSlider'
 import MultiSearchSelect from '../components/filters/MultiSearchSelect'
 import CarCard from '../components/CarCard'
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion'
+import { TbAlphabetLatin } from "react-icons/tb";
+import { MdSpeed, MdDateRange } from "react-icons/md";
+import { IoMdPricetags } from "react-icons/io";
+import { FaArrowUp } from "react-icons/fa";
 
 interface CarOverview {
   id?: string
@@ -440,7 +444,7 @@ const Collection: React.FC = () => {
   )
 
   // ——— Pagination ———
-  const PAGE_SIZE = 10
+  const PAGE_SIZE = 12
   const [page, setPage] = useState(1)
 
   const totalPages = useMemo(() => {
