@@ -505,16 +505,18 @@ const Collection: React.FC = () => {
       onClick={onClick}
       className={[
         'px-1.5 py-1 text-sm',
-        'bg-transparent border-0',   // geen achtergrond/border
-        'text-[#1C448E]',            // altijd blauw
+        // agressieve reset
+        'bg-transparent !bg-transparent border-0 !border-0 rounded-none',
+        'shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0',
+        'hover:bg-transparent active:bg-transparent',
+        // altijd blauwe tekst
+        'text-[#1C448E]', 
         active ? 'font-semibold' : 'font-normal',
-        'focus:outline-none focus-visible:ring-0'
       ].join(' ')}
     >
       {children}
     </button>
   )
-
   const renderSortControls = () => (
     <div className="flex items-center gap-4">
       <span className="text-sm text-gray-700">Sorteren:</span>
@@ -534,13 +536,21 @@ const Collection: React.FC = () => {
         onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
         aria-label="Draai sorteer volgorde"
         title="Draai sorteer volgorde"
-        className="p-0 m-0 bg-transparent border-0 text-[#1C448E]"
+        className={[
+          'p-0 m-0',
+          // agressieve reset
+          'bg-transparent !bg-transparent border-0 !border-0 rounded-none',
+          'shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0',
+          'hover:bg-transparent active:bg-transparent',
+          // blauw
+          'text-[#1C448E] leading-none',
+        ].join(' ')}
       >
-          <svg
-            viewBox="0 0 24 24"
-            className={['w-5 h-5 transition-transform duration-200 inline-block', sortDir === 'desc' ? 'rotate-180' : 'rotate-0'].join(' ')}
-            xmlns="http://www.w3.org/2000/svg"
-          >
+        <svg
+          viewBox="0 0 24 24"
+          className={['w-5 h-5 transition-transform duration-200 inline-block', sortDir === 'desc' ? 'rotate-180' : 'rotate-0'].join(' ')}
+          xmlns="http://www.w3.org/2000/svg"
+        >
           <path d="M12 5 L5 15 H19 Z" fill="currentColor" />
         </svg>
       </button>
