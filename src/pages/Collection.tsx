@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import Loader from '../components/Loader'
 import FilterRangeSlider from '../components/filters/FilterRangeSlider'
@@ -34,28 +34,27 @@ type IncomingFilters =
     }
   | undefined
 
-// Fallback als layout geen --app-offset zet (pas aan indien nodig)
-const APP_OFFSET_FALLBACK = 112 // px (topbar + navbar + blauwe balk)
+const NAV_HEIGHT_FALLBACK = 64 // px
 
 const Collection: React.FC = () => {
   const location = useLocation()
   const navState = (location.state as { filters?: IncomingFilters; includeItems?: boolean } | undefined) || {}
   const initialFilters = navState.filters || {}
 
+  // Data
   const [cars, setCars] = useState<CarOverview[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Mobile overlay
+  // UI
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
-  // ── UI filterstate ─────────────────────────────────────────────
+  // Filters
   const [brandSelected, setBrandSelected] = useState<string[]>(
     ('brands' in initialFilters && Array.isArray(initialFilters.brands))
       ? (initialFilters.brands as string[])
       : (Array.isArray((initialFilters as any).brand) ? (initialFilters as any).brand : [])
   )
-
   const [modelSelected, setModelSelected] = useState<string[]>(() => {
     const out: string[] = []
     if ('models_by_brand' in initialFilters && initialFilters.models_by_brand) {
@@ -72,7 +71,6 @@ const Collection: React.FC = () => {
     }
     return out
   })
-
   const [variantSelected, setVariantSelected] = useState<string[]>(() => {
     const out: string[] = []
     if ('variants_by_brand_model' in initialFilters && initialFilters.variants_by_brand_model) {
@@ -93,6 +91,7 @@ const Collection: React.FC = () => {
   const [transSelected, setTransSelected] = useState<string[]>([])
   const [doorsSelected, setDoorsSelected] = useState<string[]>([])
 
+  // Helpers
   function parseModelTokens(tokens: string[]) {
     const map: Record<string, Set<string>> = {}
     tokens.forEach(t => {
@@ -115,6 +114,7 @@ const Collection: React.FC = () => {
     return map
   }
 
+  // Fetch
   useEffect(() => {
     setLoading(true)
     fetch('/api/filter_cars', {
@@ -148,10 +148,7 @@ const Collection: React.FC = () => {
           const mn = Math.min(...prices)
           const mx = Math.max(...prices)
           setPriceBounds([mn, mx])
-          setPriceRange([
-            typeof (initialFilters as any).price_min === 'number' ? (initialFilters as any).price_min : mn,
-            typeof (initialFilters as any).price_max === 'number' ? (initialFilters as any).price_max : mx
-          ])
+          setPriceRange([mn, mx])
 
           const kms = valid.map(c => (typeof c.km === 'number' ? c.km : 0))
           const kmMax = Math.max(...kms, 0)
@@ -161,18 +158,21 @@ const Collection: React.FC = () => {
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
-  }, []) // fetch 1x
+  }, [])
 
+  // Derived facets
   const brandOptions = useMemo(
     () => Array.from(new Set(cars.map(c => c.brand))).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' })),
     [cars]
   )
+
   const modelOptions = useMemo(() => {
     const base = brandSelected.length ? cars.filter(c => brandSelected.includes(c.brand)) : cars
     const uniq = new Set<string>()
     base.forEach(c => uniq.add(`${c.brand} — ${c.model}`))
     return Array.from(uniq).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [cars, brandSelected])
+
   const variantOptions = useMemo(() => {
     if (!modelSelected.length) return []
     const chosenBM = new Set(modelSelected)
@@ -207,16 +207,19 @@ const Collection: React.FC = () => {
     baseAfterBMVAndSliders.forEach(c => { if (typeof c.pk === 'number' && !Number.isNaN(c.pk)) set.add(String(c.pk)) })
     return Array.from(set).sort((a, b) => Number(a) - Number(b))
   }, [baseAfterBMVAndSliders])
+
   const bodyOptions = useMemo(() => {
     const set = new Set<string>()
     baseAfterBMVAndSliders.forEach(c => { if (c.body) set.add(String(c.body)) })
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [baseAfterBMVAndSliders])
+
   const transOptions = useMemo(() => {
     const set = new Set<string>()
     baseAfterBMVAndSliders.forEach(c => { if (c.transmission) set.add(String(c.transmission)) })
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [baseAfterBMVAndSliders])
+
   const doorsOptions = useMemo(() => {
     const set = new Set<string>()
     baseAfterBMVAndSliders.forEach(c => { if (typeof c.doors === 'number' && !Number.isNaN(c.doors)) set.add(String(c.doors)) })
@@ -238,9 +241,39 @@ const Collection: React.FC = () => {
     })
   }, [baseAfterBMVAndSliders, pkSelected, bodySelected, transSelected, doorsSelected])
 
-  if (loading) return <Loader />
-  if (error)   return <Loader />
+  // ───────── NAVBAR overlay ↔ solid (zonder globale CSS) ─────────
+  const heroEndRef = useRef<HTMLDivElement | null>(null)
+  const [navBottom, setNavBottom] = useState<number>(NAV_HEIGHT_FALLBACK)
+  const [navSolid, setNavSolid] = useState<boolean>(false)
 
+  // luister naar metingen van Navbar + vraag initiale meting op
+  useEffect(() => {
+    const onMetrics = (e: Event) => {
+      const ce = e as CustomEvent<{ bottom: number; height: number; mode: 'overlay' | 'solid' }>
+      if (ce?.detail?.bottom) setNavBottom(ce.detail.bottom)
+    }
+    window.addEventListener('avs:nav-metrics', onMetrics)
+    window.dispatchEvent(new Event('avs:request-nav-metrics'))
+    return () => window.removeEventListener('avs:nav-metrics', onMetrics)
+  }, [])
+
+  // wissel navbar-mode zodra hero voorbij is
+  useEffect(() => {
+    const el = heroEndRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(([entry]) => {
+      const solid = !entry.isIntersecting
+      setNavSolid(solid)
+      window.dispatchEvent(new CustomEvent('avs:nav-mode', { detail: { mode: solid ? 'solid' : 'overlay' } }))
+    }, { threshold: 0 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
+  if (loading) return <Loader />
+  if (error) return <Loader />
+
+  // UI: filters render
   const renderFilters = () => (
     <>
       <h2 className="text-lg font-semibold mb-3">Filters</h2>
@@ -250,35 +283,19 @@ const Collection: React.FC = () => {
       </div>
 
       <div className="mb-4">
-        <MultiSearchSelect label="Model" options={modelOptions} selected={modelSelected} onChange={setModelSelected} disabled={brandSelected.length === 0} />
+        <MultiSearchSelect label="Model" options={modelOptions} selected={modelSelected} onChange={setModelSelected} disabled={!brandSelected.length} />
       </div>
 
       <div className="mb-4">
-        <MultiSearchSelect label="Variant" options={variantOptions} selected={variantSelected} onChange={setVariantSelected} disabled={modelSelected.length === 0} />
+        <MultiSearchSelect label="Variant" options={variantOptions} selected={variantSelected} onChange={setVariantSelected} disabled={!modelSelected.length} />
       </div>
 
       <div className="mb-4">
-        <FilterRangeSlider
-          label="Prijs"
-          min={priceBounds[0]}
-          max={priceBounds[1]}
-          value={priceRange}
-          onChange={setPriceRange}
-          placeholderMin={priceBounds[0].toString()}
-          placeholderMax={priceBounds[1].toString()}
-        />
+        <FilterRangeSlider label="Prijs" min={priceBounds[0]} max={priceBounds[1]} value={priceRange} onChange={setPriceRange} />
       </div>
 
       <div className="mb-6">
-        <FilterRangeSlider
-          label="Kilometerstand"
-          min={kmBounds[0]}
-          max={kmBounds[1]}
-          value={kmRange}
-          onChange={setKmRange}
-          placeholderMin={kmBounds[0].toString()}
-          placeholderMax={kmBounds[1].toString()}
-        />
+        <FilterRangeSlider label="Kilometerstand" min={kmBounds[0]} max={kmBounds[1]} value={kmRange} onChange={setKmRange} />
       </div>
 
       <div className="mb-4">
@@ -300,36 +317,38 @@ const Collection: React.FC = () => {
   )
 
   return (
-    // 1) Hele pagina duwen we onder de samengestelde header zonder extra spacer
-    <div
-      className="w-full bg-white"
-      style={{ paddingTop: `var(--app-offset, ${APP_OFFSET_FALLBACK}px)` }}
-    >
-      {/* 2) Desktop/tablet: hero + sidebar */}
-      <section className="relative hidden md:block">
-        <div className="h-48 lg:h-56 w-full bg-center bg-cover" style={{ backgroundImage: `url('/images/collection-hero.jpg')` }} />
+    <div className="w-full bg-white">
+      {/* HERO: loopt onder overlay-navbar door */}
+      <section className="relative">
+        <div className="h-40 md:h-56 lg:h-64 w-full bg-center bg-cover" style={{ backgroundImage: `url('/images/collection-hero.jpg')` }} />
         <div className="absolute inset-0 bg-black/25" />
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full max-w-screen-2xl mx-auto px-6 lg:px-8">
-            <h1 className="text-white text-4xl lg:text-5xl font-bold drop-shadow">Collectie</h1>
+          <div className="w-full max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
+            <h1 className="text-white text-3xl md:text-4xl lg:text-5xl font-bold drop-shadow">Collectie</h1>
           </div>
         </div>
       </section>
 
-      <div className="w-full max-w-screen-2xl mx-auto py-4 md:py-6">
+      {/* Sentinel: begin van content */}
+      <div ref={heroEndRef} aria-hidden className="h-0" />
+
+      {/* CONTENT */}
+      <div className="w-full max-w-screen-2xl mx-auto" style={{ paddingTop: navSolid ? `${navBottom}px` : 0 }}>
         <div className="grid grid-cols-1 md:grid-cols-[33%_67%] lg:grid-cols-[minmax(260px,360px)_1fr]">
+          {/* Sidebar (md+) */}
           <aside className="hidden md:block border-r border-gray-200">
-            <div className="sticky p-4 bg-white" style={{ top: `var(--app-offset, ${APP_OFFSET_FALLBACK}px)` }}>
+            <div className="sticky p-4 bg-white" style={{ top: navSolid ? `${navBottom}px` : 0 }}>
               {renderFilters()}
             </div>
           </aside>
 
+          {/* Resultaten */}
           <section className="min-w-0">
-            {/* 3) MOBIEL: sticky filterknop EXACT onder header */}
+            {/* Mobiel: sticky filter-knop exact onder navbar */}
             {!mobileFiltersOpen && (
               <div
-                className="md:hidden sticky z-[60] bg-white/95 backdrop-blur-sm border-b"
-                style={{ top: `var(--app-offset, ${APP_OFFSET_FALLBACK}px)` }}
+                className="md:hidden sticky z-30 bg-white/95 backdrop-blur-sm border-b"
+                style={{ top: `${navBottom}px` }}
               >
                 <div className="flex items-center justify-between px-4 py-2">
                   <button
@@ -348,15 +367,17 @@ const Collection: React.FC = () => {
               </div>
             )}
 
-            {/* Desktop/tablet teller */}
+            {/* Teller (md+) */}
             <div className="hidden md:flex items-center justify-end px-6 lg:px-8 mb-4 md:mb-6">
               <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
             </div>
 
-            {/* Cards */}
+            {/* Cards grid – schaalt op grote schermen */}
             <div className="px-4 md:px-6 lg:px-8 pb-8">
               {filteredCars.length === 0 ? (
-                <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">Geen resultaten met de huidige filters.</div>
+                <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
+                  Geen resultaten met de huidige filters.
+                </div>
               ) : (
                 <div className="grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] sm:[grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
                   {filteredCars.map((c, idx) => {
@@ -365,13 +386,13 @@ const Collection: React.FC = () => {
                       brand: c.brand,
                       model: c.model,
                       variant: c.variant,
-                      fuel: (c as any).fuel || (c as any).brandstof || "Onbekend",
-                      mileage: typeof c.km === "number" ? c.km : (c as any).mileage || 0,
-                      transmission: c.transmission || (c as any).gearbox || "Onbekend",
+                      fuel: (c as any).fuel || (c as any).brandstof || 'Onbekend',
+                      mileage: typeof c.km === 'number' ? c.km : (c as any).mileage || 0,
+                      transmission: c.transmission || (c as any).gearbox || 'Onbekend',
                       price: c.price,
                       year: (c as any).year || (c as any).bouwjaar || 0,
-                      engine_size: (c as any).engine_size || (c as any).motorinhoud || "",
-                      pk: typeof c.pk === "number" ? c.pk : (c as any).pk || 0,
+                      engine_size: (c as any).engine_size || (c as any).motorinhoud || '',
+                      pk: typeof c.pk === 'number' ? c.pk : (c as any).pk || 0,
                     }
                     return <CarCard key={mappedCar.id} car={mappedCar} layout="grid" imageFolder="car_001" />
                   })}
@@ -382,13 +403,13 @@ const Collection: React.FC = () => {
         </div>
       </div>
 
-      {/* 4) MOBIELE overlay: ook onder header starten */}
+      {/* Mobiele fullscreen filters (start onder navbar) */}
       {mobileFiltersOpen && (
         <div
           className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-white flex flex-col"
           role="dialog"
           aria-modal="true"
-          style={{ top: `var(--app-offset, ${APP_OFFSET_FALLBACK}px)` }}
+          style={{ top: `${navBottom}px` }}
         >
           <div className="h-12 flex items-center justify-between px-4 border-b">
             <h2 className="text-base font-semibold">Filters</h2>
