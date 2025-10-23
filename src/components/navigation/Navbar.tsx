@@ -7,7 +7,7 @@ const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isMobileDropdownOpen, setIsMobileDropdownOpen] = useState(false)
 
-  // 🔥 Nieuw: nav-mode besturing + metingen
+  // nav-mode besturing + metingen
   const [mode, setMode] = useState<'overlay'|'solid'>('overlay')
   const navRef = useRef<HTMLElement | null>(null)
 
@@ -15,30 +15,25 @@ const Navbar: React.FC = () => {
     const el = navRef.current
     if (!el) return
     const rect = el.getBoundingClientRect()
-    // Omdat de navbar 'fixed' is, is rect.bottom de offset vanaf de viewport-top
     const bottom = Math.round(rect.bottom)
     const height = Math.round(rect.height)
     window.dispatchEvent(new CustomEvent('avs:nav-metrics', { detail: { bottom, height, mode } }))
   }
 
-  // Ontvang schakelsignalen van Collection
   useEffect(() => {
     const onMode = (e: Event) => {
       const ce = e as CustomEvent<{ mode: 'overlay'|'solid' }>
       setMode(ce.detail.mode)
     }
     const onRequestMetrics = () => measureAndBroadcast()
-
     window.addEventListener('avs:nav-mode', onMode)
     window.addEventListener('avs:request-nav-metrics', onRequestMetrics)
     return () => {
       window.removeEventListener('avs:nav-mode', onMode)
       window.removeEventListener('avs:request-nav-metrics', onRequestMetrics)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Re-measure bij resize/scroll/menu open/close of mode wijziging
   useEffect(() => {
     const handler = () => measureAndBroadcast()
     window.addEventListener('resize', handler)
@@ -48,19 +43,15 @@ const Navbar: React.FC = () => {
       window.removeEventListener('resize', handler)
       window.removeEventListener('scroll', handler)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    measureAndBroadcast()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, isMobileMenuOpen])
+  useEffect(() => { measureAndBroadcast() }, [mode, isMobileMenuOpen])
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleMouseEnter = () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); setIsDropdownOpen(true) }
   const handleMouseLeave = () => { timeoutRef.current = setTimeout(() => setIsDropdownOpen(false), 200) }
 
-  // ✨ Styles per modus (géén globale CSS nodig)
+  // 🔧 Styles per modus
   const navClass = useMemo(() => {
     const base = `
       fixed flex items-center justify-between z-50
@@ -68,15 +59,15 @@ const Navbar: React.FC = () => {
       h-20 px-6
     `
     if (mode === 'overlay') {
-      // gecentreerd, afgeronde onderkant, transparant
+      // ⬅️ niet doorzichtig, wel gecentreerd + afgeronde onderkant (desktop)
       return `
         ${base}
         top-10 left-1/2 -translate-x-1/2 w-3/4
-        bg-white/50 backdrop-blur-md shadow-lg rounded-b-xl
+        bg-white shadow-lg rounded-b-xl
         max-[1366px]:left-0 max-[1366px]:translate-x-0 max-[1366px]:w-full
       `
     }
-    // solid: volle breedte, geen radius, top-0
+    // solid: volle breedte, geen radius, top-0 (desktop)
     return `
       ${base}
       top-0 left-0 w-full translate-x-0
