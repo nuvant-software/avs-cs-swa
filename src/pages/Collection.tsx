@@ -408,6 +408,26 @@ const Collection: React.FC = () => {
   useEffect(() => setDoorsSelected(sel => sel.filter(v => doorsOptions.includes(v))), [doorsOptions])
   useEffect(() => setFuelSelected(sel => sel.filter(v => fuelOptions.includes(v))), [fuelOptions])
 
+  // Als een merk wordt gedeselecteerd: verwijder alle modellen van die merken
+  useEffect(() => {
+    setModelSelected((sel) =>
+      sel.filter((token) => {
+        const [b] = token.split(' — ')
+        return brandSelected.includes(b)
+      })
+    )
+  }, [brandSelected])
+
+  // Als (merk, model) niet meer bestaat in modelSelected: verwijder varianten daarvan
+  useEffect(() => {
+    setVariantSelected((sel) =>
+      sel.filter((token) => {
+        const [b, m] = token.split(' — ')
+        return modelSelected.includes(`${b} — ${m}`)
+      })
+    )
+  }, [modelSelected])
+
   // Eindfilter + sorteren
   const filteredAndSortedCars = useMemo(() => {
     const afterFacets = baseAfterBMVAndSliders.filter(c => {
