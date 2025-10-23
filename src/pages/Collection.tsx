@@ -5,6 +5,8 @@ import FilterRangeSlider from '../components/filters/FilterRangeSlider'
 import MultiSearchSelect from '../components/filters/MultiSearchSelect'
 import CarCard from '../components/CarCard'
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion'
+
+// ✅ React-Icons
 import { TbAlphabetLatin } from "react-icons/tb";
 import { MdSpeed, MdDateRange } from "react-icons/md";
 import { IoMdPricetags } from "react-icons/io";
@@ -444,7 +446,7 @@ const Collection: React.FC = () => {
   )
 
   // ——— Pagination ———
-  const PAGE_SIZE = 12
+  const PAGE_SIZE = 10
   const [page, setPage] = useState(1)
 
   const totalPages = useMemo(() => {
@@ -452,7 +454,6 @@ const Collection: React.FC = () => {
   }, [gridCardData.length])
 
   useEffect(() => {
-    // clamp current page als dataset wijzigt
     if (page > totalPages) setPage(totalPages)
     if (page < 1) setPage(1)
   }, [page, totalPages])
@@ -514,114 +515,78 @@ const Collection: React.FC = () => {
   if (loading) return <Loader />
   if (error) return <Loader />
 
-  // ———————————— Icons ————————————
-  const MileageIcon = () => (
-    <svg
-      viewBox="0 0 24 24"
-      className="w-4 h-4 inline-block align-[-1px]"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <path d="M12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-6-6V4z" />
-      <path d="M13 12.5 17 9l-1.4-1.4-4 3a2.5 2.5 0 1 0 1.4 1.9z" />
-    </svg>
-  )
-  const CalendarIcon = () => (
-    <svg
-      viewBox="0 0 24 24"
-      className="w-4 h-4 inline-block align-[-1px]"
-      xmlns="http://www.w3.org/2000/svg"
-      fill="currentColor"
-      aria-hidden="true"
-    >
-      <path d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2zm13 8H4v10h16V10z" />
-    </svg>
-  )
-
-  // ———————————— Sorteerknoppen (blauwe tekst, geen hover/geen achtergrond) ————————————
+  // ———————————— Sorteerknoppen (blauwe tekst, underline op hover/actief, geen achtergrond) ————————————
   const SortPill: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
     <button
       type="button"
       onClick={onClick}
       className={[
         'px-1.5 py-1 text-sm',
+        // harde reset
         'bg-transparent !bg-transparent border-0 !border-0 rounded-none',
         'shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0',
         'hover:bg-transparent active:bg-transparent',
-        'text-[#1C448E]',
-        active ? 'font-semibold' : 'font-normal',
+        // kleur + underline
+        'text-[#1C448E] border-b-2',
+        active ? 'font-semibold border-[#1C448E]' : 'font-normal border-transparent hover:border-[#1C448E]',
+        'inline-flex items-center gap-1'
       ].join(' ')}
     >
       {children}
     </button>
   )
 
-  // Sorteercontrols (in witte balk)
+  // Sorteercontrols (in witte balk; teller links, acties rechts)
   const renderSortControls = () => (
-    <div
-      className={[
-        "flex items-center justify-between w-full",
-        "[&_button]:bg-transparent [&_button]:!bg-transparent",
-        "[&_button]:border-0 [&_button]:!border-0",
-        "[&_button]:rounded-none",
-        "[&_button]:shadow-none",
-        "[&_button]:ring-0 [&_button]:focus:ring-0 [&_button]:outline-none",
-        "[&_button:hover]:bg-transparent [&_button:active]:bg-transparent",
-      ].join(" ")}
-    >
+    <div className="flex items-center justify-between w-full">
       {/* Teller links */}
       <span className="text-sm text-gray-700">
         {gridCardData.length === 0
-          ? "0 resultaten"
+          ? '0 resultaten'
           : `${pageStartIndex + 1}–${pageEndIndex} van ${gridCardData.length} resultaten`}
       </span>
 
       {/* Sorteeropties rechts */}
       <div className="flex items-center gap-4 justify-end">
-        <SortPill
-          active={sortBy === "brandModelVariant"}
-          onClick={() => setSortBy("brandModelVariant")}
-        >
+        <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>
+          <TbAlphabetLatin className="text-base" />
           A–Z
         </SortPill>
-        <SortPill active={sortBy === "price"} onClick={() => setSortBy("price")}>
+
+        <SortPill active={sortBy === 'price'} onClick={() => setSortBy('price')}>
+          <IoMdPricetags className="text-base" />
           Prijs
         </SortPill>
-        <SortPill active={sortBy === "km"} onClick={() => setSortBy("km")}>
-          <span className="inline-flex items-center gap-1">
-            <MileageIcon /> km
-          </span>
-        </SortPill>
-        <SortPill active={sortBy === "year"} onClick={() => setSortBy("year")}>
-          <span className="inline-flex items-center gap-1">
-            <CalendarIcon /> jaar
-          </span>
+
+        <SortPill active={sortBy === 'km'} onClick={() => setSortBy('km')}>
+          <MdSpeed className="text-base" />
+          km
         </SortPill>
 
-        {/* Pijlknop voor sorteer richting */}
+        <SortPill active={sortBy === 'year'} onClick={() => setSortBy('year')}>
+          <MdDateRange className="text-base" />
+          Jaar
+        </SortPill>
+
+        {/* Richtingspijl */}
         <button
           type="button"
-          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
           aria-label="Draai sorteer volgorde"
           title="Draai sorteer volgorde"
           className={[
-            "p-0 m-0",
-            "bg-transparent border-0 rounded-none",
-            "text-[#1C448E] leading-none border-b-2 border-transparent hover:border-[#1C448E]",
-            "transition-transform duration-200",
-          ].join(" ")}
+            'p-0 m-0 text-[#1C448E]',
+            'bg-transparent border-0 rounded-none',
+            'border-b-2 border-transparent hover:border-[#1C448E]',
+            'transition-transform duration-200'
+          ].join(' ')}
         >
-          <svg
-            viewBox="0 0 24 24"
+          <FaArrowUp
             className={[
-              "w-5 h-5 inline-block",
-              sortDir === "desc" ? "rotate-180" : "rotate-0",
-            ].join(" ")}
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="M12 5 L5 15 H19 Z" fill="currentColor" />
-          </svg>
+              'text-base inline-block',
+              sortDir === 'desc' ? 'rotate-180' : 'rotate-0'
+            ].join(' ')}
+          />
         </button>
       </div>
     </div>
@@ -629,8 +594,6 @@ const Collection: React.FC = () => {
 
   const renderFilters = () => (
     <>
-      {/* geen "Filters" titel */}
-
       <div className="mb-4">
         <MultiSearchSelect label="Merk" options={brandOptions} selected={brandSelected} onChange={setBrandSelected} />
       </div>
@@ -651,7 +614,6 @@ const Collection: React.FC = () => {
         <FilterRangeSlider label="Kilometerstand" min={kmBounds[0]} max={kmBounds[1]} value={kmRange} onChange={setKmRange} />
       </div>
 
-      {/* PK als slider */}
       <div className="mb-6">
         <FilterRangeSlider label="PK" min={pkBounds[0]} max={pkBounds[1]} value={pkRange} onChange={setPkRange} />
       </div>
@@ -703,10 +665,7 @@ const Collection: React.FC = () => {
           <section className="min-w-0">
             {/* Mobiele filter- en sort-balk (sticky) */}
             {!mobileFiltersOpen && (
-              <div
-                className="md:hidden sticky z-30 bg-white"
-                style={{ top: `${navOffset}px` }}
-              >
+              <div className="md:hidden sticky z-30 bg-white" style={{ top: `${navOffset}px` }}>
                 <div className="flex items-center justify-between px-4 py-2">
                   <button
                     type="button"
@@ -719,13 +678,12 @@ const Collection: React.FC = () => {
                     </svg>
                     Filters
                   </button>
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm text-gray-700">
+                  <div className="flex items-center gap-4 w-full">
+                    <div className="text-sm text-gray-700 ml-auto">
                       {gridCardData.length === 0
                         ? '0 resultaten'
                         : `${pageStartIndex + 1}–${pageEndIndex} van ${gridCardData.length} resultaten`}
                     </div>
-                    <div className="flex items-center">{renderSortControls()}</div>
                   </div>
                 </div>
               </div>
@@ -773,12 +731,10 @@ const Collection: React.FC = () => {
                   </LayoutGroup>
 
                   {/* Pagination controls */}
-                  {/* Pagination controls */}
                   {totalPages > 1 && (
                     <div
                       className={[
                         "mt-6 flex items-center justify-center gap-2 select-none",
-                        // 🔒 harde reset tegen globale button styles
                         "[&_button]:bg-transparent [&_button]:!bg-transparent",
                         "[&_button]:border-0 [&_button]:!border-0",
                         "[&_button]:rounded-none",
@@ -795,9 +751,9 @@ const Collection: React.FC = () => {
                         className={[
                           "px-2 py-1 text-sm",
                           "text-[#1C448E]",
-                          "bg-transparent",                 // expliciet
-                          "border-b-2 border-transparent",  // default: geen underline
-                          "hover:border-[#1C448E]",         // hover: blauwe underline
+                          "bg-transparent",
+                          "border-b-2 border-transparent",
+                          "hover:border-[#1C448E]",
                           page === 1 ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
                         ].join(" ")}
                         aria-label="Vorige pagina"
@@ -805,7 +761,7 @@ const Collection: React.FC = () => {
                         Vorige
                       </button>
 
-                      {/* Nummer knoppen — transparant, underline op hover, blauw + underline als actief */}
+                      {/* Nummers */}
                       {(() => {
                         const items: (number | "…")[] = []
                         const add = (n: number | "…") => items.push(n)
@@ -832,11 +788,11 @@ const Collection: React.FC = () => {
                                   className={[
                                     "px-1 py-0.5 text-sm",
                                     "text-[#1C448E]",
-                                    "bg-transparent",                         // expliciet
-                                    "border-b-2",                              // underline-lijn aanwezig
+                                    "bg-transparent",
+                                    "border-b-2",
                                     it === page
-                                      ? "font-semibold border-[#1C448E]"       // actief: blauwe lijn + bold
-                                      : "font-normal border-transparent hover:border-[#1C448E]", // hover: blauwe lijn
+                                      ? "font-semibold border-[#1C448E]"
+                                      : "font-normal border-transparent hover:border-[#1C448E]",
                                   ].join(" ")}
                                   aria-current={it === page ? "page" : undefined}
                                   aria-label={`Ga naar pagina ${it}`}
@@ -857,9 +813,9 @@ const Collection: React.FC = () => {
                         className={[
                           "px-2 py-1 text-sm",
                           "text-[#1C448E]",
-                          "bg-transparent",                 // expliciet
-                          "border-b-2 border-transparent",  // default: geen underline
-                          "hover:border-[#1C448E]",         // hover: blauwe underline
+                          "bg-transparent",
+                          "border-b-2 border-transparent",
+                          "hover:border-[#1C448E]",
                           page === totalPages ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
                         ].join(" ")}
                         aria-label="Volgende pagina"
