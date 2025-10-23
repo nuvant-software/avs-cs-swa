@@ -108,10 +108,9 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
     listBlobs();
   }, [car.id, imageFolder]);
 
-  // ✅ Als de afbeeldingen wijzigen: reset hover/preview naar begin
+  // ✅ Als de afbeeldingen wijzigen: reset hover naar 0
   useEffect(() => {
     setHoverZone(null);
-    setLastPreviewZone(0);
   }, [allImages]);
 
   const totalPhotos = allImages.length;
@@ -132,7 +131,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
   );
 
   const getZoneContent = () => {
-    // ✅ Altijd terugvallen op 0 (eerste foto) buiten hover
+    // ✅ Altijd terug naar eerste foto buiten hover
     const zone = hoverZone ?? 0;
 
     if (zone === 2) {
@@ -267,7 +266,6 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
           // ✅ Bij verlaten van de afbeelding: reset naar beginfoto
           onMouseLeave={() => {
             setHoverZone(null);
-            setLastPreviewZone(0);
           }}
         >
           {getZoneContent()}
@@ -279,7 +277,6 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
                 className="w-1/3 h-full"
                 onMouseEnter={() => {
                   setHoverZone(zone);
-                  setLastPreviewZone(zone); // mag blijven, want onMouseLeave resetten we naar 0
                 }}
                 onClick={() => {
                   const idx = zone < 2 ? zone : 2;
