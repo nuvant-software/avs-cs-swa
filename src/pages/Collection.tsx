@@ -550,7 +550,6 @@ const Collection: React.FC = () => {
       <div className="flex items-center gap-4 justify-end">
         <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>
           <TbAlphabetLatin className="text-base" />
-          A–Z
         </SortPill>
 
         <SortPill active={sortBy === 'price'} onClick={() => setSortBy('price')}>
