@@ -549,21 +549,21 @@ const Collection: React.FC = () => {
       {/* Sorteeropties rechts */}
       <div className="flex items-center gap-4 justify-end">
         <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>
-          <TbAlphabetLatin className="text-base" />
+          <TbAlphabetLatin size={22} className="text-base" />
         </SortPill>
 
         <SortPill active={sortBy === 'price'} onClick={() => setSortBy('price')}>
-          <IoMdPricetags className="text-base" />
+          <IoMdPricetags size={22} className="text-base" />
           Prijs
         </SortPill>
 
         <SortPill active={sortBy === 'km'} onClick={() => setSortBy('km')}>
-          <MdSpeed className="text-base" />
+          <MdSpeed size={22} className="text-base" />
           km
         </SortPill>
 
         <SortPill active={sortBy === 'year'} onClick={() => setSortBy('year')}>
-          <MdDateRange className="text-base" />
+          <MdDateRange size={22} className="text-base" />
           Jaar
         </SortPill>
 
