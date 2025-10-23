@@ -721,15 +721,30 @@ const Collection: React.FC = () => {
                   Geen resultaten met de huidige filters.
                 </div>
               ) : (
-                <div className="grid gap-6 justify-items-start [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] sm:[grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
-                  {gridEntries.map(entry => (
-                    <AnimatedGridCard
-                      key={entry.id}
-                      entry={entry}
-                      prefersReducedMotion={prefersReducedMotion}
-                      onExitComplete={handleCardExitComplete}
-                    />
-                  ))}
+                <div className="grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] sm:[grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
+                  {filteredCars.map((c, idx) => {
+                    const mappedCar = {
+                      id: (c as any).id || (c as any)._id || `${c.brand}-${c.model}-${idx}`,
+                      brand: c.brand,
+                      model: c.model,
+                      variant: c.variant,
+                      fuel: (c as any).fuel || (c as any).brandstof || 'Onbekend',
+                      mileage: typeof c.km === 'number' ? c.km : (c as any).mileage || 0,
+                      transmission: c.transmission || (c as any).gearbox || 'Onbekend',
+                      price: c.price,
+                      year: (c as any).year || (c as any).bouwjaar || 0,
+                      engine_size: (c as any).engine_size || (c as any).motorinhoud || '',
+                      pk: typeof c.pk === 'number' ? c.pk : (c as any).pk || 0,
+                    }
+                    return (
+                      <CarCard
+                        key={mappedCar.id}
+                        car={mappedCar}
+                        layout="grid"
+                        imageFolder="car_001"
+                        animationDelay={Math.min(idx, 8) * 80}
+                      />
+                    )})}
                 </div>
               )}
             </div>

@@ -25,14 +25,14 @@ type Props = {
   animationDelay?: number;
 };
 
-const prefersReducedMotionQuery = () => {
-  if (typeof window === "undefined") {
-    return false;
-  }
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-};
+  const prefersReducedMotionQuery = () => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  };
 
-const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animationDelay }) => {
+  const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animationDelay }) => {
   const [hoverZone, setHoverZone] = useState<number | null>(null);
   const [lastPreviewZone, setLastPreviewZone] = useState<number>(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -254,7 +254,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
 
   // ─── Grid Layout (standaard) ─────────────────────────────────
   const cardClassName = [
-    "w-full max-w-[340px] self-start flex flex-col transition duration-[420ms] ease-out hover:shadow-lg",
+    "w-full h-full flex flex-col transition duration-[420ms] ease-out hover:shadow-lg",
     "transform-gpu motion-reduce:transform-none motion-reduce:opacity-100 motion-reduce:translate-y-0",
     "motion-reduce:duration-0 motion-reduce:transition-none",
     cardVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
