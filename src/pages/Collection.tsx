@@ -34,22 +34,19 @@ type IncomingFilters =
     }
   | undefined
 
-const NAV_HEIGHT_FALLBACK = 64 // px
+const NAV_HEIGHT_FALLBACK = 80
 
 const Collection: React.FC = () => {
   const location = useLocation()
   const navState = (location.state as { filters?: IncomingFilters; includeItems?: boolean } | undefined) || {}
   const initialFilters = navState.filters || {}
 
-  // Data
   const [cars, setCars] = useState<CarOverview[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // UI
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
-  // Filters
   const [brandSelected, setBrandSelected] = useState<string[]>(
     ('brands' in initialFilters && Array.isArray(initialFilters.brands))
       ? (initialFilters.brands as string[])
@@ -91,7 +88,6 @@ const Collection: React.FC = () => {
   const [transSelected, setTransSelected] = useState<string[]>([])
   const [doorsSelected, setDoorsSelected] = useState<string[]>([])
 
-  // Helpers
   function parseModelTokens(tokens: string[]) {
     const map: Record<string, Set<string>> = {}
     tokens.forEach(t => {
@@ -114,7 +110,6 @@ const Collection: React.FC = () => {
     return map
   }
 
-  // Fetch
   useEffect(() => {
     setLoading(true)
     fetch('/api/filter_cars', {
@@ -160,19 +155,16 @@ const Collection: React.FC = () => {
       .finally(() => setLoading(false))
   }, [])
 
-  // Derived facets
   const brandOptions = useMemo(
     () => Array.from(new Set(cars.map(c => c.brand))).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' })),
     [cars]
   )
-
   const modelOptions = useMemo(() => {
     const base = brandSelected.length ? cars.filter(c => brandSelected.includes(c.brand)) : cars
     const uniq = new Set<string>()
     base.forEach(c => uniq.add(`${c.brand} — ${c.model}`))
     return Array.from(uniq).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [cars, brandSelected])
-
   const variantOptions = useMemo(() => {
     if (!modelSelected.length) return []
     const chosenBM = new Set(modelSelected)
@@ -207,19 +199,16 @@ const Collection: React.FC = () => {
     baseAfterBMVAndSliders.forEach(c => { if (typeof c.pk === 'number' && !Number.isNaN(c.pk)) set.add(String(c.pk)) })
     return Array.from(set).sort((a, b) => Number(a) - Number(b))
   }, [baseAfterBMVAndSliders])
-
   const bodyOptions = useMemo(() => {
     const set = new Set<string>()
     baseAfterBMVAndSliders.forEach(c => { if (c.body) set.add(String(c.body)) })
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [baseAfterBMVAndSliders])
-
   const transOptions = useMemo(() => {
     const set = new Set<string>()
     baseAfterBMVAndSliders.forEach(c => { if (c.transmission) set.add(String(c.transmission)) })
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [baseAfterBMVAndSliders])
-
   const doorsOptions = useMemo(() => {
     const set = new Set<string>()
     baseAfterBMVAndSliders.forEach(c => { if (typeof c.doors === 'number' && !Number.isNaN(c.doors)) set.add(String(c.doors)) })
@@ -246,7 +235,6 @@ const Collection: React.FC = () => {
   const [navBottom, setNavBottom] = useState<number>(NAV_HEIGHT_FALLBACK)
   const [navSolid, setNavSolid] = useState<boolean>(false)
 
-  // luister naar metingen van Navbar + vraag initiale meting op
   useEffect(() => {
     const onMetrics = (e: Event) => {
       const ce = e as CustomEvent<{ bottom: number; height: number; mode: 'overlay' | 'solid' }>
@@ -257,24 +245,18 @@ const Collection: React.FC = () => {
     return () => window.removeEventListener('avs:nav-metrics', onMetrics)
   }, [])
 
-  // wissel navbar-mode precies wanneer de content onder de onderrand van de navbar schuift
   useEffect(() => {
     const el = heroEndRef.current
     if (!el) return
-
+    // zodra de top van de content onder de onderrand van de navbar komt → solid
     const obs = new IntersectionObserver(
       ([entry]) => {
         const solid = !entry.isIntersecting
         setNavSolid(solid)
         window.dispatchEvent(new CustomEvent('avs:nav-mode', { detail: { mode: solid ? 'solid' : 'overlay' } }))
       },
-      {
-        threshold: 0,
-        root: null,
-        rootMargin: `-${Math.max(0, navBottom)}px 0px 0px 0px`,
-      }
+      { threshold: 0, root: null, rootMargin: `-${Math.max(0, navBottom)}px 0px 0px 0px` }
     )
-
     obs.observe(el)
     return () => obs.disconnect()
   }, [navBottom])
@@ -282,52 +264,24 @@ const Collection: React.FC = () => {
   if (loading) return <Loader />
   if (error) return <Loader />
 
-  // UI: filters render
   const renderFilters = () => (
     <>
       <h2 className="text-lg font-semibold mb-3">Filters</h2>
-
-      <div className="mb-4">
-        <MultiSearchSelect label="Merk" options={brandOptions} selected={brandSelected} onChange={setBrandSelected} />
-      </div>
-
-      <div className="mb-4">
-        <MultiSearchSelect label="Model" options={modelOptions} selected={modelSelected} onChange={setModelSelected} disabled={!brandSelected.length} />
-      </div>
-
-      <div className="mb-4">
-        <MultiSearchSelect label="Variant" options={variantOptions} selected={variantSelected} onChange={setVariantSelected} disabled={!modelSelected.length} />
-      </div>
-
-      <div className="mb-4">
-        <FilterRangeSlider label="Prijs" min={priceBounds[0]} max={priceBounds[1]} value={priceRange} onChange={setPriceRange} />
-      </div>
-
-      <div className="mb-6">
-        <FilterRangeSlider label="Kilometerstand" min={kmBounds[0]} max={kmBounds[1]} value={kmRange} onChange={setKmRange} />
-      </div>
-
-      <div className="mb-4">
-        <MultiSearchSelect label="PK" options={pkOptions} selected={pkSelected} onChange={setPkSelected} />
-      </div>
-
-      <div className="mb-4">
-        <MultiSearchSelect label="Carrosserie" options={bodyOptions} selected={bodySelected} onChange={setBodySelected} />
-      </div>
-
-      <div className="mb-4">
-        <MultiSearchSelect label="Transmissie" options={transOptions} selected={transSelected} onChange={setTransSelected} />
-      </div>
-
-      <div>
-        <MultiSearchSelect label="Aantal deuren" options={doorsOptions} selected={doorsSelected} onChange={setDoorsSelected} />
-      </div>
+      <div className="mb-4"><MultiSearchSelect label="Merk" options={brandOptions} selected={brandSelected} onChange={setBrandSelected} /></div>
+      <div className="mb-4"><MultiSearchSelect label="Model" options={modelOptions} selected={modelSelected} onChange={setModelSelected} disabled={!brandSelected.length} /></div>
+      <div className="mb-4"><MultiSearchSelect label="Variant" options={variantOptions} selected={variantSelected} onChange={setVariantSelected} disabled={!modelSelected.length} /></div>
+      <div className="mb-4"><FilterRangeSlider label="Prijs" min={priceBounds[0]} max={priceBounds[1]} value={priceRange} onChange={setPriceRange} /></div>
+      <div className="mb-6"><FilterRangeSlider label="Kilometerstand" min={kmBounds[0]} max={kmBounds[1]} value={kmRange} onChange={setKmRange} /></div>
+      <div className="mb-4"><MultiSearchSelect label="PK" options={pkOptions} selected={pkSelected} onChange={setPkSelected} /></div>
+      <div className="mb-4"><MultiSearchSelect label="Carrosserie" options={bodyOptions} selected={bodySelected} onChange={setBodySelected} /></div>
+      <div className="mb-4"><MultiSearchSelect label="Transmissie" options={transOptions} selected={transSelected} onChange={setTransSelected} /></div>
+      <div><MultiSearchSelect label="Aantal deuren" options={doorsOptions} selected={doorsSelected} onChange={setDoorsSelected} /></div>
     </>
   )
 
   return (
     <div className="w-full bg-white">
-      {/* HERO: loopt onder overlay-navbar door */}
+      {/* HERO onder de overlay navbar */}
       <section className="relative">
         <div className="h-40 md:h-56 lg:h-64 w-full bg-center bg-cover" style={{ backgroundImage: `url('/images/collection-hero.jpg')` }} />
         <div className="absolute inset-0 bg-black/25" />
@@ -338,27 +292,22 @@ const Collection: React.FC = () => {
         </div>
       </section>
 
-      {/* Sentinel: begin van content */}
+      {/* Sentinel voor nav-omschakeling */}
       <div ref={heroEndRef} aria-hidden className="h-0" />
 
-      {/* CONTENT */}
+      {/* CONTENT; wanneer nav solid is, duwen we de content omlaag met paddingTop */}
       <div className="w-full max-w-screen-2xl mx-auto" style={{ paddingTop: navSolid ? `${navBottom}px` : 0 }}>
         <div className="grid grid-cols-1 md:grid-cols-[33%_67%] lg:grid-cols-[minmax(260px,360px)_1fr]">
-          {/* Sidebar (md+) */}
           <aside className="hidden md:block border-r border-gray-200">
             <div className="sticky p-4 bg-white" style={{ top: navSolid ? `${navBottom}px` : 0 }}>
               {renderFilters()}
             </div>
           </aside>
 
-          {/* Resultaten */}
           <section className="min-w-0">
-            {/* Mobiel: sticky filter-knop exact onder navbar */}
+            {/* Mobiele filterknop onder navbar (blijft zoals eerder) */}
             {!mobileFiltersOpen && (
-              <div
-                className="md:hidden sticky z-30 bg-white/95 backdrop-blur-sm border-b"
-                style={{ top: `${navBottom}px` }}
-              >
+              <div className="md:hidden sticky z-30 bg-white/95 backdrop-blur-sm border-b" style={{ top: `${navBottom}px` }}>
                 <div className="flex items-center justify-between px-4 py-2">
                   <button
                     type="button"
@@ -376,12 +325,10 @@ const Collection: React.FC = () => {
               </div>
             )}
 
-            {/* Teller (md+) */}
             <div className="hidden md:flex items-center justify-end px-6 lg:px-8 mb-4 md:mb-6">
               <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
             </div>
 
-            {/* Cards grid – schaalt op grote schermen */}
             <div className="px-4 md:px-6 lg:px-8 pb-8">
               {filteredCars.length === 0 ? (
                 <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
@@ -412,14 +359,9 @@ const Collection: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobiele fullscreen filters (start onder navbar) */}
+      {/* Mobiele fullscreen filters */}
       {mobileFiltersOpen && (
-        <div
-          className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-white flex flex-col"
-          role="dialog"
-          aria-modal="true"
-          style={{ top: `${navBottom}px` }}
-        >
+        <div className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-white flex flex-col" role="dialog" aria-modal="true" style={{ top: `${navBottom}px` }}>
           <div className="h-12 flex items-center justify-between px-4 border-b">
             <h2 className="text-base font-semibold">Filters</h2>
             <button

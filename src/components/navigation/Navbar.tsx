@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import NavLink from './NavLink'
 import { Bars3Icon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline'
 
+const NAV_HEIGHT = 80 // h-20
+
 const Navbar: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -11,7 +13,7 @@ const Navbar: React.FC = () => {
   const [mode, setMode] = useState<'overlay'|'solid'>('overlay')
   const navRef = useRef<HTMLElement | null>(null)
 
-  // breakpoint (≲1366px) → altijd full width
+  // smal scherm? (mobiel/tablet breakpoint dat jij al gebruikte)
   const [isNarrow, setIsNarrow] = useState<boolean>(false)
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 1366px)')
@@ -22,12 +24,8 @@ const Navbar: React.FC = () => {
   }, [])
 
   const measureAndBroadcast = () => {
-    const el = navRef.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const bottom = Math.round(rect.bottom)
-    const height = Math.round(rect.height)
-    window.dispatchEvent(new CustomEvent('avs:nav-metrics', { detail: { bottom, height, mode } }))
+    const rect = { bottom: NAV_HEIGHT, height: NAV_HEIGHT } // constante hoogte
+    window.dispatchEvent(new CustomEvent('avs:nav-metrics', { detail: { ...rect, mode } }))
   }
 
   useEffect(() => {
@@ -48,7 +46,7 @@ const Navbar: React.FC = () => {
     const handler = () => measureAndBroadcast()
     window.addEventListener('resize', handler)
     window.addEventListener('scroll', handler)
-    handler() // initial
+    handler()
     return () => {
       window.removeEventListener('resize', handler)
       window.removeEventListener('scroll', handler)
@@ -61,98 +59,131 @@ const Navbar: React.FC = () => {
   const handleMouseEnter = () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); setIsDropdownOpen(true) }
   const handleMouseLeave = () => { timeoutRef.current = setTimeout(() => setIsDropdownOpen(false), 200) }
 
-  // 🔧 Geanimeerde stijl (width/left/transform/borderRadius/top)
-  const navStyle = useMemo<React.CSSProperties>(() => {
-    const overlay = {
-      top: '2.5rem',                               // top-10
-      left: isNarrow ? '0' : '50%',
-      transform: isNarrow ? 'none' : 'translateX(-50%)',
-      width: isNarrow ? '100%' : '75%',            // w-3/4 → animatie naar 100%
-      borderBottomLeftRadius: '0.75rem',           // rounded-b-xl
-      borderBottomRightRadius: '0.75rem',
-    } as React.CSSProperties
+  // ─────────────────────────────────────────────────────────────
+  // Lagen:
+  // - wrapper: fixed, full-width (voor klikgebied)
+  // - bgBar: absolute witte balk die van 75% → 100% animerend gaat
+  // - row:   absolute contentrij (logo/links) die 75% blijft (desktop)
+  // ─────────────────────────────────────────────────────────────
 
-    const solid = {
-      top: '0px',
-      left: '0px',
+  const topOverlay = '2.5rem' // top-10
+  const topSolid = '0px'
+
+  // WITTE ACHTERGRONDBALK (alleen deze schuift uit)
+  const bgBarStyle = useMemo<React.CSSProperties>(() => {
+    const overlay: React.CSSProperties = {
+      top: topOverlay,
+      left: isNarrow ? 0 : '50%',
+      transform: isNarrow ? 'none' : 'translateX(-50%)',
+      width: isNarrow ? '100%' : '75vw',
+      maxWidth: isNarrow ? '100%' : '1200px',
+      height: NAV_HEIGHT,
+      borderBottomLeftRadius: '0.75rem',
+      borderBottomRightRadius: '0.75rem',
+      boxShadow: '0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1)',
+    }
+    const solid: React.CSSProperties = {
+      top: topSolid,
+      left: 0,
       transform: 'none',
       width: '100%',
+      height: NAV_HEIGHT,
       borderBottomLeftRadius: '0px',
       borderBottomRightRadius: '0px',
-    } as React.CSSProperties
-
-    const base: React.CSSProperties = {
-      position: 'fixed',
-      zIndex: 50,
-      transition: 'top 300ms ease, left 300ms ease, transform 300ms ease, width 300ms ease, border-radius 300ms ease',
+      boxShadow: 'none',
     }
+    return {
+      position: 'absolute',
+      backgroundColor: '#fff',
+      zIndex: 40, // onder content-row (z-50) maar boven pagina
+      transition: 'top 300ms ease, left 300ms ease, transform 300ms ease, width 300ms ease, border-radius 300ms ease, box-shadow 300ms ease',
+      ...(mode === 'overlay' ? overlay : solid),
+    }
+  }, [mode, isNarrow])
 
-    return { ...base, ...(mode === 'overlay' ? overlay : solid) }
+  // CONTENT-RIJ (blijft 75% gecentreerd op desktop; 100% op smalle viewports)
+  const rowStyle = useMemo<React.CSSProperties>(() => {
+    return {
+      position: 'absolute',
+      top: mode === 'overlay' ? topOverlay : topSolid,
+      left: isNarrow ? 0 : '50%',
+      transform: isNarrow ? 'none' : 'translateX(-50%)',
+      width: isNarrow ? '100%' : '75vw',
+      maxWidth: isNarrow ? '100%' : '1200px',
+      height: NAV_HEIGHT,
+      zIndex: 50,
+      transition: 'top 300ms ease',
+      paddingLeft: '1.5rem',
+      paddingRight: '1.5rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    }
   }, [mode, isNarrow])
 
   return (
     <>
-      <nav
-        ref={navRef}
-        style={navStyle}
-        className={`
-          flex items-center justify-between h-20 px-6 bg-white
-          ${mode === 'overlay' ? 'shadow-lg' : 'shadow-md'}
-        `}
-      >
-        {/* Logo */}
-        <NavLink href="/" className="p-0">
-          <img src="/assets/avs-icon.svg" alt="Logo" className="h-10" />
-        </NavLink>
+      {/* Wrapper */}
+      <nav ref={navRef} className="fixed inset-x-0 top-0 z-50" style={{ height: 0 }}>
+        {/* Achtergrondbalk die uitschuift */}
+        <div style={bgBarStyle} />
 
-        {/* Desktop links */}
-        <ul className="flex gap-8 max-[1366px]:hidden">
-          <li><NavLink href="/">Home</NavLink></li>
-          <li>
-            <NavLink href="/collection" state={{ filters: {}, includeItems: true }}>
-              Collectie
-            </NavLink>
-          </li>
-          <li className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-            <NavLink href="#" chevron isOpen={isDropdownOpen}>
-              Diensten
-            </NavLink>
-            <ul
-              className={`
-                absolute left-0 w-56 bg-white shadow-lg mt-7 py-4 space-y-2
-                rounded-b-lg transition-all duration-500 ease-out
-                ${isDropdownOpen ? 'opacity-100 scale-y-100 translate-y-0' : 'opacity-0 scale-y-75 -translate-y-2'}
-              `}
-              style={{ transformOrigin: 'top' }}
-            >
-              <li className="pl-4"><NavLink href="#">Autoverkoop</NavLink></li>
-              <li className="pl-4"><NavLink href="#">Auto zoeken</NavLink></li>
-            </ul>
-          </li>
-          <li><NavLink href="#">Over Ons</NavLink></li>
-          <li><NavLink href="#">Contact</NavLink></li>
-        </ul>
-
-        {/* Desktop login */}
-        <div className="block max-[1366px]:hidden">
-          <NavLink href="#" className="inline-flex items-center gap-2">
-            <UserIcon className="w-5 h-5 text-[#0A0A0A]" /> Inloggen
+        {/* Contentrij (logo/links/knoppen) */}
+        <div style={rowStyle}>
+          {/* Logo */}
+          <NavLink href="/" className="p-0">
+            <img src="/assets/avs-icon.svg" alt="Logo" className="h-10" />
           </NavLink>
-        </div>
 
-        {/* Mobile menu button */}
-        <button
-          type="button"
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="hidden max-[1366px]:block bg-transparent border-none z-50"
-        >
-          <Bars3Icon
-            className={`
-              w-8 h-8 transition-transform duration-300 hover:scale-110
-              ${isMobileMenuOpen ? 'text-[#27408B]' : 'text-[#0A0A0A]'}
-            `}
-          />
-        </button>
+          {/* Desktop links */}
+          <ul className="flex gap-8 max-[1366px]:hidden">
+            <li><NavLink href="/">Home</NavLink></li>
+            <li>
+              <NavLink href="/collection" state={{ filters: {}, includeItems: true }}>
+                Collectie
+              </NavLink>
+            </li>
+            <li className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+              <NavLink href="#" chevron isOpen={isDropdownOpen}>
+                Diensten
+              </NavLink>
+              <ul
+                className={`
+                  absolute left-0 w-56 bg-white shadow-lg mt-7 py-4 space-y-2
+                  rounded-b-lg transition-all duration-500 ease-out
+                  ${isDropdownOpen ? 'opacity-100 scale-y-100 translate-y-0' : 'opacity-0 scale-y-75 -translate-y-2'}
+                `}
+                style={{ transformOrigin: 'top' }}
+              >
+                <li className="pl-4"><NavLink href="#">Autoverkoop</NavLink></li>
+                <li className="pl-4"><NavLink href="#">Auto zoeken</NavLink></li>
+              </ul>
+            </li>
+            <li><NavLink href="#">Over Ons</NavLink></li>
+            <li><NavLink href="#">Contact</NavLink></li>
+          </ul>
+
+          {/* Desktop login */}
+          <div className="hidden max-[1366px]:hidden md:block">
+            <NavLink href="#" className="inline-flex items-center gap-2">
+              <UserIcon className="w-5 h-5 text-[#0A0A0A]" /> Inloggen
+            </NavLink>
+          </div>
+
+          {/* Mobile menu button */}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="hidden max-[1366px]:block bg-transparent border-none"
+          >
+            <Bars3Icon
+              className={`
+                w-8 h-8 transition-transform duration-300 hover:scale-110
+                ${isMobileMenuOpen ? 'text-[#27408B]' : 'text-[#0A0A0A]'}
+              `}
+            />
+          </button>
+        </div>
       </nav>
 
       {/* Mobile sidebar */}
