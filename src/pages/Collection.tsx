@@ -22,7 +22,7 @@ interface CarOverview {
   engine_size?: string
   imageFolder?: string
   sourceId?: string
-  // createdAt?: string | number // als je later op datum wilt sorteren
+  // createdAt?: string | number
 }
 
 type StructuredNavFilters = {
@@ -62,11 +62,10 @@ type GridCardData = {
 
 const FALLBACK_IMAGE_FOLDER = 'car_001'
 
-// ⚠️ Belangrijk: stabiele key zonder index
+// Stabiele key zonder index
 const buildStableId = (car: CarOverview): string => {
   const raw = [car.id, car.sourceId].find(v => typeof v === 'string' && v.trim().length)
   if (raw) return raw!.trim()
-  // Fallback: combineer stabiele, inhoudelijke velden (GEEN index)
   return [
     (car.brand || '').trim().toLowerCase(),
     (car.model || '').trim().toLowerCase(),
@@ -128,7 +127,6 @@ const pickNumber = (record: Record<string, unknown>, keys: string[]): number | u
 const ensureStringArray = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : []
 
-// ───────────────────────────────────────────────────────────────────────────────
 // Sorteren
 type SortBy = 'brandModelVariant' | 'price' | 'km' | 'year'
 type SortDir = 'asc' | 'desc'
@@ -136,6 +134,12 @@ type SortDir = 'asc' | 'desc'
 const composeBMV = (c: CarOverview) =>
   `${(c.brand || '').toLowerCase()}|${(c.model || '').toLowerCase()}|${(c.variant || '').toLowerCase()}`
 const cmpNum = (a: number, b: number) => (a < b ? -1 : a > b ? 1 : 0)
+
+// Altijd-beschikbare keuzes
+const BASE_TRANSMISSIONS = ['Automaat', 'Handgeschakeld']
+const BASE_BODIES = ['Hatchback','Sedan','Stationwagon','SUV','MPV','Coupé','Cabrio','Pick-up','Bestel']
+const BASE_FUELS = ['Benzine','Diesel','Elektrisch','Hybride','LPG']
+const BASE_DOORS = ['2','3','4','5']
 
 const Collection: React.FC = () => {
   const location = useLocation()
@@ -204,10 +208,16 @@ const Collection: React.FC = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 0])
   const [kmBounds, setKmBounds] = useState<[number, number]>([0, 0])
   const [kmRange, setKmRange] = useState<[number, number]>([0, 0])
-  const [pkSelected, setPkSelected] = useState<string[]>([])
+
+  // PK slider
+  const [pkBounds, setPkBounds] = useState<[number, number]>([0, 0])
+  const [pkRange, setPkRange] = useState<[number, number]>([0, 0])
+
+  // Multi-select filters
   const [bodySelected, setBodySelected] = useState<string[]>([])
   const [transSelected, setTransSelected] = useState<string[]>([])
   const [doorsSelected, setDoorsSelected] = useState<string[]>([])
+  const [fuelSelected, setFuelSelected] = useState<string[]>([])
 
   // Fetch
   useEffect(() => {
@@ -280,6 +290,12 @@ const Collection: React.FC = () => {
           const kmMax = Math.max(...kms, 0)
           setKmBounds([0, kmMax])
           setKmRange([0, kmMax])
+
+          const pks = valid.map(c => (typeof c.pk === 'number' ? c.pk : 0))
+          const pkMin = Math.min(...pks, 0)
+          const pkMax = Math.max(...pks, 0)
+          setPkBounds([pkMin, pkMax])
+          setPkRange([pkMin, pkMax])
         }
       })
       .catch(err => setError(err.message))
@@ -347,48 +363,57 @@ const Collection: React.FC = () => {
       if (typeof c.price !== 'number' || c.price < priceRange[0] || c.price > priceRange[1]) return false
       const km = typeof c.km === 'number' ? c.km : 0
       if (km < kmRange[0] || km > kmRange[1]) return false
+      // PK range
+      const pk = typeof c.pk === 'number' ? c.pk : 0
+      if (pk < pkRange[0] || pk > pkRange[1]) return false
       return true
     })
-  }, [cars, brandSelected, modelsByBrand, variantsByBrandModel, priceRange, kmRange])
+  }, [cars, brandSelected, modelsByBrand, variantsByBrandModel, priceRange, kmRange, pkRange])
 
-  // Facet-options
-  const pkOptions = useMemo(() => {
-    const set = new Set<string>()
-    baseAfterBMVAndSliders.forEach(c => {
-      if (typeof c.pk === 'number' && !Number.isNaN(c.pk)) set.add(String(c.pk))
-    })
-    return Array.from(set).sort((a, b) => Number(a) - Number(b))
-  }, [baseAfterBMVAndSliders])
-
+  // Altijd-beschikbare facet-options (union met dataset-afgeleide)
   const bodyOptions = useMemo(() => {
-    const set = new Set<string>()
+    const set = new Set<string>(BASE_BODIES)
     baseAfterBMVAndSliders.forEach(c => { if (c.body) set.add(String(c.body)) })
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [baseAfterBMVAndSliders])
 
   const transOptions = useMemo(() => {
-    const set = new Set<string>()
+    const set = new Set<string>(BASE_TRANSMISSIONS)
     baseAfterBMVAndSliders.forEach(c => { if (c.transmission) set.add(String(c.transmission)) })
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [baseAfterBMVAndSliders])
 
   const doorsOptions = useMemo(() => {
-    const set = new Set<string>()
+    const set = new Set<string>(BASE_DOORS)
     baseAfterBMVAndSliders.forEach(c => {
       if (typeof c.doors === 'number' && !Number.isNaN(c.doors)) set.add(String(c.doors))
     })
     return Array.from(set).sort((a, b) => Number(a) - Number(b))
   }, [baseAfterBMVAndSliders])
 
-  // Sync geselecteerde waarden met opties
-  useEffect(() => setPkSelected(sel => sel.filter(v => pkOptions.includes(v))), [pkOptions])
+  const fuelOptions = useMemo(() => {
+    const set = new Set<string>(BASE_FUELS)
+    baseAfterBMVAndSliders.forEach(c => { if (c.fuel) set.add(String(c.fuel)) })
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
+  }, [baseAfterBMVAndSliders])
+
+  // Houd geselecteerde waarden in sync met beschikbare opties
   useEffect(() => setBodySelected(sel => sel.filter(v => bodyOptions.includes(v))), [bodyOptions])
   useEffect(() => setTransSelected(sel => sel.filter(v => transOptions.includes(v))), [transOptions])
   useEffect(() => setDoorsSelected(sel => sel.filter(v => doorsOptions.includes(v))), [doorsOptions])
+  useEffect(() => setFuelSelected(sel => sel.filter(v => fuelOptions.includes(v))), [fuelOptions])
 
-  // Sorteren toepassen
+  // Eindfilter (na sliders + overige facets)
   const filteredAndSortedCars = useMemo(() => {
-    const base = baseAfterBMVAndSliders.slice()
+    const afterFacets = baseAfterBMVAndSliders.filter(c => {
+      if (bodySelected.length && !(c.body && bodySelected.includes(String(c.body)))) return false
+      if (transSelected.length && !(c.transmission && transSelected.includes(String(c.transmission)))) return false
+      if (doorsSelected.length && !(c.doors != null && doorsSelected.includes(String(c.doors)))) return false
+      if (fuelSelected.length && !(c.fuel && fuelSelected.includes(String(c.fuel)))) return false
+      return true
+    })
+
+    const base = afterFacets.slice()
     base.sort((a, b) => {
       let res = 0
       switch (sortBy) {
@@ -408,14 +433,14 @@ const Collection: React.FC = () => {
       return sortDir === 'asc' ? res : -res
     })
     return base
-  }, [baseAfterBMVAndSliders, sortBy, sortDir])
+  }, [baseAfterBMVAndSliders, bodySelected, transSelected, doorsSelected, fuelSelected, sortBy, sortDir])
 
   const gridCardData = useMemo(
     () => filteredAndSortedCars.map((car) => mapCarToGridData(car)),
     [filteredAndSortedCars]
   )
 
-  // ───────── NAVBAR overlay ↔ solid ─────────
+  // NAVBAR overlay ↔ solid
   const heroEndRef = useRef<HTMLDivElement | null>(null)
   const [navBottom, setNavBottom] = useState<number>(NAV_HEIGHT_FALLBACK)
   const [navSolid, setNavSolid] = useState<boolean>(false)
@@ -451,7 +476,7 @@ const Collection: React.FC = () => {
 
   const renderFilters = () => (
     <>
-      <h2 className="text-lg font-semibold mb-3">Filters</h2>
+      {/* GEEN "Filters" titel meer */}
 
       <div className="mb-4">
         <MultiSearchSelect label="Merk" options={brandOptions} selected={brandSelected} onChange={setBrandSelected} />
@@ -473,8 +498,13 @@ const Collection: React.FC = () => {
         <FilterRangeSlider label="Kilometerstand" min={kmBounds[0]} max={kmBounds[1]} value={kmRange} onChange={setKmRange} />
       </div>
 
+      {/* PK als slider */}
+      <div className="mb-6">
+        <FilterRangeSlider label="PK" min={pkBounds[0]} max={pkBounds[1]} value={pkRange} onChange={setPkRange} />
+      </div>
+
       <div className="mb-4">
-        <MultiSearchSelect label="PK" options={pkOptions} selected={pkSelected} onChange={setPkSelected} />
+        <MultiSearchSelect label="Brandstof" options={fuelOptions} selected={fuelSelected} onChange={setFuelSelected} />
       </div>
 
       <div className="mb-4">
@@ -491,28 +521,45 @@ const Collection: React.FC = () => {
     </>
   )
 
+  // Sorteerknoppen (i.p.v. dropdown)
+  const SortPill: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        'px-3 py-1.5 text-sm rounded-full border transition',
+        active ? 'bg-[#1C448E] text-white border-[#1C448E]' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+      ].join(' ')}
+    >
+      {children}
+    </button>
+  )
+
   const renderSortControls = () => (
-    <div className="flex items-center gap-2">
-      <label htmlFor="sortBy" className="text-sm text-gray-600">Sorteren:</label>
-      <select
-        id="sortBy"
-        className="text-sm border rounded px-2 py-1"
-        value={sortBy}
-        onChange={(e) => setSortBy(e.target.value as SortBy)}
-      >
-        <option value="brandModelVariant">Merk → Model → Variant</option>
-        <option value="price">Prijs</option>
-        <option value="km">Kilometerstand</option>
-        <option value="year">Bouwjaar</option>
-      </select>
+    <div className="flex items-center gap-3">
+      <span className="text-sm text-gray-600">Sorteren:</span>
+
+      <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>A–Z</SortPill>
+      <SortPill active={sortBy === 'price'} onClick={() => setSortBy('price')}>Prijs</SortPill>
+      <SortPill active={sortBy === 'km'} onClick={() => setSortBy('km')}>KM</SortPill>
+      <SortPill active={sortBy === 'year'} onClick={() => setSortBy('year')}>Jaar</SortPill>
+
+      {/* Dikke /\ die roteert */}
       <button
         type="button"
-        className="text-sm border rounded px-2 py-1"
-        onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+        onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
         aria-label="Draai sorteer volgorde"
         title="Draai sorteer volgorde"
+        className="ml-1 inline-flex items-center justify-center w-8 h-8 border rounded-full bg-white hover:bg-gray-50 border-gray-300"
       >
-        {sortDir === 'asc' ? '↑' : '↓'}
+        <svg
+          viewBox="0 0 24 24"
+          className={['w-4 h-4 transition-transform duration-200', sortDir === 'desc' ? 'rotate-180' : 'rotate-0'].join(' ')}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* Dikke triangle /\ */}
+          <path d="M12 5 L5 15 H19 Z" fill="currentColor" />
+        </svg>
       </button>
     </div>
   )
@@ -547,7 +594,7 @@ const Collection: React.FC = () => {
             {/* Mobiele filter- en sort-balk (sticky) */}
             {!mobileFiltersOpen && (
               <div
-                className="md:hidden sticky z-30 bg-white/95 backdrop-blur-sm border-b"
+                className="md:hidden sticky z-30 bg-white/95 backdrop-blur-sm"
                 style={{ top: `${navOffset}px` }}
               >
                 <div className="flex items-center justify-between px-4 py-2">
@@ -570,9 +617,9 @@ const Collection: React.FC = () => {
               </div>
             )}
 
-            {/* Desktop sort-balk sticky */}
+            {/* Desktop sort-balk sticky (zonder lijn eronder) */}
             <div
-              className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6 sticky bg-white/95 backdrop-blur-sm border-b z-20"
+              className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6 sticky bg-white/95 backdrop-blur-sm z-20"
               style={{ top: `${navOffset}px` }}
             >
               <div className="text-sm text-gray-600 py-2">{gridCardData.length} resultaten</div>
@@ -587,7 +634,6 @@ const Collection: React.FC = () => {
                 </div>
               ) : (
                 <LayoutGroup>
-                  {/* Let op: AnimatePresence MOET direct rond de items staan */}
                   <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
                     <AnimatePresence initial={false} mode="popLayout">
                       {gridCardData.map((data) => (
@@ -624,7 +670,7 @@ const Collection: React.FC = () => {
           aria-modal="true"
           style={{ top: `${navOffset}px` }}
         >
-          <div className="h-12 flex items-center justify-between px-4 border-b">
+          <div className="h-12 flex items-center justify-between px-4">
             <h2 className="text-base font-semibold">Filters</h2>
             <button
               type="button"
@@ -642,7 +688,7 @@ const Collection: React.FC = () => {
             {renderFilters()}
           </div>
 
-          <div className="p-3 border-t bg-white">
+          <div className="p-3 bg-white">
             <button
               type="button"
               className="w-full rounded-md !bg-[#27408B] hover:!bg-[#0A1833] text-white py-2 text-sm font-medium active:scale-[.99]"
