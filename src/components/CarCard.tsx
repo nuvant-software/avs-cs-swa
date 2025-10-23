@@ -34,8 +34,6 @@ const prefersReducedMotionQuery = () => {
 
 const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animationDelay }) => {
   const [hoverZone, setHoverZone] = useState<number | null>(null);
-  // We laten lastPreviewZone bestaan (om niets te breken), maar resetten ’m altijd naar 0 bij mouseleave:
-  const [lastPreviewZone, setLastPreviewZone] = useState<number>(0);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
