@@ -542,11 +542,9 @@ const Collection: React.FC = () => {
       onClick={onClick}
       className={[
         'px-1.5 py-1 text-sm',
-        // agressieve reset
         'bg-transparent !bg-transparent border-0 !border-0 rounded-none',
         'shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0',
         'hover:bg-transparent active:bg-transparent',
-        // altijd blauwe tekst
         'text-[#1C448E]',
         active ? 'font-semibold' : 'font-normal',
       ].join(' ')}
@@ -560,7 +558,6 @@ const Collection: React.FC = () => {
     <div
       className={[
         'flex items-center gap-4',
-        // reset eventuele globale button styles binnen deze rij
         '[&_button]:bg-transparent [&_button]:!bg-transparent',
         '[&_button]:border-0 [&_button]:!border-0',
         '[&_button]:rounded-none',
@@ -584,7 +581,6 @@ const Collection: React.FC = () => {
         <span className="inline-flex items-center gap-1"><CalendarIcon /> jaar</span>
       </SortPill>
 
-      {/* Dikke blauwe /\ die roteert; zonder achtergrond */}
       <button
         type="button"
         onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
@@ -592,11 +588,9 @@ const Collection: React.FC = () => {
         title="Draai sorteer volgorde"
         className={[
           'p-0 m-0',
-          // agressieve reset
           'bg-transparent !bg-transparent border-0 !border-0 rounded-none',
           'shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0',
           'hover:bg-transparent active:bg-transparent',
-          // blauw
           'text-[#1C448E] leading-none',
         ].join(' ')}
       >
@@ -688,7 +682,7 @@ const Collection: React.FC = () => {
             {/* Mobiele filter- en sort-balk (sticky) */}
             {!mobileFiltersOpen && (
               <div
-                className="md:hidden sticky z-30 bg-white"  // witte balk, geen blur/geen border
+                className="md:hidden sticky z-30 bg-white"
                 style={{ top: `${navOffset}px` }}
               >
                 <div className="flex items-center justify-between px-4 py-2">
@@ -709,19 +703,17 @@ const Collection: React.FC = () => {
                         ? '0 resultaten'
                         : `${pageStartIndex + 1}–${pageEndIndex} van ${gridCardData.length} resultaten`}
                     </div>
-                    {/* Sorteer controls */}
                     <div className="flex items-center">{renderSortControls()}</div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Desktop sort-balk sticky — witte balk, geen lijn */}
+            {/* Desktop sort-balk sticky — witte balk */}
             <div
               className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6 sticky bg-white z-20"
               style={{ top: `${navOffset}px` }}
             >
-              {/* Teller staat al in renderSortControls, dus hier laten we alleen de controls zien */}
               <div className="py-2 w-full">{renderSortControls()}</div>
             </div>
 
@@ -760,20 +752,25 @@ const Collection: React.FC = () => {
 
                   {/* Pagination controls */}
                   {totalPages > 1 && (
-                    <div className="mt-6 flex items-center justify-center gap-1 select-none">
+                    <div className="mt-6 flex items-center justify-center gap-2 select-none">
+                      {/* Vorige */}
                       <button
                         type="button"
                         onClick={() => goToPage(page - 1)}
                         disabled={page === 1}
                         className={[
-                          'px-3 py-1.5 text-sm rounded-md border',
-                          page === 1 ? 'text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed' : 'text-[#1C448E] border-gray-300 bg-white hover:bg-gray-50'
+                          'px-2 py-1 text-sm',
+                          'text-[#1C448E]',
+                          'bg-transparent border-0 rounded-none shadow-none',
+                          'focus:outline-none focus:ring-0',
+                          page === 1 ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
                         ].join(' ')}
                         aria-label="Vorige pagina"
                       >
                         Vorige
                       </button>
 
+                      {/* Nummers zonder hover, transparant; geselecteerde met blauwe underline */}
                       {(() => {
                         const items: (number | '…')[] = []
                         const add = (n: number | '…') => items.push(n)
@@ -788,20 +785,24 @@ const Collection: React.FC = () => {
                         if (totalPages > 1) add(totalPages)
 
                         return (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
                             {items.map((it, idx) =>
                               it === '…' ? (
-                                <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">…</span>
+                                <span key={`ellipsis-${idx}`} className="px-1 text-gray-500">…</span>
                               ) : (
                                 <button
                                   key={it}
                                   type="button"
                                   onClick={() => goToPage(it)}
                                   className={[
-                                    'px-3 py-1.5 text-sm rounded-md border',
+                                    'px-1 py-0.5 text-sm',
+                                    'bg-transparent border-0 rounded-none shadow-none',
+                                    'text-[#1C448E]',
+                                    // geen hover styles:
+                                    'hover:bg-transparent active:bg-transparent',
                                     it === page
-                                      ? 'bg-[#1C448E] text-white border-[#1C448E]'
-                                      : 'bg-white text-[#1C448E] border-gray-300 hover:bg-gray-50'
+                                      ? 'font-semibold border-b-2 border-[#1C448E]'
+                                      : 'font-normal border-b-2 border-transparent'
                                   ].join(' ')}
                                   aria-current={it === page ? 'page' : undefined}
                                   aria-label={`Ga naar pagina ${it}`}
@@ -814,13 +815,17 @@ const Collection: React.FC = () => {
                         )
                       })()}
 
+                      {/* Volgende */}
                       <button
                         type="button"
                         onClick={() => goToPage(page + 1)}
                         disabled={page === totalPages}
                         className={[
-                          'px-3 py-1.5 text-sm rounded-md border',
-                          page === totalPages ? 'text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed' : 'text-[#1C448E] border-gray-300 bg-white hover:bg-gray-50'
+                          'px-2 py-1 text-sm',
+                          'text-[#1C448E]',
+                          'bg-transparent border-0 rounded-none shadow-none',
+                          'focus:outline-none focus:ring-0',
+                          page === totalPages ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
                         ].join(' ')}
                         aria-label="Volgende pagina"
                       >
