@@ -557,51 +557,69 @@ const Collection: React.FC = () => {
   const renderSortControls = () => (
     <div
       className={[
-        'flex items-center gap-4',
-        '[&_button]:bg-transparent [&_button]:!bg-transparent',
-        '[&_button]:border-0 [&_button]:!border-0',
-        '[&_button]:rounded-none',
-        '[&_button]:shadow-none',
-        '[&_button]:ring-0 [&_button]:focus:ring-0 [&_button]:outline-none',
-        '[&_button:hover]:bg-transparent [&_button:active]:bg-transparent',
-      ].join(' ')}
+        "flex items-center justify-between w-full",
+        "[&_button]:bg-transparent [&_button]:!bg-transparent",
+        "[&_button]:border-0 [&_button]:!border-0",
+        "[&_button]:rounded-none",
+        "[&_button]:shadow-none",
+        "[&_button]:ring-0 [&_button]:focus:ring-0 [&_button]:outline-none",
+        "[&_button:hover]:bg-transparent [&_button:active]:bg-transparent",
+      ].join(" ")}
     >
+      {/* Teller links */}
       <span className="text-sm text-gray-700">
         {gridCardData.length === 0
-          ? '0 resultaten'
+          ? "0 resultaten"
           : `${pageStartIndex + 1}–${pageEndIndex} van ${gridCardData.length} resultaten`}
       </span>
 
-      <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>A-z</SortPill>
-      <SortPill active={sortBy === 'price'} onClick={() => setSortBy('price')}>Prijs</SortPill>
-      <SortPill active={sortBy === 'km'} onClick={() => setSortBy('km')}>
-        <span className="inline-flex items-center gap-1"><MileageIcon /> km</span>
-      </SortPill>
-      <SortPill active={sortBy === 'year'} onClick={() => setSortBy('year')}>
-        <span className="inline-flex items-center gap-1"><CalendarIcon /> jaar</span>
-      </SortPill>
-
-      <button
-        type="button"
-        onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
-        aria-label="Draai sorteer volgorde"
-        title="Draai sorteer volgorde"
-        className={[
-          'p-0 m-0',
-          'bg-transparent !bg-transparent border-0 !border-0 rounded-none',
-          'shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0',
-          'hover:bg-transparent active:bg-transparent',
-          'text-[#1C448E] leading-none',
-        ].join(' ')}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          className={['w-5 h-5 transition-transform duration-200 inline-block', sortDir === 'desc' ? 'rotate-180' : 'rotate-0'].join(' ')}
-          xmlns="http://www.w3.org/2000/svg"
+      {/* Sorteeropties rechts */}
+      <div className="flex items-center gap-4 justify-end">
+        <SortPill
+          active={sortBy === "brandModelVariant"}
+          onClick={() => setSortBy("brandModelVariant")}
         >
-          <path d="M12 5 L5 15 H19 Z" fill="currentColor" />
-        </svg>
-      </button>
+          A–Z
+        </SortPill>
+        <SortPill active={sortBy === "price"} onClick={() => setSortBy("price")}>
+          Prijs
+        </SortPill>
+        <SortPill active={sortBy === "km"} onClick={() => setSortBy("km")}>
+          <span className="inline-flex items-center gap-1">
+            <MileageIcon /> km
+          </span>
+        </SortPill>
+        <SortPill active={sortBy === "year"} onClick={() => setSortBy("year")}>
+          <span className="inline-flex items-center gap-1">
+            <CalendarIcon /> jaar
+          </span>
+        </SortPill>
+
+        {/* Pijlknop voor sorteer richting */}
+        <button
+          type="button"
+          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          aria-label="Draai sorteer volgorde"
+          title="Draai sorteer volgorde"
+          className={[
+            "p-0 m-0",
+            "bg-transparent border-0 rounded-none",
+            "text-[#1C448E] leading-none border-b-2 border-transparent hover:border-[#1C448E]",
+            "transition-transform duration-200",
+          ].join(" ")}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className={[
+              "w-5 h-5 inline-block",
+              sortDir === "desc" ? "rotate-180" : "rotate-0",
+            ].join(" ")}
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M12 5 L5 15 H19 Z" fill="currentColor" />
+          </svg>
+        </button>
+      </div>
     </div>
   )
 
