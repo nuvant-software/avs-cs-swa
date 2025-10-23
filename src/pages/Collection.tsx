@@ -439,6 +439,32 @@ const Collection: React.FC = () => {
     [filteredAndSortedCars]
   )
 
+  // ——— Pagination ———
+  const PAGE_SIZE = 10
+  const [page, setPage] = useState(1)
+
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(gridCardData.length / PAGE_SIZE))
+  }, [gridCardData.length])
+
+  useEffect(() => {
+    // clamp current page als dataset wijzigt
+    if (page > totalPages) setPage(totalPages)
+    if (page < 1) setPage(1)
+  }, [page, totalPages])
+
+  const pageStartIndex = (page - 1) * PAGE_SIZE
+  const pageEndIndex = Math.min(page * PAGE_SIZE, gridCardData.length)
+
+  const pagedGridData = useMemo(() => {
+    return gridCardData.slice(pageStartIndex, pageEndIndex)
+  }, [gridCardData, pageStartIndex, pageEndIndex])
+
+  // Reset naar pagina 1 bij filter-/sort-wijzigingen
+  useEffect(() => { setPage(1) }, [brandSelected, modelSelected, variantSelected])
+  useEffect(() => { setPage(1) }, [priceRange, kmRange, pkRange, bodySelected, transSelected, doorsSelected, fuelSelected])
+  useEffect(() => { setPage(1) }, [sortBy, sortDir])
+
   // NAVBAR overlay ↔ solid
   const heroEndRef = useRef<HTMLDivElement | null>(null)
   const [navBottom, setNavBottom] = useState<number>(NAV_HEIGHT_FALLBACK)
@@ -470,6 +496,17 @@ const Collection: React.FC = () => {
     return () => obs.disconnect()
   }, [navOffset])
 
+  // Smooth scroll naar de grid bij paginawissel
+  const gridTopRef = useRef<HTMLDivElement | null>(null)
+  const goToPage = (p: number) => {
+    const next = Math.min(Math.max(1, p), totalPages)
+    if (next !== page) setPage(next)
+    requestAnimationFrame(() => {
+      const y = (gridTopRef.current?.getBoundingClientRect().top ?? 0) + window.scrollY - navOffset - 16
+      window.scrollTo({ top: y, behavior: 'smooth' })
+    })
+  }
+
   if (loading) return <Loader />
   if (error) return <Loader />
 
@@ -498,7 +535,7 @@ const Collection: React.FC = () => {
     </svg>
   )
 
-// ———————————— Sorteerknoppen (blauwe tekst, geen hover/geen achtergrond) ————————————
+  // ———————————— Sorteerknoppen (blauwe tekst, geen hover/geen achtergrond) ————————————
   const SortPill: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
     <button
       type="button"
@@ -510,15 +547,34 @@ const Collection: React.FC = () => {
         'shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0',
         'hover:bg-transparent active:bg-transparent',
         // altijd blauwe tekst
-        'text-[#1C448E]', 
+        'text-[#1C448E]',
         active ? 'font-semibold' : 'font-normal',
       ].join(' ')}
     >
       {children}
     </button>
   )
+
+  // Sorteercontrols (in witte balk)
   const renderSortControls = () => (
-    <div className="flex items-center gap-4">
+    <div
+      className={[
+        'flex items-center gap-4',
+        // reset eventuele globale button styles binnen deze rij
+        '[&_button]:bg-transparent [&_button]:!bg-transparent',
+        '[&_button]:border-0 [&_button]:!border-0',
+        '[&_button]:rounded-none',
+        '[&_button]:shadow-none',
+        '[&_button]:ring-0 [&_button]:focus:ring-0 [&_button]:outline-none',
+        '[&_button:hover]:bg-transparent [&_button:active]:bg-transparent',
+      ].join(' ')}
+    >
+      <span className="text-sm text-gray-700">
+        {gridCardData.length === 0
+          ? '0 resultaten'
+          : `${pageStartIndex + 1}–${pageEndIndex} van ${gridCardData.length} resultaten`}
+      </span>
+
       <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>A-z</SortPill>
       <SortPill active={sortBy === 'price'} onClick={() => setSortBy('price')}>Prijs</SortPill>
       <SortPill active={sortBy === 'km'} onClick={() => setSortBy('km')}>
@@ -648,8 +704,13 @@ const Collection: React.FC = () => {
                     Filters
                   </button>
                   <div className="flex items-center gap-4">
-                    <div className="text-sm text-gray-700">{gridCardData.length} resultaten</div>
-                    {renderSortControls()}
+                    <div className="text-sm text-gray-700">
+                      {gridCardData.length === 0
+                        ? '0 resultaten'
+                        : `${pageStartIndex + 1}–${pageEndIndex} van ${gridCardData.length} resultaten`}
+                    </div>
+                    {/* Sorteer controls */}
+                    <div className="flex items-center">{renderSortControls()}</div>
                   </div>
                 </div>
               </div>
@@ -660,40 +721,114 @@ const Collection: React.FC = () => {
               className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6 sticky bg-white z-20"
               style={{ top: `${navOffset}px` }}
             >
-              <div className="text-sm text-gray-700 py-2">{gridCardData.length} resultaten</div>
-              <div className="py-2">{renderSortControls()}</div>
+              {/* Teller staat al in renderSortControls, dus hier laten we alleen de controls zien */}
+              <div className="py-2 w-full">{renderSortControls()}</div>
             </div>
 
             {/* Grid */}
             <div className="px-4 md:px-6 lg:px-8 pb-8">
+              <div ref={gridTopRef} />
               {gridCardData.length === 0 ? (
                 <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
                   Geen resultaten met de huidige filters.
                 </div>
               ) : (
-                <LayoutGroup>
-                  <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
-                    <AnimatePresence initial={false} mode="popLayout">
-                      {gridCardData.map((data) => (
-                        <motion.div
-                          key={data.id}
-                          layout="position"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, y: 28 }}
-                          transition={{
-                            layout: { type: 'spring', stiffness: 420, damping: 32, mass: 0.3 },
-                            duration: 0.22,
-                            opacity: { duration: 0.18 }
-                          }}
-                          className="w-full will-change-transform"
-                        >
-                          <CarCard car={data.car} layout="grid" imageFolder={data.imageFolder} />
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                </LayoutGroup>
+                <>
+                  <LayoutGroup>
+                    <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+                      <AnimatePresence initial={false} mode="popLayout">
+                        {pagedGridData.map((data) => (
+                          <motion.div
+                            key={data.id}
+                            layout="position"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, y: 28 }}
+                            transition={{
+                              layout: { type: 'spring', stiffness: 420, damping: 32, mass: 0.3 },
+                              duration: 0.22,
+                              opacity: { duration: 0.18 }
+                            }}
+                            className="w-full will-change-transform"
+                          >
+                            <CarCard car={data.car} layout="grid" imageFolder={data.imageFolder} />
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  </LayoutGroup>
+
+                  {/* Pagination controls */}
+                  {totalPages > 1 && (
+                    <div className="mt-6 flex items-center justify-center gap-1 select-none">
+                      <button
+                        type="button"
+                        onClick={() => goToPage(page - 1)}
+                        disabled={page === 1}
+                        className={[
+                          'px-3 py-1.5 text-sm rounded-md border',
+                          page === 1 ? 'text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed' : 'text-[#1C448E] border-gray-300 bg-white hover:bg-gray-50'
+                        ].join(' ')}
+                        aria-label="Vorige pagina"
+                      >
+                        Vorige
+                      </button>
+
+                      {(() => {
+                        const items: (number | '…')[] = []
+                        const add = (n: number | '…') => items.push(n)
+                        const windowSize = 1
+                        const start = Math.max(2, page - windowSize)
+                        const end = Math.min(totalPages - 1, page + windowSize)
+
+                        add(1)
+                        if (start > 2) add('…')
+                        for (let n = start; n <= end; n++) add(n)
+                        if (end < totalPages - 1) add('…')
+                        if (totalPages > 1) add(totalPages)
+
+                        return (
+                          <div className="flex items-center gap-1">
+                            {items.map((it, idx) =>
+                              it === '…' ? (
+                                <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">…</span>
+                              ) : (
+                                <button
+                                  key={it}
+                                  type="button"
+                                  onClick={() => goToPage(it)}
+                                  className={[
+                                    'px-3 py-1.5 text-sm rounded-md border',
+                                    it === page
+                                      ? 'bg-[#1C448E] text-white border-[#1C448E]'
+                                      : 'bg-white text-[#1C448E] border-gray-300 hover:bg-gray-50'
+                                  ].join(' ')}
+                                  aria-current={it === page ? 'page' : undefined}
+                                  aria-label={`Ga naar pagina ${it}`}
+                                >
+                                  {it}
+                                </button>
+                              )
+                            )}
+                          </div>
+                        )
+                      })()}
+
+                      <button
+                        type="button"
+                        onClick={() => goToPage(page + 1)}
+                        disabled={page === totalPages}
+                        className={[
+                          'px-3 py-1.5 text-sm rounded-md border',
+                          page === totalPages ? 'text-gray-400 border-gray-200 bg-gray-50 cursor-not-allowed' : 'text-[#1C448E] border-gray-300 bg-white hover:bg-gray-50'
+                        ].join(' ')}
+                        aria-label="Volgende pagina"
+                      >
+                        Volgende
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </section>
