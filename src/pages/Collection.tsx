@@ -751,43 +751,56 @@ const Collection: React.FC = () => {
                   </LayoutGroup>
 
                   {/* Pagination controls */}
+                  {/* Pagination controls */}
                   {totalPages > 1 && (
-                    <div className="mt-6 flex items-center justify-center gap-2 select-none">
+                    <div
+                      className={[
+                        "mt-6 flex items-center justify-center gap-2 select-none",
+                        // 🔒 harde reset tegen globale button styles
+                        "[&_button]:bg-transparent [&_button]:!bg-transparent",
+                        "[&_button]:border-0 [&_button]:!border-0",
+                        "[&_button]:rounded-none",
+                        "[&_button]:shadow-none",
+                        "[&_button]:ring-0 [&_button]:focus:ring-0 [&_button]:outline-none",
+                        "[&_button:hover]:bg-transparent [&_button:active]:bg-transparent",
+                      ].join(" ")}
+                    >
                       {/* Vorige */}
                       <button
                         type="button"
                         onClick={() => goToPage(page - 1)}
                         disabled={page === 1}
                         className={[
-                          'px-2 py-1 text-sm',
-                          'text-[#1C448E]',
-                          'bg-transparent border-0 rounded-none shadow-none',
-                          'focus:outline-none focus:ring-0',
-                          page === 1 ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
-                        ].join(' ')}
+                          "px-2 py-1 text-sm",
+                          "text-[#1C448E]",
+                          "bg-transparent",                 // expliciet
+                          "border-b-2 border-transparent",  // default: geen underline
+                          "hover:border-[#1C448E]",         // hover: blauwe underline
+                          page === 1 ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
+                        ].join(" ")}
                         aria-label="Vorige pagina"
                       >
                         Vorige
                       </button>
 
-                      {/* Nummers zonder hover, transparant; geselecteerde met blauwe underline */}
+                      {/* Nummer knoppen — transparant, underline op hover, blauw + underline als actief */}
                       {(() => {
-                        const items: (number | '…')[] = []
-                        const add = (n: number | '…') => items.push(n)
+                        const items: (number | "…")[] = []
+                        const add = (n: number | "…") => items.push(n)
                         const windowSize = 1
                         const start = Math.max(2, page - windowSize)
                         const end = Math.min(totalPages - 1, page + windowSize)
 
                         add(1)
-                        if (start > 2) add('…')
+                        if (start > 2) add("…")
                         for (let n = start; n <= end; n++) add(n)
-                        if (end < totalPages - 1) add('…')
+                        if (end < totalPages - 1) add("…")
                         if (totalPages > 1) add(totalPages)
 
                         return (
                           <div className="flex items-center gap-2">
                             {items.map((it, idx) =>
-                              it === '…' ? (
+                              it === "…" ? (
                                 <span key={`ellipsis-${idx}`} className="px-1 text-gray-500">…</span>
                               ) : (
                                 <button
@@ -795,16 +808,15 @@ const Collection: React.FC = () => {
                                   type="button"
                                   onClick={() => goToPage(it)}
                                   className={[
-                                    'px-1 py-0.5 text-sm',
-                                    'bg-transparent border-0 rounded-none shadow-none',
-                                    'text-[#1C448E]',
-                                    // geen hover styles:
-                                    'hover:bg-transparent active:bg-transparent',
+                                    "px-1 py-0.5 text-sm",
+                                    "text-[#1C448E]",
+                                    "bg-transparent",                         // expliciet
+                                    "border-b-2",                              // underline-lijn aanwezig
                                     it === page
-                                      ? 'font-semibold border-b-2 border-[#1C448E]'
-                                      : 'font-normal border-b-2 border-transparent'
-                                  ].join(' ')}
-                                  aria-current={it === page ? 'page' : undefined}
+                                      ? "font-semibold border-[#1C448E]"       // actief: blauwe lijn + bold
+                                      : "font-normal border-transparent hover:border-[#1C448E]", // hover: blauwe lijn
+                                  ].join(" ")}
+                                  aria-current={it === page ? "page" : undefined}
                                   aria-label={`Ga naar pagina ${it}`}
                                 >
                                   {it}
@@ -821,12 +833,13 @@ const Collection: React.FC = () => {
                         onClick={() => goToPage(page + 1)}
                         disabled={page === totalPages}
                         className={[
-                          'px-2 py-1 text-sm',
-                          'text-[#1C448E]',
-                          'bg-transparent border-0 rounded-none shadow-none',
-                          'focus:outline-none focus:ring-0',
-                          page === totalPages ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
-                        ].join(' ')}
+                          "px-2 py-1 text-sm",
+                          "text-[#1C448E]",
+                          "bg-transparent",                 // expliciet
+                          "border-b-2 border-transparent",  // default: geen underline
+                          "hover:border-[#1C448E]",         // hover: blauwe underline
+                          page === totalPages ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
+                        ].join(" ")}
                         aria-label="Volgende pagina"
                       >
                         Volgende
