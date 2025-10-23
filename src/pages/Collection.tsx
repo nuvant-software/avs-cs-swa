@@ -62,25 +62,26 @@ type GridCardData = {
 
 const FALLBACK_IMAGE_FOLDER = 'car_001'
 
-const buildStableId = (car: CarOverview, fallbackIndex: number): string => {
-  const raw = [car.id, car.sourceId].find(value => typeof value === 'string' && value.trim().length)
-  if (raw) return raw.trim()
+// ⚠️ Belangrijk: stabiele key zonder index
+const buildStableId = (car: CarOverview): string => {
+  const raw = [car.id, car.sourceId].find(v => typeof v === 'string' && v.trim().length)
+  if (raw) return raw!.trim()
+  // Fallback: combineer stabiele, inhoudelijke velden (GEEN index)
   return [
-    car.brand,
-    car.model,
-    car.variant,
-    car.price,
-    car.km ?? 'km?',
-    car.pk ?? 'pk?',
-    car.transmission ?? 'trans?',
-    fallbackIndex,
+    (car.brand || '').trim().toLowerCase(),
+    (car.model || '').trim().toLowerCase(),
+    (car.variant || '').trim().toLowerCase(),
+    String(car.year ?? ''),
+    (car.transmission || '').trim().toLowerCase(),
+    (car.engine_size || '').trim().toLowerCase(),
+    (car.fuel || '').trim().toLowerCase(),
   ].join('|')
 }
 
 const carkmToNum = (km: number) => km
 
-const mapCarToGridData = (car: CarOverview, index: number): GridCardData => {
-  const id = buildStableId(car, index)
+const mapCarToGridData = (car: CarOverview): GridCardData => {
+  const id = buildStableId(car)
   const card: GridCar = {
     id,
     brand: car.brand,
@@ -350,7 +351,7 @@ const Collection: React.FC = () => {
     })
   }, [cars, brandSelected, modelsByBrand, variantsByBrandModel, priceRange, kmRange])
 
-  // Facet-options op basis van huidige (pre)filters
+  // Facet-options
   const pkOptions = useMemo(() => {
     const set = new Set<string>()
     baseAfterBMVAndSliders.forEach(c => {
@@ -379,7 +380,7 @@ const Collection: React.FC = () => {
     return Array.from(set).sort((a, b) => Number(a) - Number(b))
   }, [baseAfterBMVAndSliders])
 
-  // Houd geselecteerde waarden in sync met beschikbare opties
+  // Sync geselecteerde waarden met opties
   useEffect(() => setPkSelected(sel => sel.filter(v => pkOptions.includes(v))), [pkOptions])
   useEffect(() => setBodySelected(sel => sel.filter(v => bodyOptions.includes(v))), [bodyOptions])
   useEffect(() => setTransSelected(sel => sel.filter(v => transOptions.includes(v))), [transOptions])
@@ -410,7 +411,7 @@ const Collection: React.FC = () => {
   }, [baseAfterBMVAndSliders, sortBy, sortDir])
 
   const gridCardData = useMemo(
-    () => filteredAndSortedCars.map((car, index) => mapCarToGridData(car, index)),
+    () => filteredAndSortedCars.map((car) => mapCarToGridData(car)),
     [filteredAndSortedCars]
   )
 
@@ -586,22 +587,16 @@ const Collection: React.FC = () => {
                 </div>
               ) : (
                 <LayoutGroup>
-                  {/* Belangrijk:
-                      - initial={false}: bestaande items krijgen geen enter-animaties bij reorder
-                      - mode="popLayout": vertrekkende items blijven “zweven” voor hun exit animatie */}
-                  <AnimatePresence initial={false} mode="popLayout">
-                    <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+                  {/* Let op: AnimatePresence MOET direct rond de items staan */}
+                  <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+                    <AnimatePresence initial={false} mode="popLayout">
                       {gridCardData.map((data) => (
                         <motion.div
                           key={data.id}
-                          layout
-                          // Geen nieuw 'animate' pad bij reorders → pure FLIP (schuift naar nieuwe plek)
-                          // Enter (alleen voor écht nieuwe items):
+                          layout="position"
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          // Exit: naar beneden + fade
                           exit={{ opacity: 0, y: 28 }}
-                          // Layout transition voor vloeiend horizontaal/diagonaal schuiven
                           transition={{
                             layout: { type: 'spring', stiffness: 420, damping: 32, mass: 0.3 },
                             duration: 0.22,
@@ -612,8 +607,8 @@ const Collection: React.FC = () => {
                           <CarCard car={data.car} layout="grid" imageFolder={data.imageFolder} />
                         </motion.div>
                       ))}
-                    </div>
-                  </AnimatePresence>
+                    </AnimatePresence>
+                  </div>
                 </LayoutGroup>
               )}
             </div>
