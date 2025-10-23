@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import Loader from '../components/Loader'
 import FilterRangeSlider from '../components/filters/FilterRangeSlider'
 import MultiSearchSelect from '../components/filters/MultiSearchSelect'
 import CarCard from '../components/CarCard'
+import { AnimatePresence, LayoutGroup, motion } from 'framer-motion'
 
 interface CarOverview {
   id?: string
@@ -59,22 +60,11 @@ type GridCardData = {
   order: number
 }
 
-type AnimatedGridEntry = {
-  id: string
-  car: GridCar
-  imageFolder?: string
-  status: 'enter' | 'present' | 'exit'
-  order: number
-  animationDelay: number
-}
-
 const FALLBACK_IMAGE_FOLDER = 'car_001'
 
 const buildStableId = (car: CarOverview, fallbackIndex: number): string => {
   const raw = [car.id, car.sourceId].find(value => typeof value === 'string' && value.trim().length)
-  if (raw) {
-    return raw.trim()
-  }
+  if (raw) return raw.trim()
 
   return [
     car.brand,
@@ -119,9 +109,7 @@ const pickString = (record: Record<string, unknown>, keys: string[]): string | u
     const value = record[key]
     if (typeof value === 'string') {
       const trimmed = value.trim()
-      if (trimmed.length) {
-        return trimmed
-      }
+      if (trimmed.length) return trimmed
     }
   }
   return undefined
@@ -130,16 +118,12 @@ const pickString = (record: Record<string, unknown>, keys: string[]): string | u
 const pickNumber = (record: Record<string, unknown>, keys: string[]): number | undefined => {
   for (const key of keys) {
     const value = record[key]
-    if (typeof value === 'number' && !Number.isNaN(value)) {
-      return value
-    }
+    if (typeof value === 'number' && !Number.isNaN(value)) return value
     if (typeof value === 'string') {
       const trimmed = value.trim()
       if (trimmed.length) {
         const parsed = Number(trimmed)
-        if (!Number.isNaN(parsed)) {
-          return parsed
-        }
+        if (!Number.isNaN(parsed)) return parsed
       }
     }
   }
@@ -148,114 +132,6 @@ const pickNumber = (record: Record<string, unknown>, keys: string[]): number | u
 
 const ensureStringArray = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : []
-
-type AnimatedGridCardProps = {
-  entry: AnimatedGridEntry
-  prefersReducedMotion: boolean
-  onExitComplete: (id: string) => void
-}
-
-const AnimatedGridCard: React.FC<AnimatedGridCardProps> = ({ entry, prefersReducedMotion, onExitComplete }) => {
-  const containerRef = useRef<HTMLDivElement | null>(null)
-  const cardRef = useRef<HTMLDivElement | null>(null)
-  const [measuredHeight, setMeasuredHeight] = useState<number>(() => 1)
-
-  useLayoutEffect(() => {
-    if (!cardRef.current) return
-    const rect = cardRef.current.getBoundingClientRect()
-    setMeasuredHeight(Math.max(1, Math.ceil(rect.height)))
-  }, [entry.car])
-
-  useEffect(() => {
-    if (!cardRef.current || typeof ResizeObserver === 'undefined') return
-    const node = cardRef.current
-    const observer = new ResizeObserver(entries => {
-      entries.forEach(en => {
-        const next = Math.max(1, Math.ceil(en.contentRect.height))
-        setMeasuredHeight(prev => (Math.abs(prev - next) > 1 ? next : prev))
-      })
-    })
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [])
-
-  useEffect(() => {
-    if (prefersReducedMotion && entry.status === 'exit') {
-      onExitComplete(entry.id)
-      return
-    }
-
-    if (prefersReducedMotion || entry.status !== 'exit') return
-
-    const node = containerRef.current
-    if (!node) return
-
-    const handle = (event: TransitionEvent) => {
-      if (event.propertyName === 'max-height') {
-        onExitComplete(entry.id)
-      }
-    }
-
-    node.addEventListener('transitionend', handle)
-    return () => node.removeEventListener('transitionend', handle)
-  }, [entry.id, entry.status, onExitComplete, prefersReducedMotion])
-
-  const containerStyle = prefersReducedMotion
-    ? { order: entry.order }
-    : { order: entry.order, maxHeight: entry.status === 'exit' ? '0px' : `${Math.max(1, measuredHeight)}px` }
-
-  const containerClassName = [
-    'overflow-hidden w-full max-w-[340px] justify-self-start',
-    prefersReducedMotion ? '' : 'transition-[max-height,opacity] duration-500 ease-out',
-    entry.status === 'exit' && !prefersReducedMotion ? 'opacity-0' : 'opacity-100',
-  ]
-    .filter(Boolean)
-    .join(' ')
-
-  const motionClassName = [
-    'will-change-transform will-change-opacity',
-    prefersReducedMotion ? '' : 'transition duration-[420ms] ease-out',
-    entry.status === 'exit' && !prefersReducedMotion ? 'translate-y-6 opacity-0' : 'translate-y-0 opacity-100',
-  ]
-    .filter(Boolean)
-    .join(' ')
-
-  const cardDelay = !prefersReducedMotion && entry.status === 'enter' ? entry.animationDelay : 0
-  const transitionStyle = cardDelay ? { transitionDelay: `${cardDelay}ms` } : undefined
-
-  return (
-    <div ref={containerRef} className={containerClassName} style={containerStyle}>
-      <div className="flex justify-start">
-        <div ref={cardRef} className={motionClassName} style={transitionStyle}>
-          <CarCard
-            car={entry.car}
-            layout="grid"
-            imageFolder={entry.imageFolder}
-            animationDelay={cardDelay}
-          />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const usePrefersReducedMotion = () => {
-  const [prefers, setPrefers] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  })
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const handler = (event: MediaQueryListEvent) => setPrefers(event.matches)
-    setPrefers(media.matches)
-    media.addEventListener('change', handler)
-    return () => media.removeEventListener('change', handler)
-  }, [])
-
-  return prefers
-}
 
 const Collection: React.FC = () => {
   const location = useLocation()
@@ -513,65 +389,6 @@ const Collection: React.FC = () => {
     })
   }, [baseAfterBMVAndSliders, pkSelected, bodySelected, transSelected, doorsSelected])
 
-  const gridCardData = useMemo(() => filteredCars.map((car, index) => mapCarToGridData(car, index)), [filteredCars])
-
-  const [gridEntries, setGridEntries] = useState<AnimatedGridEntry[]>([])
-
-  useEffect(() => {
-    setGridEntries(prev => {
-      const prevById = new Map(prev.map(entry => [entry.id, entry]))
-      const nextEntries: AnimatedGridEntry[] = []
-
-      gridCardData.forEach((item, index) => {
-        const existing = prevById.get(item.id)
-        if (existing) {
-          prevById.delete(item.id)
-          const status = existing.status === 'exit' ? 'enter' : 'present'
-          nextEntries.push({
-            ...existing,
-            car: item.car,
-            imageFolder: item.imageFolder,
-            order: item.order,
-            status,
-            animationDelay: status === 'enter' ? Math.min(index, 8) * 80 : 0,
-          })
-        } else {
-          nextEntries.push({
-            id: item.id,
-            car: item.car,
-            imageFolder: item.imageFolder,
-            order: item.order,
-            status: 'enter',
-            animationDelay: Math.min(index, 8) * 80,
-          })
-        }
-      })
-
-      prevById.forEach(entry => {
-        if (entry.status === 'exit') {
-          nextEntries.push(entry)
-        } else {
-          nextEntries.push({ ...entry, status: 'exit', animationDelay: 0 })
-        }
-      })
-
-      return nextEntries.sort((a, b) => {
-        if (a.order === b.order) {
-          if (a.status === b.status) return a.id.localeCompare(b.id)
-          if (a.status === 'exit') return 1
-          if (b.status === 'exit') return -1
-        }
-        return a.order - b.order
-      })
-    })
-  }, [gridCardData])
-
-  const handleCardExitComplete = useCallback((id: string) => {
-    setGridEntries(prev => prev.filter(entry => entry.id !== id))
-  }, [])
-
-  const prefersReducedMotion = usePrefersReducedMotion()
-
   // ───────── NAVBAR overlay ↔ solid ─────────
   const heroEndRef = useRef<HTMLDivElement | null>(null)
   const [navBottom, setNavBottom] = useState<number>(NAV_HEIGHT_FALLBACK)
@@ -714,23 +531,45 @@ const Collection: React.FC = () => {
               <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
             </div>
 
-            {/* Cards grid – schaalt op grote schermen */}
+            {/* Cards grid – met layout-animaties */}
             <div className="px-4 md:px-6 lg:px-8 pb-8">
-              {filteredCars.length === 0 && gridEntries.length === 0 ? (
+              {filteredCars.length === 0 ? (
                 <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
                   Geen resultaten met de huidige filters.
                 </div>
               ) : (
-                <div className="grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] sm:[grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
-                  {gridEntries.map(entry => (
-                    <AnimatedGridCard
-                      key={entry.id}
-                      entry={entry}
-                      prefersReducedMotion={prefersReducedMotion}
-                      onExitComplete={handleCardExitComplete}
-                    />
-                  ))}
-                </div>
+                <LayoutGroup>
+                  <AnimatePresence mode="popLayout">
+                    <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+                      {filteredCars.map((car, index) => {
+                        const data = mapCarToGridData(car, index)
+                        return (
+                          <motion.div
+                            key={data.id}
+                            layout
+                            initial={{ opacity: 0, y: 24 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 24 }}
+                            transition={{
+                              duration: 0.35,
+                              ease: [0.22, 1, 0.36, 1],
+                              delay: Math.min(index, 8) * 0.06,
+                            }}
+                            className="w-full"
+                          >
+                            <CarCard
+                              car={data.car}
+                              layout="grid"
+                              imageFolder={data.imageFolder}
+                              // Je kunt animationDelay doorgeven als je de Card zelf ook wilt laten faden:
+                              // animationDelay={Math.min(index, 8) * 80}
+                            />
+                          </motion.div>
+                        )
+                      })}
+                    </div>
+                  </AnimatePresence>
+                </LayoutGroup>
               )}
             </div>
           </section>
