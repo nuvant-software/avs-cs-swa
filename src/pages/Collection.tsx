@@ -22,7 +22,7 @@ interface CarOverview {
   engine_size?: string
   imageFolder?: string
   sourceId?: string
-  // createdAt?: string | number // voeg dit toe als je later op datum wilt sorteren
+  // createdAt?: string | number // als je later op datum wilt sorteren
 }
 
 type StructuredNavFilters = {
@@ -77,6 +77,8 @@ const buildStableId = (car: CarOverview, fallbackIndex: number): string => {
   ].join('|')
 }
 
+const carkmToNum = (km: number) => km
+
 const mapCarToGridData = (car: CarOverview, index: number): GridCardData => {
   const id = buildStableId(car, index)
   const card: GridCar = {
@@ -95,8 +97,6 @@ const mapCarToGridData = (car: CarOverview, index: number): GridCardData => {
   const imageFolder = car.imageFolder && car.imageFolder.trim().length ? car.imageFolder.trim() : FALLBACK_IMAGE_FOLDER
   return { id, car: card, imageFolder }
 }
-
-const carkmToNum = (km: number) => km // eventueel formatter/normalizer
 
 const pickString = (record: Record<string, unknown>, keys: string[]): string | undefined => {
   for (const key of keys) {
@@ -134,7 +134,6 @@ type SortDir = 'asc' | 'desc'
 
 const composeBMV = (c: CarOverview) =>
   `${(c.brand || '').toLowerCase()}|${(c.model || '').toLowerCase()}|${(c.variant || '').toLowerCase()}`
-
 const cmpNum = (a: number, b: number) => (a < b ? -1 : a > b ? 1 : 0)
 
 const Collection: React.FC = () => {
@@ -311,7 +310,7 @@ const Collection: React.FC = () => {
     return Array.from(uniq).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [cars, modelSelected])
 
-  // parse naar snelle lookup maps (zonder losse helpers)
+  // Lookups voor gekozen model/variant
   const modelsByBrand = useMemo(() => {
     const map: Record<string, Set<string>> = {}
     modelSelected.forEach(token => {
@@ -351,9 +350,12 @@ const Collection: React.FC = () => {
     })
   }, [cars, brandSelected, modelsByBrand, variantsByBrandModel, priceRange, kmRange])
 
+  // Facet-options op basis van huidige (pre)filters
   const pkOptions = useMemo(() => {
     const set = new Set<string>()
-    baseAfterBMVAndSliders.forEach(c => { if (typeof c.pk === 'number' && !Number.isNaN(c.pk)) set.add(String(c.pk)) })
+    baseAfterBMVAndSliders.forEach(c => {
+      if (typeof c.pk === 'number' && !Number.isNaN(c.pk)) set.add(String(c.pk))
+    })
     return Array.from(set).sort((a, b) => Number(a) - Number(b))
   }, [baseAfterBMVAndSliders])
 
@@ -371,10 +373,13 @@ const Collection: React.FC = () => {
 
   const doorsOptions = useMemo(() => {
     const set = new Set<string>()
-    baseAfterBMVAndSliders.forEach(c => { if (typeof c.doors === 'number' && !Number.isNaN(c.doors)) set.add(String(c.doors)) })
+    baseAfterBMVAndSliders.forEach(c => {
+      if (typeof c.doors === 'number' && !Number.isNaN(c.doors)) set.add(String(c.doors))
+    })
     return Array.from(set).sort((a, b) => Number(a) - Number(b))
   }, [baseAfterBMVAndSliders])
 
+  // Houd geselecteerde waarden in sync met beschikbare opties
   useEffect(() => setPkSelected(sel => sel.filter(v => pkOptions.includes(v))), [pkOptions])
   useEffect(() => setBodySelected(sel => sel.filter(v => bodyOptions.includes(v))), [bodyOptions])
   useEffect(() => setTransSelected(sel => sel.filter(v => transOptions.includes(v))), [transOptions])
@@ -434,11 +439,7 @@ const Collection: React.FC = () => {
         setNavSolid(solid)
         window.dispatchEvent(new CustomEvent('avs:nav-mode', { detail: { mode: solid ? 'solid' : 'overlay' } }))
       },
-      {
-        threshold: 0,
-        root: null,
-        rootMargin: `-${Math.max(0, navOffset)}px 0px 0px 0px`,
-      }
+      { threshold: 0, root: null, rootMargin: `-${Math.max(0, navOffset)}px 0px 0px 0px` }
     )
     obs.observe(el)
     return () => obs.disconnect()
@@ -542,7 +543,7 @@ const Collection: React.FC = () => {
 
           {/* Resultaten */}
           <section className="min-w-0">
-            {/* Mobiele filters knop */}
+            {/* Mobiele filter- en sort-balk (sticky) */}
             {!mobileFiltersOpen && (
               <div
                 className="md:hidden sticky z-30 bg-white/95 backdrop-blur-sm border-b"
@@ -560,18 +561,21 @@ const Collection: React.FC = () => {
                     </svg>
                     Filters
                   </button>
-                  <div className="text-sm text-gray-600">{gridCardData.length} resultaten</div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm text-gray-600">{gridCardData.length} resultaten</div>
+                    {renderSortControls()}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Teller + sort */}
-            <div className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6">
-              <div className="text-sm text-gray-600">{gridCardData.length} resultaten</div>
-              {renderSortControls()}
-            </div>
-            <div className="md:hidden flex items-center justify-end px-4 py-2">
-              {renderSortControls()}
+            {/* Desktop sort-balk sticky */}
+            <div
+              className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6 sticky bg-white/95 backdrop-blur-sm border-b z-20"
+              style={{ top: `${navOffset}px` }}
+            >
+              <div className="text-sm text-gray-600 py-2">{gridCardData.length} resultaten</div>
+              <div className="py-2">{renderSortControls()}</div>
             </div>
 
             {/* Grid */}
@@ -582,23 +586,30 @@ const Collection: React.FC = () => {
                 </div>
               ) : (
                 <LayoutGroup>
+                  {/* Belangrijk:
+                      - initial={false}: bestaande items krijgen geen enter-animaties bij reorder
+                      - mode="popLayout": vertrekkende items blijven “zweven” voor hun exit animatie */}
                   <AnimatePresence initial={false} mode="popLayout">
                     <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
                       {gridCardData.map((data) => (
                         <motion.div
                           key={data.id}
                           layout
-                          initial={false}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 24 }}
-                          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                          className="w-full"
+                          // Geen nieuw 'animate' pad bij reorders → pure FLIP (schuift naar nieuwe plek)
+                          // Enter (alleen voor écht nieuwe items):
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          // Exit: naar beneden + fade
+                          exit={{ opacity: 0, y: 28 }}
+                          // Layout transition voor vloeiend horizontaal/diagonaal schuiven
+                          transition={{
+                            layout: { type: 'spring', stiffness: 420, damping: 32, mass: 0.3 },
+                            duration: 0.22,
+                            opacity: { duration: 0.18 }
+                          }}
+                          className="w-full will-change-transform"
                         >
-                          <CarCard
-                            car={data.car}
-                            layout="grid"
-                            imageFolder={data.imageFolder}
-                          />
+                          <CarCard car={data.car} layout="grid" imageFolder={data.imageFolder} />
                         </motion.div>
                       ))}
                     </div>
