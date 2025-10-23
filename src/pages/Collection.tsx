@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import Loader from '../components/Loader'
 import FilterRangeSlider from '../components/filters/FilterRangeSlider'
@@ -561,8 +561,6 @@ const Collection: React.FC = () => {
                               car={data.car}
                               layout="grid"
                               imageFolder={data.imageFolder}
-                              // Je kunt animationDelay doorgeven als je de Card zelf ook wilt laten faden:
-                              // animationDelay={Math.min(index, 8) * 80}
                             />
                           </motion.div>
                         )
