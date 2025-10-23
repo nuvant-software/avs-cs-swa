@@ -771,7 +771,7 @@ const Collection: React.FC = () => {
                         className={[
                           "px-2 py-1 text-sm",
                           "text-[#1C448E]",
-                          "bg-transparent",
+                          "!bg-transparent",
                           "border-b-2 border-transparent",
                           "hover:border-[#1C448E]",
                           page === 1 ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
@@ -834,7 +834,7 @@ const Collection: React.FC = () => {
                         className={[
                           "px-2 py-1 text-sm",
                           "text-[#1C448E]",
-                          "bg-transparent",
+                          "!bg-transparent",
                           "border-b-2 border-transparent",
                           "hover:border-[#1C448E]",
                           page === totalPages ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
