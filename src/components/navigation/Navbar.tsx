@@ -141,24 +141,26 @@ const Navbar: React.FC = () => {
       position: 'absolute',
       backgroundColor: '#fff',
       zIndex: 40, // onder content-row (z-50) maar boven pagina
-      transition: 'top 300ms ease, left 300ms ease, transform 300ms ease, width 300ms ease, border-radius 300ms ease, box-shadow 300ms ease',
+      transition: 'top 300ms ease, left 300ms ease, transform 300ms ease, width 300ms ease, max-width 300ms ease, border-radius 300ms ease, box-shadow 300ms ease',
       ...(mode === 'overlay' ? overlay : solid),
     }
   }, [mode, isNarrow])
 
   // CONTENT-RIJ (blijft 75% gecentreerd op desktop; 100% op smalle viewports)
   const rowStyle = useMemo<React.CSSProperties>(() => {
-    const isSolid = mode === 'solid'
+    const shouldCenter = !isNarrow
+    const width = isNarrow ? '100%' : WIDE_NAV_WIDTH
+    const maxWidth = isNarrow ? '100%' : `${MAX_WIDE_WIDTH}px`
     return {
       position: 'absolute',
       top: mode === 'overlay' ? topOverlay : topSolid,
-      left: isNarrow || isSolid ? 0 : '50%',
-      transform: isNarrow || isSolid ? 'none' : 'translateX(-50%)',
-      width: isNarrow || isSolid ? '100%' : WIDE_NAV_WIDTH,
-      maxWidth: isNarrow || isSolid ? '100%' : `${MAX_WIDE_WIDTH}px`,
+      left: shouldCenter ? '50%' : 0,
+      transform: shouldCenter ? 'translateX(-50%)' : 'none',
+      width,
+      maxWidth,
       height: NAV_HEIGHT,
       zIndex: 50,
-      transition: 'top 300ms ease, transform 300ms ease, width 300ms ease',
+      transition: 'top 300ms ease, transform 300ms ease, width 300ms ease, max-width 300ms ease',
       paddingLeft: '1.5rem',
       paddingRight: '1.5rem',
       display: 'flex',

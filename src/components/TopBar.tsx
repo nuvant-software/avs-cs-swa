@@ -10,7 +10,7 @@ import {
 const TopBar = () => {
   return (
     <div className="fixed top-0 left-0 right-0 w-full h-10 bg-[#27408B] z-[100]">
-      <div className="w-3/4 mx-auto flex justify-between items-center h-full px-6">
+      <div className="w-full lg:w-[80vw] max-w-[1280px] mx-auto flex justify-between items-center h-full px-4 sm:px-6">
         
         {/* Contact Info */}
         <div className="flex items-center space-x-4">
