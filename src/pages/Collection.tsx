@@ -475,27 +475,40 @@ const Collection: React.FC = () => {
 
   // ———————————— Icons ————————————
   const MileageIcon = () => (
-    <svg viewBox="0 0 24 24" className="w-4 h-4 inline-block align-[-1px]" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <svg
+      viewBox="0 0 24 24"
+      className="w-4 h-4 inline-block align-[-1px]"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="currentColor"
+      aria-hidden="true"
+    >
       <path d="M12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-6-6V4z" />
       <path d="M13 12.5 17 9l-1.4-1.4-4 3a2.5 2.5 0 1 0 1.4 1.9z" />
     </svg>
   )
   const CalendarIcon = () => (
-    <svg viewBox="0 0 24 24" className="w-4 h-4 inline-block align-[-1px]" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+    <svg
+      viewBox="0 0 24 24"
+      className="w-4 h-4 inline-block align-[-1px]"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="currentColor"
+      aria-hidden="true"
+    >
       <path d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2zm13 8H4v10h16V10z" />
     </svg>
   )
 
-  // Sorteerknoppen (zonder achtergrond)
+// ———————————— Sorteerknoppen (blauwe tekst, geen hover/geen achtergrond) ————————————
   const SortPill: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
     <button
       type="button"
       onClick={onClick}
       className={[
         'px-1.5 py-1 text-sm',
-        'bg-transparent',            // geen achtergrond
-        'border-0',                 // geen border
-        active ? 'font-semibold text-[#1C448E]' : 'text-gray-700 hover:text-gray-900'
+        'bg-transparent border-0',   // geen achtergrond/border
+        'text-[#1C448E]',            // altijd blauw
+        active ? 'font-semibold' : 'font-normal',
+        'focus:outline-none focus-visible:ring-0'
       ].join(' ')}
     >
       {children}
@@ -523,11 +536,11 @@ const Collection: React.FC = () => {
         title="Draai sorteer volgorde"
         className="p-0 m-0 bg-transparent border-0 text-[#1C448E]"
       >
-        <svg
-          viewBox="0 0 24 24"
-          className={['w-4 h-4 transition-transform duration-200 inline-block', sortDir === 'desc' ? 'rotate-180' : 'rotate-0'].join(' ')}
-          xmlns="http://www.w3.org/2000/svg"
-        >
+          <svg
+            viewBox="0 0 24 24"
+            className={['w-5 h-5 transition-transform duration-200 inline-block', sortDir === 'desc' ? 'rotate-180' : 'rotate-0'].join(' ')}
+            xmlns="http://www.w3.org/2000/svg"
+          >
           <path d="M12 5 L5 15 H19 Z" fill="currentColor" />
         </svg>
       </button>
