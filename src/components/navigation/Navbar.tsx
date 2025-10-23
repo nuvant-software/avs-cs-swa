@@ -59,7 +59,7 @@ const Navbar: React.FC = () => {
       h-20 px-6
     `
     if (mode === 'overlay') {
-      // ⬅️ niet doorzichtig, wel gecentreerd + afgeronde onderkant (desktop)
+      // niet doorzichtig, gecentreerd, afgeronde onderkant (desktop)
       return `
         ${base}
         top-10 left-1/2 -translate-x-1/2 w-3/4

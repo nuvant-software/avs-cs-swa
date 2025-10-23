@@ -241,7 +241,7 @@ const Collection: React.FC = () => {
     })
   }, [baseAfterBMVAndSliders, pkSelected, bodySelected, transSelected, doorsSelected])
 
-  // ───────── NAVBAR overlay ↔ solid (zonder globale CSS) ─────────
+  // ───────── NAVBAR overlay ↔ solid ─────────
   const heroEndRef = useRef<HTMLDivElement | null>(null)
   const [navBottom, setNavBottom] = useState<number>(NAV_HEIGHT_FALLBACK)
   const [navSolid, setNavSolid] = useState<boolean>(false)
@@ -257,18 +257,28 @@ const Collection: React.FC = () => {
     return () => window.removeEventListener('avs:nav-metrics', onMetrics)
   }, [])
 
-  // wissel navbar-mode zodra hero voorbij is
+  // wissel navbar-mode precies wanneer de content onder de onderrand van de navbar schuift
   useEffect(() => {
     const el = heroEndRef.current
     if (!el) return
-    const obs = new IntersectionObserver(([entry]) => {
-      const solid = !entry.isIntersecting
-      setNavSolid(solid)
-      window.dispatchEvent(new CustomEvent('avs:nav-mode', { detail: { mode: solid ? 'solid' : 'overlay' } }))
-    }, { threshold: 0 })
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        const solid = !entry.isIntersecting
+        setNavSolid(solid)
+        window.dispatchEvent(new CustomEvent('avs:nav-mode', { detail: { mode: solid ? 'solid' : 'overlay' } }))
+      },
+      {
+        threshold: 0,
+        root: null,
+        // cruciaal: compenseren voor de onderrand van de navbar
+        rootMargin: `-${Math.max(0, navBottom)}px 0px 0px 0px`,
+      }
+    )
+
     obs.observe(el)
     return () => obs.disconnect()
-  }, [])
+  }, [navBottom])
 
   if (loading) return <Loader />
   if (error) return <Loader />
