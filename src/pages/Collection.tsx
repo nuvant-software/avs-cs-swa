@@ -271,7 +271,6 @@ const Collection: React.FC = () => {
       {
         threshold: 0,
         root: null,
-        // cruciaal: compenseren voor de onderrand van de navbar
         rootMargin: `-${Math.max(0, navBottom)}px 0px 0px 0px`,
       }
     )

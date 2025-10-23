@@ -11,6 +11,16 @@ const Navbar: React.FC = () => {
   const [mode, setMode] = useState<'overlay'|'solid'>('overlay')
   const navRef = useRef<HTMLElement | null>(null)
 
+  // breakpoint (≲1366px) → altijd full width
+  const [isNarrow, setIsNarrow] = useState<boolean>(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1366px)')
+    const apply = () => setIsNarrow(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
   const measureAndBroadcast = () => {
     const el = navRef.current
     if (!el) return
@@ -45,39 +55,51 @@ const Navbar: React.FC = () => {
     }
   }, [])
 
-  useEffect(() => { measureAndBroadcast() }, [mode, isMobileMenuOpen])
+  useEffect(() => { measureAndBroadcast() }, [mode, isMobileMenuOpen, isNarrow])
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleMouseEnter = () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); setIsDropdownOpen(true) }
   const handleMouseLeave = () => { timeoutRef.current = setTimeout(() => setIsDropdownOpen(false), 200) }
 
-  // 🔧 Styles per modus
-  const navClass = useMemo(() => {
-    const base = `
-      fixed flex items-center justify-between z-50
-      transition-all duration-300 ease-out
-      h-20 px-6
-    `
-    if (mode === 'overlay') {
-      // niet doorzichtig, gecentreerd, afgeronde onderkant (desktop)
-      return `
-        ${base}
-        top-10 left-1/2 -translate-x-1/2 w-3/4
-        bg-white shadow-lg rounded-b-xl
-        max-[1366px]:left-0 max-[1366px]:translate-x-0 max-[1366px]:w-full
-      `
+  // 🔧 Geanimeerde stijl (width/left/transform/borderRadius/top)
+  const navStyle = useMemo<React.CSSProperties>(() => {
+    const overlay = {
+      top: '2.5rem',                               // top-10
+      left: isNarrow ? '0' : '50%',
+      transform: isNarrow ? 'none' : 'translateX(-50%)',
+      width: isNarrow ? '100%' : '75%',            // w-3/4 → animatie naar 100%
+      borderBottomLeftRadius: '0.75rem',           // rounded-b-xl
+      borderBottomRightRadius: '0.75rem',
+    } as React.CSSProperties
+
+    const solid = {
+      top: '0px',
+      left: '0px',
+      transform: 'none',
+      width: '100%',
+      borderBottomLeftRadius: '0px',
+      borderBottomRightRadius: '0px',
+    } as React.CSSProperties
+
+    const base: React.CSSProperties = {
+      position: 'fixed',
+      zIndex: 50,
+      transition: 'top 300ms ease, left 300ms ease, transform 300ms ease, width 300ms ease, border-radius 300ms ease',
     }
-    // solid: volle breedte, geen radius, top-0 (desktop)
-    return `
-      ${base}
-      top-0 left-0 w-full translate-x-0
-      bg-white shadow-md rounded-none
-    `
-  }, [mode])
+
+    return { ...base, ...(mode === 'overlay' ? overlay : solid) }
+  }, [mode, isNarrow])
 
   return (
     <>
-      <nav ref={navRef} className={navClass}>
+      <nav
+        ref={navRef}
+        style={navStyle}
+        className={`
+          flex items-center justify-between h-20 px-6 bg-white
+          ${mode === 'overlay' ? 'shadow-lg' : 'shadow-md'}
+        `}
+      >
         {/* Logo */}
         <NavLink href="/" className="p-0">
           <img src="/assets/avs-icon.svg" alt="Logo" className="h-10" />
