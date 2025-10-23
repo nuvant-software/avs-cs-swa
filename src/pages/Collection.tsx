@@ -22,8 +22,7 @@ interface CarOverview {
   engine_size?: string
   imageFolder?: string
   sourceId?: string
-  // Als je later een echte 'createdAt' hebt voor "datum", kun je die hier toevoegen:
-  // createdAt?: string | number
+  // createdAt?: string | number // voeg dit toe als je later op datum wilt sorteren
 }
 
 type StructuredNavFilters = {
@@ -66,7 +65,6 @@ const FALLBACK_IMAGE_FOLDER = 'car_001'
 const buildStableId = (car: CarOverview, fallbackIndex: number): string => {
   const raw = [car.id, car.sourceId].find(value => typeof value === 'string' && value.trim().length)
   if (raw) return raw.trim()
-
   return [
     car.brand,
     car.model,
@@ -87,18 +85,18 @@ const mapCarToGridData = (car: CarOverview, index: number): GridCardData => {
     model: car.model,
     variant: car.variant,
     fuel: car.fuel || 'Onbekend',
-    mileage: typeof car.km === 'number' ? car.km : 0,
+    mileage: typeof car.km === 'number' ? carkmToNum(car.km) : 0,
     transmission: car.transmission || 'Onbekend',
     price: car.price,
     year: car.year ?? 0,
     engine_size: car.engine_size || '',
     pk: typeof car.pk === 'number' ? car.pk : 0,
   }
-
   const imageFolder = car.imageFolder && car.imageFolder.trim().length ? car.imageFolder.trim() : FALLBACK_IMAGE_FOLDER
-
   return { id, car: card, imageFolder }
 }
+
+const carkmToNum = (km: number) => km // eventueel formatter/normalizer
 
 const pickString = (record: Record<string, unknown>, keys: string[]): string | undefined => {
   for (const key of keys) {
@@ -130,7 +128,7 @@ const ensureStringArray = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : []
 
 // ───────────────────────────────────────────────────────────────────────────────
-// Sorteer-opties
+// Sorteren
 type SortBy = 'brandModelVariant' | 'price' | 'km' | 'year'
 type SortDir = 'asc' | 'desc'
 
@@ -152,7 +150,7 @@ const Collection: React.FC = () => {
   // UI
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
 
-  // Sort state (standaard: merk → model → variant oplopend)
+  // Sort state
   const [sortBy, setSortBy] = useState<SortBy>('brandModelVariant')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
@@ -166,7 +164,6 @@ const Collection: React.FC = () => {
     }
     return []
   })()
-
   const [brandSelected, setBrandSelected] = useState<string[]>(initialBrandSelection)
 
   const initialModelSelection = (() => {
@@ -177,7 +174,6 @@ const Collection: React.FC = () => {
       )
       return out
     }
-
     if (isLegacyFilters(initialFilters) && initialFilters.model) {
       const models = ensureStringArray(initialFilters.model)
       const brandSet = new Set(initialBrandSelection)
@@ -186,10 +182,8 @@ const Collection: React.FC = () => {
         return models.map(model => `${brand} — ${model}`)
       }
     }
-
     return out
   })()
-
   const [modelSelected, setModelSelected] = useState<string[]>(initialModelSelection)
 
   const initialVariantSelection = (() => {
@@ -204,7 +198,6 @@ const Collection: React.FC = () => {
     }
     return out
   })()
-
   const [variantSelected, setVariantSelected] = useState<string[]>(initialVariantSelection)
 
   const [priceBounds, setPriceBounds] = useState<[number, number]>([0, 0])
@@ -215,29 +208,6 @@ const Collection: React.FC = () => {
   const [bodySelected, setBodySelected] = useState<string[]>([])
   const [transSelected, setTransSelected] = useState<string[]>([])
   const [doorsSelected, setDoorsSelected] = useState<string[]>([])
-
-  // Helpers
-  function parseModelTokens(tokens: string[]) {
-    const map: Record<string, Set<string>> = {}
-    tokens.forEach(t => {
-      const [brand, model] = t.split(' — ')
-      if (!brand || !model) return
-      if (!map[brand]) map[brand] = new Set()
-      map[brand].add(model)
-    })
-    return map
-  }
-  function parseVariantTokens(tokens: string[]) {
-    const map: Record<string, Record<string, Set<string>>> = {}
-    tokens.forEach(t => {
-      const [brand, model, variant] = t.split(' — ')
-      if (!brand || !model || !variant) return
-      if (!map[brand]) map[brand] = {}
-      if (!map[brand][model]) map[brand][model] = new Set()
-      map[brand][model].add(variant)
-    })
-    return map
-  }
 
   // Fetch
   useEffect(() => {
@@ -255,9 +225,7 @@ const Collection: React.FC = () => {
             if (item && typeof item === 'object') {
               const record = item as Record<string, unknown>
               const nested = record.car_overview ?? record.carOverview
-              if (nested && typeof nested === 'object') {
-                return nested as Record<string, unknown>
-              }
+              if (nested && typeof nested === 'object') return nested as Record<string, unknown>
               return record
             }
             return null
@@ -343,6 +311,7 @@ const Collection: React.FC = () => {
     return Array.from(uniq).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [cars, modelSelected])
 
+  // parse naar snelle lookup maps (zonder losse helpers)
   const modelsByBrand = useMemo(() => {
     const map: Record<string, Set<string>> = {}
     modelSelected.forEach(token => {
@@ -411,10 +380,9 @@ const Collection: React.FC = () => {
   useEffect(() => setTransSelected(sel => sel.filter(v => transOptions.includes(v))), [transOptions])
   useEffect(() => setDoorsSelected(sel => sel.filter(v => doorsOptions.includes(v))), [doorsOptions])
 
-  // ─────────────────────────────────────────────────────
-  // Toepassen van sortering (stabiele, pure sorteerfunctie)
+  // Sorteren toepassen
   const filteredAndSortedCars = useMemo(() => {
-    const base = baseAfterBMVAndSliders.slice() // kopie
+    const base = baseAfterBMVAndSliders.slice()
     base.sort((a, b) => {
       let res = 0
       switch (sortBy) {
@@ -436,7 +404,10 @@ const Collection: React.FC = () => {
     return base
   }, [baseAfterBMVAndSliders, sortBy, sortDir])
 
-  const gridCardData = useMemo(() => filteredAndSortedCars.map((car, index) => mapCarToGridData(car, index)), [filteredAndSortedCars])
+  const gridCardData = useMemo(
+    () => filteredAndSortedCars.map((car, index) => mapCarToGridData(car, index)),
+    [filteredAndSortedCars]
+  )
 
   // ───────── NAVBAR overlay ↔ solid ─────────
   const heroEndRef = useRef<HTMLDivElement | null>(null)
@@ -444,7 +415,6 @@ const Collection: React.FC = () => {
   const [navSolid, setNavSolid] = useState<boolean>(false)
   const navOffset = Math.max(navBottom, NAV_HEIGHT_FALLBACK)
 
-  // luister naar metingen van Navbar + vraag initiale meting op
   useEffect(() => {
     const onMetrics = (e: Event) => {
       const ce = e as CustomEvent<{ bottom: number; height: number; mode: 'overlay' | 'solid' }>
@@ -455,11 +425,9 @@ const Collection: React.FC = () => {
     return () => window.removeEventListener('avs:nav-metrics', onMetrics)
   }, [])
 
-  // wissel navbar-mode precies wanneer de content onder de onderrand van de navbar schuift
   useEffect(() => {
     const el = heroEndRef.current
     if (!el) return
-
     const obs = new IntersectionObserver(
       ([entry]) => {
         const solid = !entry.isIntersecting
@@ -469,11 +437,9 @@ const Collection: React.FC = () => {
       {
         threshold: 0,
         root: null,
-        // cruciaal: compenseren voor de onderrand van de navbar
         rootMargin: `-${Math.max(0, navOffset)}px 0px 0px 0px`,
       }
     )
-
     obs.observe(el)
     return () => obs.disconnect()
   }, [navOffset])
@@ -481,7 +447,6 @@ const Collection: React.FC = () => {
   if (loading) return <Loader />
   if (error) return <Loader />
 
-  // UI: filters render
   const renderFilters = () => (
     <>
       <h2 className="text-lg font-semibold mb-3">Filters</h2>
@@ -524,7 +489,6 @@ const Collection: React.FC = () => {
     </>
   )
 
-  // UI: sorteer controls (rechts boven grid)
   const renderSortControls = () => (
     <div className="flex items-center gap-2">
       <label htmlFor="sortBy" className="text-sm text-gray-600">Sorteren:</label>
@@ -553,7 +517,7 @@ const Collection: React.FC = () => {
 
   return (
     <div className="w-full bg-white">
-      {/* HERO: loopt onder overlay-navbar door */}
+      {/* HERO */}
       <section className="relative">
         <div className="h-40 md:h-56 lg:h-64 w-full bg-center bg-cover" style={{ backgroundImage: `url('/images/collection-hero.jpg')` }} />
         <div className="absolute inset-0 bg-black/25" />
@@ -564,13 +528,12 @@ const Collection: React.FC = () => {
         </div>
       </section>
 
-      {/* Sentinel: begin van content */}
       <div ref={heroEndRef} aria-hidden className="h-0" />
 
       {/* CONTENT */}
       <div className="w-full max-w-screen-2xl mx-auto" style={{ paddingTop: navSolid ? `${navOffset}px` : 0 }}>
         <div className="grid grid-cols-1 md:grid-cols-[33%_67%] lg:grid-cols-[minmax(260px,360px)_1fr]">
-          {/* Sidebar (md+) */}
+          {/* Sidebar */}
           <aside className="hidden md:block border-r border-gray-200">
             <div className="sticky p-4 bg-white" style={{ top: `${navOffset}px` }}>
               {renderFilters()}
@@ -579,7 +542,7 @@ const Collection: React.FC = () => {
 
           {/* Resultaten */}
           <section className="min-w-0">
-            {/* Mobiel: sticky filter-knop exact onder navbar */}
+            {/* Mobiele filters knop */}
             {!mobileFiltersOpen && (
               <div
                 className="md:hidden sticky z-30 bg-white/95 backdrop-blur-sm border-b"
@@ -602,18 +565,16 @@ const Collection: React.FC = () => {
               </div>
             )}
 
-            {/* Teller + sort (md+) */}
+            {/* Teller + sort */}
             <div className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6">
               <div className="text-sm text-gray-600">{gridCardData.length} resultaten</div>
               {renderSortControls()}
             </div>
-
-            {/* Mobiel sort */}
             <div className="md:hidden flex items-center justify-end px-4 py-2">
               {renderSortControls()}
             </div>
 
-            {/* Cards grid – met layout-animaties */}
+            {/* Grid */}
             <div className="px-4 md:px-6 lg:px-8 pb-8">
               {gridCardData.length === 0 ? (
                 <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
@@ -621,14 +582,13 @@ const Collection: React.FC = () => {
                 </div>
               ) : (
                 <LayoutGroup>
-                  {/* Belangrijk: initial={false} voorkomt re-init animatie bij reorders */}
                   <AnimatePresence initial={false} mode="popLayout">
                     <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
                       {gridCardData.map((data) => (
                         <motion.div
-                          key={data.id}         // stabiele, pure key → geen remount op reorder
-                          layout                // FLIP: schuiven ipv remount
-                          initial={false}       // nooit opnieuw initialiseren bij re-render
+                          key={data.id}
+                          layout
+                          initial={false}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 24 }}
                           transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
@@ -638,7 +598,6 @@ const Collection: React.FC = () => {
                             car={data.car}
                             layout="grid"
                             imageFolder={data.imageFolder}
-                            // geen animationDelay meer op index → index verandert bij sorteren en kan "nieuw" aanvoelen
                           />
                         </motion.div>
                       ))}
@@ -651,7 +610,7 @@ const Collection: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobiele fullscreen filters (start onder navbar) */}
+      {/* Mobiele fullscreen filters */}
       {mobileFiltersOpen && (
         <div
           className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-white flex flex-col"
