@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { Lightbox } from "./Lightbox";
 
+// Eenvoudige in-memory cache zodat bij reorders/sort de bloblijst niet opnieuw hoeft
+const blobCache = new Map<string, string[]>();
+
 type Car = {
   id: string;
   brand: string;
@@ -26,9 +29,7 @@ type Props = {
 };
 
 const prefersReducedMotionQuery = () => {
-  if (typeof window === "undefined") {
-    return false;
-  }
+  if (typeof window === "undefined") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 };
 
@@ -43,30 +44,20 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
   const [cardVisible, setCardVisible] = useState(() => (prefersReducedMotionQuery() ? true : false));
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
+    if (typeof window === "undefined") return;
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const handleChange = () => {
       const prefers = mediaQuery.matches;
       setPrefersReducedMotion(prefers);
-      if (prefers) {
-        setCardVisible(true);
-      }
+      if (prefers) setCardVisible(true);
     };
-
     handleChange();
     mediaQuery.addEventListener("change", handleChange);
-
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
   useEffect(() => {
-    if (prefersReducedMotion) {
-      return;
-    }
-
+    if (prefersReducedMotion) return;
     const frame = requestAnimationFrame(() => setCardVisible(true));
     return () => cancelAnimationFrame(frame);
   }, [prefersReducedMotion]);
@@ -76,15 +67,18 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
       ? { transitionDelay: `${animationDelay}ms` }
       : undefined;
 
-  // 📸 Laden uit Azure Blob
+  // 📸 Laden uit Azure Blob (met cache)
   useEffect(() => {
-    // 1) Als imageFolder is meegegeven -> gebruik die
-    // 2) Anders probeer een map per auto-id
-    // 3) Fallback naar 'car_001'
     const baseFolder =
       imageFolder?.trim() ||
       (car.id ? `car_${car.id}` : "") ||
       "car_001";
+
+    const cached = blobCache.get(baseFolder);
+    if (cached) {
+      setAllImages(cached);
+      return; // geen nieuwe fetch nodig
+    }
 
     const listBlobs = async () => {
       try {
@@ -101,15 +95,14 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
         const urls = blobs
           .map((b) => b.getElementsByTagName("Name")[0]?.textContent)
           .filter((n): n is string => !!n && /\.(jpg|jpeg|png|webp)$/i.test(n))
-          .map(
-            (name) =>
-              `https://avsapisa.blob.core.windows.net/carimages/${name}`
-          );
+          .map((name) => `https://avsapisa.blob.core.windows.net/carimages/${name}`);
 
+        blobCache.set(baseFolder, urls);
         setAllImages(urls);
       } catch (e) {
         console.error("Blob list error:", e);
-        setAllImages([]); // zorg dat UI blijft werken
+        blobCache.set(baseFolder, []);
+        setAllImages([]); // UI blijft werken
       }
     };
 
@@ -231,7 +224,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
                     </svg>
                     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 -translate-x-4">
                       <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
-                    </svg>
+                  </svg>
                   </div>
                 </div>
               </button>
@@ -254,7 +247,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
 
   // ─── Grid Layout (standaard) ─────────────────────────────────
   const cardClassName = [
-    // Verwijderd: max-w-[340px]  → grid beheert nu de kolombreedtes
+    // géén max-w → de grid beheert de breedtes; voorkomt gaps bij schuiven
     "w-full self-start flex flex-col transition duration-[420ms] ease-out hover:shadow-lg",
     "transform-gpu motion-reduce:transform-none motion-reduce:opacity-100 motion-reduce:translate-y-0",
     "motion-reduce:duration-0 motion-reduce:transition-none",
@@ -336,7 +329,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
               <div className="relative ml-2 h-5 w-5 overflow-hidden">
                 <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
                   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5">
-                    <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
+                    <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.45118 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
                   </svg>
                   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 -translate-x-4">
                     <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>

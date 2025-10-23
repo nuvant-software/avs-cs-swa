@@ -22,6 +22,8 @@ interface CarOverview {
   engine_size?: string
   imageFolder?: string
   sourceId?: string
+  // Als je later een echte 'createdAt' hebt voor "datum", kun je die hier toevoegen:
+  // createdAt?: string | number
 }
 
 type StructuredNavFilters = {
@@ -57,7 +59,6 @@ type GridCardData = {
   id: string
   car: GridCar
   imageFolder?: string
-  order: number
 }
 
 const FALLBACK_IMAGE_FOLDER = 'car_001'
@@ -96,12 +97,7 @@ const mapCarToGridData = (car: CarOverview, index: number): GridCardData => {
 
   const imageFolder = car.imageFolder && car.imageFolder.trim().length ? car.imageFolder.trim() : FALLBACK_IMAGE_FOLDER
 
-  return {
-    id,
-    car: card,
-    imageFolder,
-    order: index,
-  }
+  return { id, car: card, imageFolder }
 }
 
 const pickString = (record: Record<string, unknown>, keys: string[]): string | undefined => {
@@ -133,6 +129,16 @@ const pickNumber = (record: Record<string, unknown>, keys: string[]): number | u
 const ensureStringArray = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : []
 
+// ───────────────────────────────────────────────────────────────────────────────
+// Sorteer-opties
+type SortBy = 'brandModelVariant' | 'price' | 'km' | 'year'
+type SortDir = 'asc' | 'desc'
+
+const composeBMV = (c: CarOverview) =>
+  `${(c.brand || '').toLowerCase()}|${(c.model || '').toLowerCase()}|${(c.variant || '').toLowerCase()}`
+
+const cmpNum = (a: number, b: number) => (a < b ? -1 : a > b ? 1 : 0)
+
 const Collection: React.FC = () => {
   const location = useLocation()
   const navState = (location.state as { filters?: IncomingFilters; includeItems?: boolean } | undefined) || {}
@@ -145,6 +151,10 @@ const Collection: React.FC = () => {
 
   // UI
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+
+  // Sort state (standaard: merk → model → variant oplopend)
+  const [sortBy, setSortBy] = useState<SortBy>('brandModelVariant')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
 
   // Filters
   const initialBrandSelection = (() => {
@@ -333,8 +343,30 @@ const Collection: React.FC = () => {
     return Array.from(uniq).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [cars, modelSelected])
 
-  const modelsByBrand = useMemo(() => parseModelTokens(modelSelected), [modelSelected])
-  const variantsByBrandModel = useMemo(() => parseVariantTokens(variantSelected), [variantSelected])
+  const modelsByBrand = useMemo(() => {
+    const map: Record<string, Set<string>> = {}
+    modelSelected.forEach(token => {
+      const [b, m] = token.split(' — ')
+      if (b && m) {
+        if (!map[b]) map[b] = new Set()
+        map[b].add(m)
+      }
+    })
+    return map
+  }, [modelSelected])
+
+  const variantsByBrandModel = useMemo(() => {
+    const map: Record<string, Record<string, Set<string>>> = {}
+    variantSelected.forEach(token => {
+      const [b, m, v] = token.split(' — ')
+      if (b && m && v) {
+        if (!map[b]) map[b] = {}
+        if (!map[b][m]) map[b][m] = new Set()
+        map[b][m].add(v)
+      }
+    })
+    return map
+  }, [variantSelected])
 
   const baseAfterBMVAndSliders = useMemo(() => {
     return cars.filter(c => {
@@ -379,15 +411,32 @@ const Collection: React.FC = () => {
   useEffect(() => setTransSelected(sel => sel.filter(v => transOptions.includes(v))), [transOptions])
   useEffect(() => setDoorsSelected(sel => sel.filter(v => doorsOptions.includes(v))), [doorsOptions])
 
-  const filteredCars = useMemo(() => {
-    return baseAfterBMVAndSliders.filter(c => {
-      if (pkSelected.length && !(c.pk != null && pkSelected.includes(String(c.pk)))) return false
-      if (bodySelected.length && !(c.body && bodySelected.includes(String(c.body)))) return false
-      if (transSelected.length && !(c.transmission && transSelected.includes(String(c.transmission)))) return false
-      if (doorsSelected.length && !(c.doors != null && doorsSelected.includes(String(c.doors)))) return false
-      return true
+  // ─────────────────────────────────────────────────────
+  // Toepassen van sortering (stabiele, pure sorteerfunctie)
+  const filteredAndSortedCars = useMemo(() => {
+    const base = baseAfterBMVAndSliders.slice() // kopie
+    base.sort((a, b) => {
+      let res = 0
+      switch (sortBy) {
+        case 'brandModelVariant':
+          res = composeBMV(a).localeCompare(composeBMV(b), 'nl', { sensitivity: 'base' })
+          break
+        case 'price':
+          res = cmpNum(a.price ?? 0, b.price ?? 0)
+          break
+        case 'km':
+          res = cmpNum((a.km ?? 0), (b.km ?? 0))
+          break
+        case 'year':
+          res = cmpNum((a.year ?? 0), (b.year ?? 0))
+          break
+      }
+      return sortDir === 'asc' ? res : -res
     })
-  }, [baseAfterBMVAndSliders, pkSelected, bodySelected, transSelected, doorsSelected])
+    return base
+  }, [baseAfterBMVAndSliders, sortBy, sortDir])
+
+  const gridCardData = useMemo(() => filteredAndSortedCars.map((car, index) => mapCarToGridData(car, index)), [filteredAndSortedCars])
 
   // ───────── NAVBAR overlay ↔ solid ─────────
   const heroEndRef = useRef<HTMLDivElement | null>(null)
@@ -475,6 +524,33 @@ const Collection: React.FC = () => {
     </>
   )
 
+  // UI: sorteer controls (rechts boven grid)
+  const renderSortControls = () => (
+    <div className="flex items-center gap-2">
+      <label htmlFor="sortBy" className="text-sm text-gray-600">Sorteren:</label>
+      <select
+        id="sortBy"
+        className="text-sm border rounded px-2 py-1"
+        value={sortBy}
+        onChange={(e) => setSortBy(e.target.value as SortBy)}
+      >
+        <option value="brandModelVariant">Merk → Model → Variant</option>
+        <option value="price">Prijs</option>
+        <option value="km">Kilometerstand</option>
+        <option value="year">Bouwjaar</option>
+      </select>
+      <button
+        type="button"
+        className="text-sm border rounded px-2 py-1"
+        onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+        aria-label="Draai sorteer volgorde"
+        title="Draai sorteer volgorde"
+      >
+        {sortDir === 'asc' ? '↑' : '↓'}
+      </button>
+    </div>
+  )
+
   return (
     <div className="w-full bg-white">
       {/* HERO: loopt onder overlay-navbar door */}
@@ -521,50 +597,51 @@ const Collection: React.FC = () => {
                     </svg>
                     Filters
                   </button>
-                  <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
+                  <div className="text-sm text-gray-600">{gridCardData.length} resultaten</div>
                 </div>
               </div>
             )}
 
-            {/* Teller (md+) */}
-            <div className="hidden md:flex items-center justify-end px-6 lg:px-8 mb-4 md:mb-6">
-              <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
+            {/* Teller + sort (md+) */}
+            <div className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6">
+              <div className="text-sm text-gray-600">{gridCardData.length} resultaten</div>
+              {renderSortControls()}
+            </div>
+
+            {/* Mobiel sort */}
+            <div className="md:hidden flex items-center justify-end px-4 py-2">
+              {renderSortControls()}
             </div>
 
             {/* Cards grid – met layout-animaties */}
             <div className="px-4 md:px-6 lg:px-8 pb-8">
-              {filteredCars.length === 0 ? (
+              {gridCardData.length === 0 ? (
                 <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
                   Geen resultaten met de huidige filters.
                 </div>
               ) : (
                 <LayoutGroup>
-                  <AnimatePresence mode="popLayout">
+                  {/* Belangrijk: initial={false} voorkomt re-init animatie bij reorders */}
+                  <AnimatePresence initial={false} mode="popLayout">
                     <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
-                      {filteredCars.map((car, index) => {
-                        const data = mapCarToGridData(car, index)
-                        return (
-                          <motion.div
-                            key={data.id}
-                            layout
-                            initial={{ opacity: 0, y: 24 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 24 }}
-                            transition={{
-                              duration: 0.35,
-                              ease: [0.22, 1, 0.36, 1],
-                              delay: Math.min(index, 8) * 0.06,
-                            }}
-                            className="w-full"
-                          >
-                            <CarCard
-                              car={data.car}
-                              layout="grid"
-                              imageFolder={data.imageFolder}
-                            />
-                          </motion.div>
-                        )
-                      })}
+                      {gridCardData.map((data) => (
+                        <motion.div
+                          key={data.id}         // stabiele, pure key → geen remount op reorder
+                          layout                // FLIP: schuiven ipv remount
+                          initial={false}       // nooit opnieuw initialiseren bij re-render
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 24 }}
+                          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                          className="w-full"
+                        >
+                          <CarCard
+                            car={data.car}
+                            layout="grid"
+                            imageFolder={data.imageFolder}
+                            // geen animationDelay meer op index → index verandert bij sorteren en kan "nieuw" aanvoelen
+                          />
+                        </motion.div>
+                      ))}
                     </div>
                   </AnimatePresence>
                 </LayoutGroup>
