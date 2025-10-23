@@ -151,8 +151,7 @@ const Navbar: React.FC = () => {
       position: 'absolute',
       backgroundColor: '#fff',
       zIndex: 40, // onder content-row (z-50) maar boven pagina
-      boxShadow: NAV_ELEVATION_SHADOW,
-      transition: 'top 300ms ease, transform 300ms ease, width 300ms ease, max-width 300ms ease, border-radius 300ms ease, box-shadow 300ms ease',
+      transition: 'top 300ms ease, left 300ms ease, transform 300ms ease, width 300ms ease, max-width 300ms ease, border-radius 300ms ease, box-shadow 300ms ease',
       ...(mode === 'overlay' ? overlay : solid),
     }
   }, [mode, isNarrow])
