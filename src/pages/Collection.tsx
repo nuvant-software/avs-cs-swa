@@ -466,7 +466,7 @@ const Collection: React.FC = () => {
   )
 
   // ——— Pagination ———
-  const PAGE_SIZE = 10
+  const PAGE_SIZE = 12
   const [page, setPage] = useState(1)
 
   const totalPages = useMemo(() => {
