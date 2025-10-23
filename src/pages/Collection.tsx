@@ -575,8 +575,8 @@ const Collection: React.FC = () => {
           title="Draai sorteer volgorde"
           className={[
             'p-0 m-0 text-[#1C448E]',
-            'bg-transparent border-0 rounded-none',
-            'border-b-2 border-transparent hover:border-[#1C448E]',
+            '!bg-transparent border-0 rounded-none',
+            'border-b-2 !border-transparent hover:border-[#1C448E]',
             'transition-transform duration-200'
           ].join(' ')}
         >
