@@ -1,4 +1,3 @@
-// src/components/CarCard.tsx
 import React, { useState, useEffect } from "react";
 import { Lightbox } from "./Lightbox";
 
@@ -35,7 +34,9 @@ const prefersReducedMotionQuery = () => {
 
 const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animationDelay }) => {
   const [hoverZone, setHoverZone] = useState<number | null>(null);
+  // We laten lastPreviewZone bestaan (om niets te breken), maar resetten ’m altijd naar 0 bij mouseleave:
   const [lastPreviewZone, setLastPreviewZone] = useState<number>(0);
+
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [allImages, setAllImages] = useState<string[]>([]);
@@ -109,6 +110,12 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
     listBlobs();
   }, [car.id, imageFolder]);
 
+  // ✅ Als de afbeeldingen wijzigen: reset hover/preview naar begin
+  useEffect(() => {
+    setHoverZone(null);
+    setLastPreviewZone(0);
+  }, [allImages]);
+
   const totalPhotos = allImages.length;
   const prevSlide = () => setCurrentSlide((s) => (s - 1 + totalPhotos) % totalPhotos);
   const nextSlide = () => setCurrentSlide((s) => (s + 1) % totalPhotos);
@@ -127,7 +134,8 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
   );
 
   const getZoneContent = () => {
-    const zone = hoverZone ?? lastPreviewZone;
+    // ✅ Altijd terugvallen op 0 (eerste foto) buiten hover
+    const zone = hoverZone ?? 0;
 
     if (zone === 2) {
       if (totalPhotos === 3 && allImages[2]) {
@@ -247,7 +255,6 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
 
   // ─── Grid Layout (standaard) ─────────────────────────────────
   const cardClassName = [
-    // géén max-w → de grid beheert de breedtes; voorkomt gaps bij schuiven
     "w-full self-start flex flex-col transition duration-[420ms] ease-out hover:shadow-lg",
     "transform-gpu motion-reduce:transform-none motion-reduce:opacity-100 motion-reduce:translate-y-0",
     "motion-reduce:duration-0 motion-reduce:transition-none",
@@ -257,8 +264,16 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
   return (
     <>
       <div className={cardClassName} style={transitionStyle}>
-        <div className="relative w-full h-56 overflow-hidden group rounded-t-[6px]">
+        <div
+          className="relative w-full h-56 overflow-hidden group rounded-t-[6px]"
+          // ✅ Bij verlaten van de afbeelding: reset naar beginfoto
+          onMouseLeave={() => {
+            setHoverZone(null);
+            setLastPreviewZone(0);
+          }}
+        >
           {getZoneContent()}
+
           <div className="absolute inset-0 flex">
             {[0, 1, 2].map((zone) => (
               <div
@@ -266,7 +281,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
                 className="w-1/3 h-full"
                 onMouseEnter={() => {
                   setHoverZone(zone);
-                  setLastPreviewZone(zone);
+                  setLastPreviewZone(zone); // mag blijven, want onMouseLeave resetten we naar 0
                 }}
                 onClick={() => {
                   const idx = zone < 2 ? zone : 2;
@@ -276,12 +291,14 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
               />
             ))}
           </div>
+
           <div className="absolute bottom-0 left-0 w-full flex">
             {[0, 1, 2].map((zone, i) => (
               <div
                 key={zone}
                 className={`h-[3px] flex-1 transition-colors duration-300 ${
-                  (hoverZone ?? lastPreviewZone) === zone ? "!bg-[#1C448E]" : "!bg-white/60"
+                  // ✅ indicator volgt ook hover met fallback 0
+                  (hoverZone ?? 0) === zone ? "!bg-[#1C448E]" : "!bg-white/60"
                 } ${i === 1 ? "mx-[6px]" : ""}`}
               />
             ))}
@@ -329,11 +346,11 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
               <div className="relative ml-2 h-5 w-5 overflow-hidden">
                 <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
                   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5">
-                    <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.45118 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
+                    <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
                   </svg>
                   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 -translate-x-4">
                     <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
-                  </svg>
+                </svg>
                 </div>
               </div>
             </button>
