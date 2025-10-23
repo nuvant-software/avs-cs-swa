@@ -245,6 +245,7 @@ const Collection: React.FC = () => {
   const heroEndRef = useRef<HTMLDivElement | null>(null)
   const [navBottom, setNavBottom] = useState<number>(NAV_HEIGHT_FALLBACK)
   const [navSolid, setNavSolid] = useState<boolean>(false)
+  const navOffset = Math.max(navBottom, NAV_HEIGHT_FALLBACK)
 
   // luister naar metingen van Navbar + vraag initiale meting op
   useEffect(() => {
@@ -272,13 +273,13 @@ const Collection: React.FC = () => {
         threshold: 0,
         root: null,
         // cruciaal: compenseren voor de onderrand van de navbar
-        rootMargin: `-${Math.max(0, navBottom)}px 0px 0px 0px`,
+        rootMargin: `-${Math.max(0, navOffset)}px 0px 0px 0px`,
       }
     )
 
     obs.observe(el)
     return () => obs.disconnect()
-  }, [navBottom])
+  }, [navOffset])
 
   if (loading) return <Loader />
   if (error) return <Loader />
@@ -343,11 +344,11 @@ const Collection: React.FC = () => {
       <div ref={heroEndRef} aria-hidden className="h-0" />
 
       {/* CONTENT */}
-      <div className="w-full max-w-screen-2xl mx-auto" style={{ paddingTop: navSolid ? `${navBottom}px` : 0 }}>
+      <div className="w-full max-w-screen-2xl mx-auto" style={{ paddingTop: navSolid ? `${navOffset}px` : 0 }}>
         <div className="grid grid-cols-1 md:grid-cols-[33%_67%] lg:grid-cols-[minmax(260px,360px)_1fr]">
           {/* Sidebar (md+) */}
           <aside className="hidden md:block border-r border-gray-200">
-            <div className="sticky p-4 bg-white" style={{ top: navSolid ? `${navBottom}px` : 0 }}>
+            <div className="sticky p-4 bg-white" style={{ top: `${navOffset}px` }}>
               {renderFilters()}
             </div>
           </aside>
@@ -358,7 +359,7 @@ const Collection: React.FC = () => {
             {!mobileFiltersOpen && (
               <div
                 className="md:hidden sticky z-30 bg-white/95 backdrop-blur-sm border-b"
-                style={{ top: `${navBottom}px` }}
+                style={{ top: `${navOffset}px` }}
               >
                 <div className="flex items-center justify-between px-4 py-2">
                   <button
@@ -419,7 +420,7 @@ const Collection: React.FC = () => {
           className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-white flex flex-col"
           role="dialog"
           aria-modal="true"
-          style={{ top: `${navBottom}px` }}
+          style={{ top: `${navOffset}px` }}
         >
           <div className="h-12 flex items-center justify-between px-4 border-b">
             <h2 className="text-base font-semibold">Filters</h2>

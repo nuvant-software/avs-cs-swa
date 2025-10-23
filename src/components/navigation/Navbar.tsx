@@ -3,8 +3,10 @@ import NavLink from './NavLink'
 import { Bars3Icon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline'
 
 const NAV_HEIGHT = 80 // h-20
-const WIDE_NAV_WIDTH = '66.6667vw'
+const WIDE_NAV_WIDTH = '80vw'
+const MAX_WIDE_WIDTH = 1280
 const MIN_WIDE_BREAKPOINT = 1024
+const SCROLL_SOLID_THRESHOLD = 32
 
 const Navbar: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -12,7 +14,8 @@ const Navbar: React.FC = () => {
   const [isMobileDropdownOpen, setIsMobileDropdownOpen] = useState(false)
 
   // nav-mode besturing + metingen
-  const [mode, setMode] = useState<'overlay'|'solid'>('overlay')
+  const [desiredMode, setDesiredMode] = useState<'overlay'|'solid'>('overlay')
+  const [scrollSolid, setScrollSolid] = useState<boolean>(false)
   const rowRef = useRef<HTMLDivElement | null>(null)
 
   const computeIsNarrow = () => {
@@ -35,6 +38,10 @@ const Navbar: React.FC = () => {
     }
   }, [])
 
+  const mode = useMemo<'overlay'|'solid'>(() => {
+    return scrollSolid || desiredMode === 'solid' ? 'solid' : 'overlay'
+  }, [scrollSolid, desiredMode])
+
   const measureAndBroadcast = useCallback(() => {
     const el = rowRef.current
     if (!el) return
@@ -49,7 +56,7 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     const onMode = (e: Event) => {
       const ce = e as CustomEvent<{ mode: 'overlay'|'solid' }>
-      setMode(ce.detail.mode)
+      setDesiredMode(ce.detail.mode)
     }
     const onRequestMetrics = () => measureAndBroadcast()
     window.addEventListener('avs:nav-mode', onMode)
@@ -63,15 +70,23 @@ const Navbar: React.FC = () => {
   useEffect(() => {
     const handler = () => measureAndBroadcast()
     window.addEventListener('resize', handler)
-    window.addEventListener('scroll', handler)
     handler()
     return () => {
       window.removeEventListener('resize', handler)
-      window.removeEventListener('scroll', handler)
     }
   }, [measureAndBroadcast])
 
-  useEffect(() => { measureAndBroadcast() }, [measureAndBroadcast, isMobileMenuOpen, isNarrow])
+  useEffect(() => {
+    const handleScroll = () => {
+      const shouldBeSolid = window.scrollY > SCROLL_SOLID_THRESHOLD
+      setScrollSolid(prev => (prev === shouldBeSolid ? prev : shouldBeSolid))
+    }
+    handleScroll()
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => { measureAndBroadcast() }, [measureAndBroadcast, isMobileMenuOpen, isNarrow, mode])
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleMouseEnter = () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); setIsDropdownOpen(true) }
@@ -107,7 +122,7 @@ const Navbar: React.FC = () => {
           transform: 'translateX(-50%)',
           width: WIDE_NAV_WIDTH,
           height: NAV_HEIGHT,
-          maxWidth: '1200px',
+          maxWidth: `${MAX_WIDE_WIDTH}px`,
           borderBottomLeftRadius: '0.75rem',
           borderBottomRightRadius: '0.75rem',
           boxShadow: '0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1)',
@@ -140,7 +155,7 @@ const Navbar: React.FC = () => {
       left: isNarrow || isSolid ? 0 : '50%',
       transform: isNarrow || isSolid ? 'none' : 'translateX(-50%)',
       width: isNarrow || isSolid ? '100%' : WIDE_NAV_WIDTH,
-      maxWidth: isNarrow || isSolid ? '100%' : '1200px',
+      maxWidth: isNarrow || isSolid ? '100%' : `${MAX_WIDE_WIDTH}px`,
       height: NAV_HEIGHT,
       zIndex: 50,
       transition: 'top 300ms ease, transform 300ms ease, width 300ms ease',
