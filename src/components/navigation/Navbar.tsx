@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import NavLink from './NavLink'
 import { Bars3Icon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline'
 
@@ -13,7 +13,7 @@ const Navbar: React.FC = () => {
 
   // nav-mode besturing + metingen
   const [mode, setMode] = useState<'overlay'|'solid'>('overlay')
-  const navRef = useRef<HTMLElement | null>(null)
+  const rowRef = useRef<HTMLDivElement | null>(null)
 
   const computeIsNarrow = () => {
     if (typeof window === 'undefined') return false
@@ -35,10 +35,16 @@ const Navbar: React.FC = () => {
     }
   }, [])
 
-  const measureAndBroadcast = () => {
-    const rect = { bottom: NAV_HEIGHT, height: NAV_HEIGHT } // constante hoogte
-    window.dispatchEvent(new CustomEvent('avs:nav-metrics', { detail: { ...rect, mode } }))
-  }
+  const measureAndBroadcast = useCallback(() => {
+    const el = rowRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    window.dispatchEvent(
+      new CustomEvent('avs:nav-metrics', {
+        detail: { bottom: rect.bottom, height: rect.height, mode },
+      })
+    )
+  }, [mode])
 
   useEffect(() => {
     const onMode = (e: Event) => {
@@ -52,7 +58,7 @@ const Navbar: React.FC = () => {
       window.removeEventListener('avs:nav-mode', onMode)
       window.removeEventListener('avs:request-nav-metrics', onRequestMetrics)
     }
-  }, [])
+  }, [measureAndBroadcast])
 
   useEffect(() => {
     const handler = () => measureAndBroadcast()
@@ -63,9 +69,9 @@ const Navbar: React.FC = () => {
       window.removeEventListener('resize', handler)
       window.removeEventListener('scroll', handler)
     }
-  }, [])
+  }, [measureAndBroadcast])
 
-  useEffect(() => { measureAndBroadcast() }, [mode, isMobileMenuOpen, isNarrow])
+  useEffect(() => { measureAndBroadcast() }, [measureAndBroadcast, isMobileMenuOpen, isNarrow])
 
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleMouseEnter = () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); setIsDropdownOpen(true) }
@@ -79,7 +85,7 @@ const Navbar: React.FC = () => {
   // ─────────────────────────────────────────────────────────────
 
   const topOverlay = '2.5rem' // top-10
-  const topSolid = '0px'
+  const topSolid = topOverlay
 
   // WITTE ACHTERGRONDBALK (alleen deze schuift uit)
   const bgBarStyle = useMemo<React.CSSProperties>(() => {
@@ -90,6 +96,7 @@ const Navbar: React.FC = () => {
           transform: 'none',
           width: '100%',
           height: NAV_HEIGHT,
+          maxWidth: '100%',
           borderBottomLeftRadius: '0.75rem',
           borderBottomRightRadius: '0.75rem',
           boxShadow: '0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1)',
@@ -100,6 +107,7 @@ const Navbar: React.FC = () => {
           transform: 'translateX(-50%)',
           width: WIDE_NAV_WIDTH,
           height: NAV_HEIGHT,
+          maxWidth: '1200px',
           borderBottomLeftRadius: '0.75rem',
           borderBottomRightRadius: '0.75rem',
           boxShadow: '0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1)',
@@ -125,12 +133,14 @@ const Navbar: React.FC = () => {
 
   // CONTENT-RIJ (blijft 75% gecentreerd op desktop; 100% op smalle viewports)
   const rowStyle = useMemo<React.CSSProperties>(() => {
+    const isSolid = mode === 'solid'
     return {
       position: 'absolute',
       top: mode === 'overlay' ? topOverlay : topSolid,
-      left: isNarrow ? 0 : '50%',
-      transform: isNarrow ? 'none' : 'translateX(-50%)',
-      width: isNarrow ? '100%' : WIDE_NAV_WIDTH,
+      left: isNarrow || isSolid ? 0 : '50%',
+      transform: isNarrow || isSolid ? 'none' : 'translateX(-50%)',
+      width: isNarrow || isSolid ? '100%' : WIDE_NAV_WIDTH,
+      maxWidth: isNarrow || isSolid ? '100%' : '1200px',
       height: NAV_HEIGHT,
       zIndex: 50,
       transition: 'top 300ms ease, transform 300ms ease, width 300ms ease',
@@ -145,19 +155,19 @@ const Navbar: React.FC = () => {
   return (
     <>
       {/* Wrapper */}
-      <nav ref={navRef} className="fixed inset-x-0 top-0 z-50" style={{ height: 0 }}>
+       <nav className="fixed inset-x-0 top-0 z-50" style={{ height: 0 }}>
         {/* Achtergrondbalk die uitschuift */}
         <div style={bgBarStyle} />
 
         {/* Contentrij (logo/links/knoppen) */}
-        <div style={rowStyle}>
+        <div ref={rowRef} style={rowStyle}>
           {/* Logo */}
           <NavLink href="/" className="p-0">
             <img src="/assets/avs-icon.svg" alt="Logo" className="h-10" />
           </NavLink>
 
           {/* Desktop links */}
-          <ul className="flex gap-8 max-[1366px]:hidden">
+          <ul className="hidden lg:flex gap-8">
             <li><NavLink href="/">Home</NavLink></li>
             <li>
               <NavLink href="/collection" state={{ filters: {}, includeItems: true }}>
@@ -185,7 +195,7 @@ const Navbar: React.FC = () => {
           </ul>
 
           {/* Desktop login */}
-          <div className="hidden max-[1366px]:hidden md:block">
+          <div className="hidden lg:block">
             <NavLink href="#" className="inline-flex items-center gap-2">
               <UserIcon className="w-5 h-5 text-[#0A0A0A]" /> Inloggen
             </NavLink>
@@ -195,7 +205,7 @@ const Navbar: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(true)}
-            className="hidden max-[1366px]:block bg-transparent border-none"
+            className="lg:hidden bg-transparent border-none"
           >
             <Bars3Icon
               className={`

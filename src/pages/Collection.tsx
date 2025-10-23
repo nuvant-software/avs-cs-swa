@@ -34,7 +34,7 @@ type IncomingFilters =
     }
   | undefined
 
-const NAV_HEIGHT_FALLBACK = 80 // px
+const NAV_HEIGHT_FALLBACK = 120 // px
 
 const Collection: React.FC = () => {
   const location = useLocation()
