@@ -56,7 +56,6 @@ const Navbar: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, isMobileMenuOpen])
 
-  const [isDropdownInstant, setIsDropdownInstant] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const handleMouseEnter = () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); setIsDropdownOpen(true) }
   const handleMouseLeave = () => { timeoutRef.current = setTimeout(() => setIsDropdownOpen(false), 200) }
