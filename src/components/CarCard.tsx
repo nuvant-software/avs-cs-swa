@@ -21,14 +21,60 @@ type Props = {
   layout?: "grid" | "list";
   /** Optioneel: forceer mapnaam in Azure Blob container (bv. 'car_001') */
   imageFolder?: string;
+  /** Optioneel: animatievertraging in milliseconden voor de kaart */
+  animationDelay?: number;
 };
 
-const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder }) => {
+  const prefersReducedMotionQuery = () => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  };
+
+  const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animationDelay }) => {
   const [hoverZone, setHoverZone] = useState<number | null>(null);
   const [lastPreviewZone, setLastPreviewZone] = useState<number>(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [allImages, setAllImages] = useState<string[]>([]);
+
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(prefersReducedMotionQuery);
+  const [cardVisible, setCardVisible] = useState(() => (prefersReducedMotionQuery() ? true : false));
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleChange = () => {
+      const prefers = mediaQuery.matches;
+      setPrefersReducedMotion(prefers);
+      if (prefers) {
+        setCardVisible(true);
+      }
+    };
+
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => setCardVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, [prefersReducedMotion]);
+
+  const transitionStyle: React.CSSProperties | undefined =
+    !prefersReducedMotion && animationDelay != null
+      ? { transitionDelay: `${animationDelay}ms` }
+      : undefined;
 
   // 📸 Laden uit Azure Blob
   useEffect(() => {
@@ -207,9 +253,15 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder }) => {
   }
 
   // ─── Grid Layout (standaard) ─────────────────────────────────
+  const cardClassName = [
+    "w-full h-full flex flex-col transition duration-[420ms] ease-out hover:shadow-lg",
+    "transform-gpu motion-reduce:transform-none motion-reduce:opacity-100 motion-reduce:translate-y-0",
+    "motion-reduce:duration-0 motion-reduce:transition-none",
+    cardVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
+  ].join(" ");
   return (
     <>
-      <div className="w-full max-w-[340px] mx-auto transition-shadow duration-300 hover:shadow-lg">
+      <div className={cardClassName} style={transitionStyle}>
         <div className="relative w-full h-56 overflow-hidden group rounded-t-[6px]">
           {getZoneContent()}
           <div className="absolute inset-0 flex">

@@ -405,8 +405,15 @@ const Collection: React.FC = () => {
                       engine_size: (c as any).engine_size || (c as any).motorinhoud || '',
                       pk: typeof c.pk === 'number' ? c.pk : (c as any).pk || 0,
                     }
-                    return <CarCard key={mappedCar.id} car={mappedCar} layout="grid" imageFolder="car_001" />
-                  })}
+                    return (
+                      <CarCard
+                        key={mappedCar.id}
+                        car={mappedCar}
+                        layout="grid"
+                        imageFolder="car_001"
+                        animationDelay={Math.min(idx, 8) * 80}
+                      />
+                    )})}
                 </div>
               )}
             </div>
