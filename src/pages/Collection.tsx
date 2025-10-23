@@ -5,7 +5,6 @@ import FilterRangeSlider from '../components/filters/FilterRangeSlider'
 import MultiSearchSelect from '../components/filters/MultiSearchSelect'
 import CarCard from '../components/CarCard'
 
-// --- types ---
 interface CarOverview {
   brand: string
   model: string
@@ -35,6 +34,9 @@ type IncomingFilters =
     }
   | undefined
 
+// Fallback als layout geen --app-offset zet (pas aan indien nodig)
+const APP_OFFSET_FALLBACK = 112 // px (topbar + navbar + blauwe balk)
+
 const Collection: React.FC = () => {
   const location = useLocation()
   const navState = (location.state as { filters?: IncomingFilters; includeItems?: boolean } | undefined) || {}
@@ -57,9 +59,7 @@ const Collection: React.FC = () => {
   const [modelSelected, setModelSelected] = useState<string[]>(() => {
     const out: string[] = []
     if ('models_by_brand' in initialFilters && initialFilters.models_by_brand) {
-      Object.entries(initialFilters.models_by_brand!).forEach(([b, arr]) => {
-        (arr || []).forEach(m => out.push(`${b} — ${m}`))
-      })
+      Object.entries(initialFilters.models_by_brand!).forEach(([b, arr]) => (arr || []).forEach(m => out.push(`${b} — ${m}`)))
       return out
     }
     if ((initialFilters as any).model && Array.isArray((initialFilters as any).model)) {
@@ -77,9 +77,7 @@ const Collection: React.FC = () => {
     const out: string[] = []
     if ('variants_by_brand_model' in initialFilters && initialFilters.variants_by_brand_model) {
       Object.entries(initialFilters.variants_by_brand_model!).forEach(([b, models]) => {
-        Object.entries(models || {}).forEach(([m, vars]) => {
-          (vars || []).forEach(v => out.push(`${b} — ${m} — ${v}`))
-        })
+        Object.entries(models || {}).forEach(([m, vars]) => (vars || []).forEach(v => out.push(`${b} — ${m} — ${v}`)))
       })
       return out
     }
@@ -88,10 +86,8 @@ const Collection: React.FC = () => {
 
   const [priceBounds, setPriceBounds] = useState<[number, number]>([0, 0])
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 0])
-
   const [kmBounds, setKmBounds] = useState<[number, number]>([0, 0])
   const [kmRange, setKmRange] = useState<[number, number]>([0, 0])
-
   const [pkSelected, setPkSelected] = useState<string[]>([])
   const [bodySelected, setBodySelected] = useState<string[]>([])
   const [transSelected, setTransSelected] = useState<string[]>([])
@@ -119,7 +115,6 @@ const Collection: React.FC = () => {
     return map
   }
 
-  // ── FETCH ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     setLoading(true)
     fetch('/api/filter_cars', {
@@ -127,10 +122,7 @@ const Collection: React.FC = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filters: {}, includeItems: true })
     })
-      .then(res => {
-        if (!res.ok) throw new Error(res.statusText)
-        return res.json()
-      })
+      .then(res => { if (!res.ok) throw new Error(res.statusText); return res.json() })
       .then((data: { items?: any[] }) => {
         const items = Array.isArray(data.items) ? data.items : []
         const valid: CarOverview[] = items
@@ -171,19 +163,16 @@ const Collection: React.FC = () => {
       .finally(() => setLoading(false))
   }, []) // fetch 1x
 
-  // ── FACETS/DERIVED ──────────────────────────────────────────────────────────
   const brandOptions = useMemo(
     () => Array.from(new Set(cars.map(c => c.brand))).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' })),
     [cars]
   )
-
   const modelOptions = useMemo(() => {
     const base = brandSelected.length ? cars.filter(c => brandSelected.includes(c.brand)) : cars
     const uniq = new Set<string>()
     base.forEach(c => uniq.add(`${c.brand} — ${c.model}`))
     return Array.from(uniq).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [cars, brandSelected])
-
   const variantOptions = useMemo(() => {
     if (!modelSelected.length) return []
     const chosenBM = new Set(modelSelected)
@@ -215,29 +204,22 @@ const Collection: React.FC = () => {
 
   const pkOptions = useMemo(() => {
     const set = new Set<string>()
-    baseAfterBMVAndSliders.forEach(c => {
-      if (typeof c.pk === 'number' && !Number.isNaN(c.pk)) set.add(String(c.pk))
-    })
+    baseAfterBMVAndSliders.forEach(c => { if (typeof c.pk === 'number' && !Number.isNaN(c.pk)) set.add(String(c.pk)) })
     return Array.from(set).sort((a, b) => Number(a) - Number(b))
   }, [baseAfterBMVAndSliders])
-
   const bodyOptions = useMemo(() => {
     const set = new Set<string>()
     baseAfterBMVAndSliders.forEach(c => { if (c.body) set.add(String(c.body)) })
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [baseAfterBMVAndSliders])
-
   const transOptions = useMemo(() => {
     const set = new Set<string>()
     baseAfterBMVAndSliders.forEach(c => { if (c.transmission) set.add(String(c.transmission)) })
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [baseAfterBMVAndSliders])
-
   const doorsOptions = useMemo(() => {
     const set = new Set<string>()
-    baseAfterBMVAndSliders.forEach(c => {
-      if (typeof c.doors === 'number' && !Number.isNaN(c.doors)) set.add(String(c.doors))
-    })
+    baseAfterBMVAndSliders.forEach(c => { if (typeof c.doors === 'number' && !Number.isNaN(c.doors)) set.add(String(c.doors)) })
     return Array.from(set).sort((a, b) => Number(a) - Number(b))
   }, [baseAfterBMVAndSliders])
 
@@ -259,38 +241,20 @@ const Collection: React.FC = () => {
   if (loading) return <Loader />
   if (error)   return <Loader />
 
-  // — Render van de filtervelden (hergebruikt) —
   const renderFilters = () => (
     <>
       <h2 className="text-lg font-semibold mb-3">Filters</h2>
 
       <div className="mb-4">
-        <MultiSearchSelect
-          label="Merk"
-          options={brandOptions}
-          selected={brandSelected}
-          onChange={setBrandSelected}
-        />
+        <MultiSearchSelect label="Merk" options={brandOptions} selected={brandSelected} onChange={setBrandSelected} />
       </div>
 
       <div className="mb-4">
-        <MultiSearchSelect
-          label="Model"
-          options={modelOptions}
-          selected={modelSelected}
-          onChange={setModelSelected}
-          disabled={brandSelected.length === 0}
-        />
+        <MultiSearchSelect label="Model" options={modelOptions} selected={modelSelected} onChange={setModelSelected} disabled={brandSelected.length === 0} />
       </div>
 
       <div className="mb-4">
-        <MultiSearchSelect
-          label="Variant"
-          options={variantOptions}
-          selected={variantSelected}
-          onChange={setVariantSelected}
-          disabled={modelSelected.length === 0}
-        />
+        <MultiSearchSelect label="Variant" options={variantOptions} selected={variantSelected} onChange={setVariantSelected} disabled={modelSelected.length === 0} />
       </div>
 
       <div className="mb-4">
@@ -318,51 +282,32 @@ const Collection: React.FC = () => {
       </div>
 
       <div className="mb-4">
-        <MultiSearchSelect
-          label="PK"
-          options={pkOptions}
-          selected={pkSelected}
-          onChange={setPkSelected}
-        />
+        <MultiSearchSelect label="PK" options={pkOptions} selected={pkSelected} onChange={setPkSelected} />
       </div>
 
       <div className="mb-4">
-        <MultiSearchSelect
-          label="Carrosserie"
-          options={bodyOptions}
-          selected={bodySelected}
-          onChange={setBodySelected}
-        />
+        <MultiSearchSelect label="Carrosserie" options={bodyOptions} selected={bodySelected} onChange={setBodySelected} />
       </div>
 
       <div className="mb-4">
-        <MultiSearchSelect
-          label="Transmissie"
-          options={transOptions}
-          selected={transSelected}
-          onChange={setTransSelected}
-        />
+        <MultiSearchSelect label="Transmissie" options={transOptions} selected={transSelected} onChange={setTransSelected} />
       </div>
 
       <div>
-        <MultiSearchSelect
-          label="Aantal deuren"
-          options={doorsOptions}
-          selected={doorsSelected}
-          onChange={setDoorsSelected}
-        />
+        <MultiSearchSelect label="Aantal deuren" options={doorsOptions} selected={doorsSelected} onChange={setDoorsSelected} />
       </div>
     </>
   )
 
   return (
-    <div className="w-full bg-white">
-      {/* ───────── Hero alleen op md+; op mobiel direct naar resultaten ───────── */}
+    // 1) Hele pagina duwen we onder de samengestelde header zonder extra spacer
+    <div
+      className="w-full bg-white"
+      style={{ paddingTop: `var(--app-offset, ${APP_OFFSET_FALLBACK}px)` }}
+    >
+      {/* 2) Desktop/tablet: hero + sidebar */}
       <section className="relative hidden md:block">
-        <div
-          className="h-48 lg:h-56 w-full bg-center bg-cover"
-          style={{ backgroundImage: `url('/images/collection-hero.jpg')` }}
-        />
+        <div className="h-48 lg:h-56 w-full bg-center bg-cover" style={{ backgroundImage: `url('/images/collection-hero.jpg')` }} />
         <div className="absolute inset-0 bg-black/25" />
         <div className="absolute inset-0 flex items-center">
           <div className="w-full max-w-screen-2xl mx-auto px-6 lg:px-8">
@@ -371,23 +316,21 @@ const Collection: React.FC = () => {
         </div>
       </section>
 
-      {/* ───────── Content container ───────── */}
       <div className="w-full max-w-screen-2xl mx-auto py-4 md:py-6">
         <div className="grid grid-cols-1 md:grid-cols-[33%_67%] lg:grid-cols-[minmax(260px,360px)_1fr]">
-          {/* Sidebar (desktop/tablet) */}
           <aside className="hidden md:block border-r border-gray-200">
-            <div className="sticky top-0 p-4 bg-white">
+            <div className="sticky p-4 bg-white" style={{ top: `var(--app-offset, ${APP_OFFSET_FALLBACK}px)` }}>
               {renderFilters()}
             </div>
           </aside>
 
-          {/* Resultaten */}
           <section className="min-w-0">
-            {/* ── Mobiel: STICKY filter-knop onder navbar (top:0) ──
-                - zichtbaar alleen als overlay DICHT is
-            */}
+            {/* 3) MOBIEL: sticky filterknop EXACT onder header */}
             {!mobileFiltersOpen && (
-              <div className="md:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b">
+              <div
+                className="md:hidden sticky z-[60] bg-white/95 backdrop-blur-sm border-b"
+                style={{ top: `var(--app-offset, ${APP_OFFSET_FALLBACK}px)` }}
+              >
                 <div className="flex items-center justify-between px-4 py-2">
                   <button
                     type="button"
@@ -405,17 +348,15 @@ const Collection: React.FC = () => {
               </div>
             )}
 
-            {/* Desktop/tablet teller-balk */}
+            {/* Desktop/tablet teller */}
             <div className="hidden md:flex items-center justify-end px-6 lg:px-8 mb-4 md:mb-6">
               <div className="text-sm text-gray-600">{filteredCars.length} resultaten</div>
             </div>
 
-            {/* Cards grid */}
+            {/* Cards */}
             <div className="px-4 md:px-6 lg:px-8 pb-8">
               {filteredCars.length === 0 ? (
-                <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">
-                  Geen resultaten met de huidige filters.
-                </div>
+                <div className="border rounded-xl p-8 text-center text-gray-600 bg-white">Geen resultaten met de huidige filters.</div>
               ) : (
                 <div className="grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))] sm:[grid-template-columns:repeat(auto-fit,minmax(300px,1fr))]">
                   {filteredCars.map((c, idx) => {
@@ -441,10 +382,14 @@ const Collection: React.FC = () => {
         </div>
       </div>
 
-      {/* ───────── Mobiele fullscreen filters ───────── */}
+      {/* 4) MOBIELE overlay: ook onder header starten */}
       {mobileFiltersOpen && (
-        <div className="fixed inset-0 z-50 md:hidden bg-white flex flex-col" role="dialog" aria-modal="true">
-          {/* Header */}
+        <div
+          className="fixed inset-x-0 bottom-0 z-50 md:hidden bg-white flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          style={{ top: `var(--app-offset, ${APP_OFFSET_FALLBACK}px)` }}
+        >
           <div className="h-12 flex items-center justify-between px-4 border-b">
             <h2 className="text-base font-semibold">Filters</h2>
             <button
@@ -459,12 +404,10 @@ const Collection: React.FC = () => {
             </button>
           </div>
 
-          {/* Inhoud */}
           <div className="flex-1 overflow-y-auto p-4">
             {renderFilters()}
           </div>
 
-          {/* Blauwe zoeken-knop */}
           <div className="p-3 border-t bg-white">
             <button
               type="button"
