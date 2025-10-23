@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import NavLink from './NavLink'
 import { Bars3Icon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline'
+import { NAV_ELEVATION_SHADOW } from '../../constants/shadows'
 
 const NAV_HEIGHT = 80 // h-20
 const WIDE_NAV_WIDTH = '80vw'
@@ -114,7 +115,6 @@ const Navbar: React.FC = () => {
           maxWidth: '100%',
           borderBottomLeftRadius: '0.75rem',
           borderBottomRightRadius: '0.75rem',
-          boxShadow: '0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1)',
         }
       : {
           top: topOverlay,
@@ -125,40 +125,53 @@ const Navbar: React.FC = () => {
           maxWidth: `${MAX_WIDE_WIDTH}px`,
           borderBottomLeftRadius: '0.75rem',
           borderBottomRightRadius: '0.75rem',
-          boxShadow: '0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1)',
         }
-    const solid: React.CSSProperties = {
-      top: topSolid,
-      left: 0,
-      transform: 'none',
-      width: '100%',
-      height: NAV_HEIGHT,
-      borderBottomLeftRadius: '0px',
-      borderBottomRightRadius: '0px',
-      boxShadow: 'none',
-    }
+    const solid: React.CSSProperties = isNarrow
+      ? {
+          top: topSolid,
+          left: 0,
+          transform: 'none',
+          width: '100%',
+          height: NAV_HEIGHT,
+          maxWidth: '100%',
+          borderBottomLeftRadius: '0px',
+          borderBottomRightRadius: '0px',
+        }
+      : {
+          top: topSolid,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          height: NAV_HEIGHT,
+          maxWidth: '100%',
+          borderBottomLeftRadius: '0px',
+          borderBottomRightRadius: '0px',
+        }
     return {
       position: 'absolute',
       backgroundColor: '#fff',
       zIndex: 40, // onder content-row (z-50) maar boven pagina
-      transition: 'top 300ms ease, left 300ms ease, transform 300ms ease, width 300ms ease, border-radius 300ms ease, box-shadow 300ms ease',
+      boxShadow: NAV_ELEVATION_SHADOW,
+      transition: 'top 300ms ease, transform 300ms ease, width 300ms ease, max-width 300ms ease, border-radius 300ms ease, box-shadow 300ms ease',
       ...(mode === 'overlay' ? overlay : solid),
     }
   }, [mode, isNarrow])
 
   // CONTENT-RIJ (blijft 75% gecentreerd op desktop; 100% op smalle viewports)
   const rowStyle = useMemo<React.CSSProperties>(() => {
-    const isSolid = mode === 'solid'
+    const shouldCenter = !isNarrow
+    const width = isNarrow ? '100%' : WIDE_NAV_WIDTH
+    const maxWidth = isNarrow ? '100%' : `${MAX_WIDE_WIDTH}px`
     return {
       position: 'absolute',
       top: mode === 'overlay' ? topOverlay : topSolid,
-      left: isNarrow || isSolid ? 0 : '50%',
-      transform: isNarrow || isSolid ? 'none' : 'translateX(-50%)',
-      width: isNarrow || isSolid ? '100%' : WIDE_NAV_WIDTH,
-      maxWidth: isNarrow || isSolid ? '100%' : `${MAX_WIDE_WIDTH}px`,
+      left: shouldCenter ? '50%' : 0,
+      transform: shouldCenter ? 'translateX(-50%)' : 'none',
+      width,
+      maxWidth,
       height: NAV_HEIGHT,
       zIndex: 50,
-      transition: 'top 300ms ease, transform 300ms ease, width 300ms ease',
+      transition: 'top 300ms ease, transform 300ms ease, width 300ms ease, max-width 300ms ease',
       paddingLeft: '1.5rem',
       paddingRight: '1.5rem',
       display: 'flex',
