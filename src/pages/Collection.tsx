@@ -11,6 +11,7 @@ import { TbAlphabetLatin } from "react-icons/tb";
 import { MdSpeed, MdDateRange } from "react-icons/md";
 import { IoMdPricetags } from "react-icons/io";
 import { FaArrowUp } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 interface CarOverview {
   id?: string
@@ -777,7 +778,8 @@ const Collection: React.FC = () => {
                         ].join(" ")}
                         aria-label="Vorige pagina"
                       >
-                        Vorige
+                        <FaChevronLeft className="inline-block align-[-2px]" size={16} />
+                        <span className="sr-only">Vorige</span>
                       </button>
 
                       {/* Nummers */}
@@ -839,7 +841,8 @@ const Collection: React.FC = () => {
                         ].join(" ")}
                         aria-label="Volgende pagina"
                       >
-                        Volgende
+                        <FaChevronRight className="inline-block align-[-2px]" size={16} />
+                        <span className="sr-only">Volgende</span>
                       </button>
                     </div>
                   )}
