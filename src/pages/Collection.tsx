@@ -22,7 +22,6 @@ interface CarOverview {
   engine_size?: string
   imageFolder?: string
   sourceId?: string
-  // createdAt?: string | number
 }
 
 type StructuredNavFilters = {
@@ -209,7 +208,7 @@ const Collection: React.FC = () => {
   const [kmBounds, setKmBounds] = useState<[number, number]>([0, 0])
   const [kmRange, setKmRange] = useState<[number, number]>([0, 0])
 
-  // PK slider
+  // PK-slider
   const [pkBounds, setPkBounds] = useState<[number, number]>([0, 0])
   const [pkRange, setPkRange] = useState<[number, number]>([0, 0])
 
@@ -403,7 +402,7 @@ const Collection: React.FC = () => {
   useEffect(() => setDoorsSelected(sel => sel.filter(v => doorsOptions.includes(v))), [doorsOptions])
   useEffect(() => setFuelSelected(sel => sel.filter(v => fuelOptions.includes(v))), [fuelOptions])
 
-  // Eindfilter (na sliders + overige facets)
+  // Eindfilter + sorteren
   const filteredAndSortedCars = useMemo(() => {
     const afterFacets = baseAfterBMVAndSliders.filter(c => {
       if (bodySelected.length && !(c.body && bodySelected.includes(String(c.body)))) return false
@@ -474,9 +473,70 @@ const Collection: React.FC = () => {
   if (loading) return <Loader />
   if (error) return <Loader />
 
+  // ———————————— Icons ————————————
+  const MileageIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-4 h-4 inline-block align-[-1px]" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <path d="M12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-6-6V4z" />
+      <path d="M13 12.5 17 9l-1.4-1.4-4 3a2.5 2.5 0 1 0 1.4 1.9z" />
+    </svg>
+  )
+  const CalendarIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-4 h-4 inline-block align-[-1px]" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+      <path d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2zm13 8H4v10h16V10z" />
+    </svg>
+  )
+
+  // Sorteerknoppen (zonder achtergrond)
+  const SortPill: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        'px-1.5 py-1 text-sm',
+        'bg-transparent',            // geen achtergrond
+        'border-0',                 // geen border
+        active ? 'font-semibold text-[#1C448E]' : 'text-gray-700 hover:text-gray-900'
+      ].join(' ')}
+    >
+      {children}
+    </button>
+  )
+
+  const renderSortControls = () => (
+    <div className="flex items-center gap-4">
+      <span className="text-sm text-gray-700">Sorteren:</span>
+
+      <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>A-z</SortPill>
+      <SortPill active={sortBy === 'price'} onClick={() => setSortBy('price')}>Prijs</SortPill>
+      <SortPill active={sortBy === 'km'} onClick={() => setSortBy('km')}>
+        <span className="inline-flex items-center gap-1"><MileageIcon /> km</span>
+      </SortPill>
+      <SortPill active={sortBy === 'year'} onClick={() => setSortBy('year')}>
+        <span className="inline-flex items-center gap-1"><CalendarIcon /> jaar</span>
+      </SortPill>
+
+      {/* Dikke blauwe /\ die roteert; zonder achtergrond */}
+      <button
+        type="button"
+        onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+        aria-label="Draai sorteer volgorde"
+        title="Draai sorteer volgorde"
+        className="p-0 m-0 bg-transparent border-0 text-[#1C448E]"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className={['w-4 h-4 transition-transform duration-200 inline-block', sortDir === 'desc' ? 'rotate-180' : 'rotate-0'].join(' ')}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M12 5 L5 15 H19 Z" fill="currentColor" />
+        </svg>
+      </button>
+    </div>
+  )
+
   const renderFilters = () => (
     <>
-      {/* GEEN "Filters" titel meer */}
+      {/* geen "Filters" titel */}
 
       <div className="mb-4">
         <MultiSearchSelect label="Merk" options={brandOptions} selected={brandSelected} onChange={setBrandSelected} />
@@ -521,49 +581,6 @@ const Collection: React.FC = () => {
     </>
   )
 
-  // Sorteerknoppen (i.p.v. dropdown)
-  const SortPill: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        'px-3 py-1.5 text-sm rounded-full border transition',
-        active ? 'bg-[#1C448E] text-white border-[#1C448E]' : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
-      ].join(' ')}
-    >
-      {children}
-    </button>
-  )
-
-  const renderSortControls = () => (
-    <div className="flex items-center gap-3">
-      <span className="text-sm text-gray-600">Sorteren:</span>
-
-      <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>A–Z</SortPill>
-      <SortPill active={sortBy === 'price'} onClick={() => setSortBy('price')}>Prijs</SortPill>
-      <SortPill active={sortBy === 'km'} onClick={() => setSortBy('km')}>KM</SortPill>
-      <SortPill active={sortBy === 'year'} onClick={() => setSortBy('year')}>Jaar</SortPill>
-
-      {/* Dikke /\ die roteert */}
-      <button
-        type="button"
-        onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
-        aria-label="Draai sorteer volgorde"
-        title="Draai sorteer volgorde"
-        className="ml-1 inline-flex items-center justify-center w-8 h-8 border rounded-full bg-white hover:bg-gray-50 border-gray-300"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          className={['w-4 h-4 transition-transform duration-200', sortDir === 'desc' ? 'rotate-180' : 'rotate-0'].join(' ')}
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {/* Dikke triangle /\ */}
-          <path d="M12 5 L5 15 H19 Z" fill="currentColor" />
-        </svg>
-      </button>
-    </div>
-  )
-
   return (
     <div className="w-full bg-white">
       {/* HERO */}
@@ -594,7 +611,7 @@ const Collection: React.FC = () => {
             {/* Mobiele filter- en sort-balk (sticky) */}
             {!mobileFiltersOpen && (
               <div
-                className="md:hidden sticky z-30 bg-white/95 backdrop-blur-sm"
+                className="md:hidden sticky z-30 bg-white"  // witte balk, geen blur/geen border
                 style={{ top: `${navOffset}px` }}
               >
                 <div className="flex items-center justify-between px-4 py-2">
@@ -609,20 +626,20 @@ const Collection: React.FC = () => {
                     </svg>
                     Filters
                   </button>
-                  <div className="flex items-center gap-3">
-                    <div className="text-sm text-gray-600">{gridCardData.length} resultaten</div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-sm text-gray-700">{gridCardData.length} resultaten</div>
                     {renderSortControls()}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Desktop sort-balk sticky (zonder lijn eronder) */}
+            {/* Desktop sort-balk sticky — witte balk, geen lijn */}
             <div
-              className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6 sticky bg-white/95 backdrop-blur-sm z-20"
+              className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6 sticky bg-white z-20"
               style={{ top: `${navOffset}px` }}
             >
-              <div className="text-sm text-gray-600 py-2">{gridCardData.length} resultaten</div>
+              <div className="text-sm text-gray-700 py-2">{gridCardData.length} resultaten</div>
               <div className="py-2">{renderSortControls()}</div>
             </div>
 
