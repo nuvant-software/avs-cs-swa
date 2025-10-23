@@ -519,8 +519,6 @@ const Collection: React.FC = () => {
   )
   const renderSortControls = () => (
     <div className="flex items-center gap-4">
-      <span className="text-sm text-gray-700">Sorteren:</span>
-
       <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>A-z</SortPill>
       <SortPill active={sortBy === 'price'} onClick={() => setSortBy('price')}>Prijs</SortPill>
       <SortPill active={sortBy === 'km'} onClick={() => setSortBy('km')}>
