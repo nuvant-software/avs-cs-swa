@@ -3,6 +3,8 @@ import NavLink from './NavLink'
 import { Bars3Icon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline'
 
 const NAV_HEIGHT = 80 // h-20
+const WIDE_NAV_WIDTH = '66.6667vw'
+const MIN_WIDE_BREAKPOINT = 1024
 
 const Navbar: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
@@ -13,14 +15,24 @@ const Navbar: React.FC = () => {
   const [mode, setMode] = useState<'overlay'|'solid'>('overlay')
   const navRef = useRef<HTMLElement | null>(null)
 
-  // smal scherm? (mobiel/tablet breakpoint dat jij al gebruikte)
-  const [isNarrow, setIsNarrow] = useState<boolean>(false)
+  const computeIsNarrow = () => {
+    if (typeof window === 'undefined') return false
+    const { innerWidth: width, innerHeight: height } = window
+    const isLandscape = width >= height
+    const wideEnough = width >= MIN_WIDE_BREAKPOINT
+    return !(isLandscape && wideEnough)
+  }
+
+  const [isNarrow, setIsNarrow] = useState<boolean>(() => computeIsNarrow())
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 1366px)')
-    const apply = () => setIsNarrow(mq.matches)
-    apply()
-    mq.addEventListener('change', apply)
-    return () => mq.removeEventListener('change', apply)
+    const update = () => setIsNarrow(computeIsNarrow())
+    update()
+    window.addEventListener('resize', update)
+    window.addEventListener('orientationchange', update)
+    return () => {
+      window.removeEventListener('resize', update)
+      window.removeEventListener('orientationchange', update)
+    }
   }, [])
 
   const measureAndBroadcast = () => {
@@ -71,17 +83,27 @@ const Navbar: React.FC = () => {
 
   // WITTE ACHTERGRONDBALK (alleen deze schuift uit)
   const bgBarStyle = useMemo<React.CSSProperties>(() => {
-    const overlay: React.CSSProperties = {
-      top: topOverlay,
-      left: isNarrow ? 0 : '50%',
-      transform: isNarrow ? 'none' : 'translateX(-50%)',
-      width: isNarrow ? '100%' : '75vw',
-      maxWidth: isNarrow ? '100%' : '1200px',
-      height: NAV_HEIGHT,
-      borderBottomLeftRadius: '0.75rem',
-      borderBottomRightRadius: '0.75rem',
-      boxShadow: '0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1)',
-    }
+    const overlay: React.CSSProperties = isNarrow
+      ? {
+          top: topOverlay,
+          left: 0,
+          transform: 'none',
+          width: '100%',
+          height: NAV_HEIGHT,
+          borderBottomLeftRadius: '0.75rem',
+          borderBottomRightRadius: '0.75rem',
+          boxShadow: '0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1)',
+        }
+      : {
+          top: topOverlay,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: WIDE_NAV_WIDTH,
+          height: NAV_HEIGHT,
+          borderBottomLeftRadius: '0.75rem',
+          borderBottomRightRadius: '0.75rem',
+          boxShadow: '0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1)',
+        }
     const solid: React.CSSProperties = {
       top: topSolid,
       left: 0,
@@ -108,11 +130,10 @@ const Navbar: React.FC = () => {
       top: mode === 'overlay' ? topOverlay : topSolid,
       left: isNarrow ? 0 : '50%',
       transform: isNarrow ? 'none' : 'translateX(-50%)',
-      width: isNarrow ? '100%' : '75vw',
-      maxWidth: isNarrow ? '100%' : '1200px',
+      width: isNarrow ? '100%' : WIDE_NAV_WIDTH,
       height: NAV_HEIGHT,
       zIndex: 50,
-      transition: 'top 300ms ease',
+      transition: 'top 300ms ease, transform 300ms ease, width 300ms ease',
       paddingLeft: '1.5rem',
       paddingRight: '1.5rem',
       display: 'flex',
