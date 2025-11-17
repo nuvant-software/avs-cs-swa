@@ -679,7 +679,7 @@ const Collection: React.FC = () => {
           <section className="min-w-0">
             {/* Mobiele filter- & sort-topbar (sticky, horizontaal scrollen, transparante knoppen) */}
             {!mobileFiltersOpen && (
-              <div className="md:hidden sticky z-30" style={{ top: `${navOffset}px` }}>
+              <div className="md:hidden sticky z-30 bg-white border-b border-gray-200" style={{ top: `${navOffset}px` }}>
                 <div
                   className={[
                     "flex items-center gap-3",
@@ -690,16 +690,16 @@ const Collection: React.FC = () => {
                     "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']",
                   ].join(" ")}
                 >
-                  {/* Filters-knop — transparant */}
+                  {/* Filters-knop — 100% transparant */}
                   <button
                     type="button"
                     onClick={() => setMobileFiltersOpen(true)}
                     aria-label="Open filters"
                     className={[
-                      "inline-flex items-center gap-2",
-                      "text-sm text-[#1C448E]",
-                      "bg-transparent border-0 rounded-none shadow-none",
-                      "focus:outline-none focus:ring-0",
+                      "inline-flex items-center gap-2 text-sm text-[#1C448E]",
+                      "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
+                      "focus:!outline-none focus:!ring-0",
+                      "hover:!bg-transparent active:!bg-transparent",
                       "border-b-2 border-transparent hover:border-[#1C448E]",
                       "snap-start",
                     ].join(" ")}
@@ -715,10 +715,9 @@ const Collection: React.FC = () => {
                     type="button"
                     onClick={() => setSortBy('brandModelVariant')}
                     className={[
-                      "inline-flex items-center gap-1 text-sm",
-                      "text-[#1C448E]",
-                      "bg-transparent border-0 rounded-none shadow-none",
-                      "focus:outline-none focus:ring-0",
+                      "inline-flex items-center gap-1 text-sm text-[#1C448E]",
+                      "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
+                      "focus:!outline-none focus:!ring-0 hover:!bg-transparent active:!bg-transparent",
                       "border-b-2",
                       sortBy === 'brandModelVariant' ? "font-semibold border-[#1C448E]" : "border-transparent hover:border-[#1C448E]",
                     ].join(" ")}
@@ -732,10 +731,9 @@ const Collection: React.FC = () => {
                     type="button"
                     onClick={() => setSortBy('price')}
                     className={[
-                      "inline-flex items-center gap-1 text-sm",
-                      "text-[#1C448E]",
-                      "bg-transparent border-0 rounded-none shadow-none",
-                      "focus:outline-none focus:ring-0",
+                      "inline-flex items-center gap-1 text-sm text-[#1C448E]",
+                      "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
+                      "focus:!outline-none focus:!ring-0 hover:!bg-transparent active:!bg-transparent",
                       "border-b-2",
                       sortBy === 'price' ? "font-semibold border-[#1C448E]" : "border-transparent hover:border-[#1C448E]",
                     ].join(" ")}
@@ -749,10 +747,9 @@ const Collection: React.FC = () => {
                     type="button"
                     onClick={() => setSortBy('km')}
                     className={[
-                      "inline-flex items-center gap-1 text-sm",
-                      "text-[#1C448E]",
-                      "bg-transparent border-0 rounded-none shadow-none",
-                      "focus:outline-none focus:ring-0",
+                      "inline-flex items-center gap-1 text-sm text-[#1C448E]",
+                      "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
+                      "focus:!outline-none focus:!ring-0 hover:!bg-transparent active:!bg-transparent",
                       "border-b-2",
                       sortBy === 'km' ? "font-semibold border-[#1C448E]" : "border-transparent hover:border-[#1C448E]",
                     ].join(" ")}
@@ -766,10 +763,9 @@ const Collection: React.FC = () => {
                     type="button"
                     onClick={() => setSortBy('year')}
                     className={[
-                      "inline-flex items-center gap-1 text-sm",
-                      "text-[#1C448E]",
-                      "bg-transparent border-0 rounded-none shadow-none",
-                      "focus:outline-none focus:ring-0",
+                      "inline-flex items-center gap-1 text-sm text-[#1C448E]",
+                      "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
+                      "focus:!outline-none focus:!ring-0 hover:!bg-transparent active:!bg-transparent",
                       "border-b-2",
                       sortBy === 'year' ? "font-semibold border-[#1C448E]" : "border-transparent hover:border-[#1C448E]",
                     ].join(" ")}
@@ -784,10 +780,9 @@ const Collection: React.FC = () => {
                     onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
                     aria-label="Draai sorteer volgorde"
                     className={[
-                      "inline-flex items-center text-sm",
-                      "text-[#1C448E]",
-                      "bg-transparent border-0 rounded-none shadow-none",
-                      "focus:outline-none focus:ring-0",
+                      "inline-flex items-center text-sm text-[#1C448E]",
+                      "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
+                      "focus:!outline-none focus:!ring-0 hover:!bg-transparent active:!bg-transparent",
                       "border-b-2 border-transparent hover:border-[#1C448E]",
                       "snap-end",
                     ].join(" ")}
