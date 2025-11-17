@@ -544,7 +544,7 @@ const Collection: React.FC = () => {
       className={[
         'px-1.5 py-1 text-sm',
         // harde reset
-        'bg-transparent !bg-transparent border-0 !border-0 rounded-none',
+        '!bg-transparent !border-0 rounded-none',
         'shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0',
         'hover:bg-transparent active:bg-transparent',
         // kleur + underline
@@ -755,8 +755,8 @@ const Collection: React.FC = () => {
                     <div
                       className={[
                         "mt-6 flex items-center justify-center gap-2 select-none",
-                        "[&_button]:bg-transparent [&_button]:!bg-transparent",
-                        "[&_button]:border-0 [&_button]:!border-0",
+                        "[&_button]:!bg-transparent",
+                        "[&_button]:!border-0",
                         "[&_button]:rounded-none",
                         "[&_button]:shadow-none",
                         "[&_button]:ring-0 [&_button]:focus:ring-0 [&_button]:outline-none",
