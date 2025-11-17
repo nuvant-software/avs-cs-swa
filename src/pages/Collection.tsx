@@ -158,22 +158,10 @@ const Collection: React.FC = () => {
 
   // UI
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
-  const [mobileSortOpen, setMobileSortOpen] = useState(false)
 
   // Sort state
   const [sortBy, setSortBy] = useState<SortBy>('brandModelVariant')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
-
-  const currentSortLabel = (() => {
-    switch (sortBy) {
-      case 'price': return 'Prijs'
-      case 'km': return 'Kilometerstand'
-      case 'year': return 'Bouwjaar'
-      case 'brandModelVariant':
-      default:
-        return 'Merk / Model'
-    }
-  })()
 
   // Filters
   const initialBrandSelection = (() => {
@@ -673,6 +661,12 @@ const Collection: React.FC = () => {
     </>
   )
 
+  // handler voor mobiele sort dropdown
+  const handleMobileSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value as SortBy
+    setSortBy(value)
+  }
+
   return (
     <div className="w-full bg-white">
       {/* HERO */}
@@ -700,10 +694,10 @@ const Collection: React.FC = () => {
 
           {/* Resultaten */}
           <section className="min-w-0">
-            {/* Mobiele filter- & sort-topbar (sticky, horizontaal scroll, transparant) */}
+            {/* Mobiele filter- & sort-topbar (sticky, horizontaal scroll, witte bar, transparante knoppen) */}
             {!mobileFiltersOpen && (
               <div
-                className="md:hidden sticky z-30 !bg-transparent"
+                className="md:hidden sticky z-30 bg-white border-b border-gray-200"
                 style={{ top: `${navOffset}px` }}
               >
                 <div
@@ -713,16 +707,12 @@ const Collection: React.FC = () => {
                     "px-4 py-2",
                     "[-webkit-overflow-scrolling:touch]",
                     "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']",
-                    "!bg-transparent",
                   ].join(" ")}
                 >
                   {/* Filters-knop */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setMobileFiltersOpen(true)
-                      setMobileSortOpen(false)
-                    }}
+                    onClick={() => setMobileFiltersOpen(true)}
                     aria-label="Open filters"
                     className={[
                       "inline-flex items-center gap-2 text-sm text-[#1C448E]",
@@ -739,65 +729,23 @@ const Collection: React.FC = () => {
                     Filters
                   </button>
 
-                  {/* Sort-dropdown */}
-                  <div className="relative inline-block text-left shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setMobileSortOpen(v => !v)}
-                      className={[
-                        "inline-flex items-center gap-1 text-sm text-[#1C448E]",
-                        "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
-                        "focus:!outline-none focus:!ring-0",
-                        "hover:!bg-transparent active:!bg-transparent",
-                        "border-b-2 border-transparent hover:border-[#1C448E]",
-                      ].join(" ")}
-                    >
-                      Sorteren: {currentSortLabel}
-                      <FaArrowUp
-                        className={[
-                          "inline-block text-xs transition-transform duration-200",
-                          mobileSortOpen ? "rotate-180" : "rotate-0",
-                        ].join(" ")}
-                      />
-                    </button>
-
-                    {mobileSortOpen && (
-                      <div className="absolute right-0 mt-2 min-w-[9rem] rounded-md bg-white shadow-lg border border-gray-200 z-40">
-                        <button
-                          type="button"
-                          onClick={() => { setSortBy('brandModelVariant'); setMobileSortOpen(false) }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-800 bg-transparent hover:bg-gray-50"
-                        >
-                          <TbAlphabetLatin size={18} />
-                          Merk / Model
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setSortBy('price'); setMobileSortOpen(false) }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-800 bg-transparent hover:bg-gray-50"
-                        >
-                          <IoMdPricetags size={18} />
-                          Prijs
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setSortBy('km'); setMobileSortOpen(false) }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-800 bg-transparent hover:bg-gray-50"
-                        >
-                          <MdSpeed size={18} />
-                          Kilometerstand
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setSortBy('year'); setMobileSortOpen(false) }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-gray-800 bg-transparent hover:bg-gray-50"
-                        >
-                          <MdDateRange size={18} />
-                          Bouwjaar
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  {/* Sort dropdown */}
+                  <select
+                    value={sortBy}
+                    onChange={handleMobileSortChange}
+                    className={[
+                      "text-sm text-[#1C448E]",
+                      "!bg-transparent !border-0 !shadow-none !ring-0",
+                      "focus:!outline-none focus:!ring-0",
+                      "border-b-2 border-transparent hover:border-[#1C448E]",
+                      "shrink-0 pr-5",
+                    ].join(" ")}
+                  >
+                    <option value="brandModelVariant">Merk / Model</option>
+                    <option value="price">Prijs</option>
+                    <option value="km">Kilometerstand</option>
+                    <option value="year">Bouwjaar</option>
+                  </select>
 
                   {/* Richtingspijl sorteer-volgorde */}
                   <button
@@ -815,13 +763,6 @@ const Collection: React.FC = () => {
                   >
                     <FaArrowUp className={sortDir === 'desc' ? 'rotate-180' : ''} />
                   </button>
-
-                  {/* Resultcount rechts */}
-                  <span className="ml-auto text-xs text-gray-700 shrink-0">
-                    {gridCardData.length === 0
-                      ? '0 resultaten'
-                      : `${pageStartIndex + 1}–${pageEndIndex} van ${gridCardData.length}`}
-                  </span>
                 </div>
               </div>
             )}
