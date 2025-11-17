@@ -10,7 +10,7 @@ import { AnimatePresence, LayoutGroup, motion } from 'framer-motion'
 import { TbAlphabetLatin } from "react-icons/tb";
 import { MdSpeed, MdDateRange } from "react-icons/md";
 import { IoMdPricetags } from "react-icons/io";
-import { FaArrowUp, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaArrowUp, FaChevronLeft, FaChevronRight, FaChevronDown } from "react-icons/fa";
 
 interface CarOverview {
   id?: string
@@ -158,10 +158,22 @@ const Collection: React.FC = () => {
 
   // UI
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
+  const [mobileSortOpen, setMobileSortOpen] = useState(false)
 
   // Sort state
   const [sortBy, setSortBy] = useState<SortBy>('brandModelVariant')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+
+  const currentSortLabel = (() => {
+    switch (sortBy) {
+      case 'price': return 'Prijs'
+      case 'km': return 'Kilometerstand'
+      case 'year': return 'Bouwjaar'
+      case 'brandModelVariant':
+      default:
+        return 'Merk / Model'
+    }
+  })()
 
   // Filters
   const initialBrandSelection = (() => {
@@ -534,7 +546,7 @@ const Collection: React.FC = () => {
   if (loading) return <Loader />
   if (error) return <Loader />
 
-  // ———————————— Sorteerknoppen (blauwe tekst, underline op hover/actief, geen achtergrond) ————————————
+  // ———————————— Sorteerknoppen (desktop, blauwe tekst, underline, geen bg) ————————————
   const SortPill: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
     <button
       type="button"
@@ -661,10 +673,10 @@ const Collection: React.FC = () => {
     </>
   )
 
-  // handler voor mobiele sort dropdown
-  const handleMobileSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value as SortBy
+  // Handler voor mobiele sort dropdown
+  const handleMobileSortSelect = (value: SortBy) => {
     setSortBy(value)
+    setMobileSortOpen(false)
   }
 
   return (
@@ -694,7 +706,7 @@ const Collection: React.FC = () => {
 
           {/* Resultaten */}
           <section className="min-w-0">
-            {/* Mobiele filter- & sort-topbar (sticky, horizontaal scroll, witte bar, transparante knoppen) */}
+            {/* Mobiele filter- & sort-topbar (sticky, filters links, sort rechts, custom dropdown) */}
             {!mobileFiltersOpen && (
               <div
                 className="md:hidden sticky z-30 bg-white border-b border-gray-200"
@@ -702,17 +714,17 @@ const Collection: React.FC = () => {
               >
                 <div
                   className={[
-                    "flex items-center gap-3",
-                    "overflow-x-auto whitespace-nowrap",
-                    "px-4 py-2",
+                    "flex items-center px-4 py-2",
                     "[-webkit-overflow-scrolling:touch]",
-                    "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']",
                   ].join(" ")}
                 >
-                  {/* Filters-knop */}
+                  {/* Filters-knop links */}
                   <button
                     type="button"
-                    onClick={() => setMobileFiltersOpen(true)}
+                    onClick={() => {
+                      setMobileFiltersOpen(true)
+                      setMobileSortOpen(false)
+                    }}
                     aria-label="Open filters"
                     className={[
                       "inline-flex items-center gap-2 text-sm text-[#1C448E]",
@@ -729,40 +741,102 @@ const Collection: React.FC = () => {
                     Filters
                   </button>
 
-                  {/* Sort dropdown */}
-                  <select
-                    value={sortBy}
-                    onChange={handleMobileSortChange}
-                    className={[
-                      "text-sm text-[#1C448E]",
-                      "!bg-transparent !border-0 !shadow-none !ring-0",
-                      "focus:!outline-none focus:!ring-0",
-                      "border-b-2 border-transparent hover:border-[#1C448E]",
-                      "shrink-0 pr-5",
-                    ].join(" ")}
-                  >
-                    <option value="brandModelVariant">Merk / Model</option>
-                    <option value="price">Prijs</option>
-                    <option value="km">Kilometerstand</option>
-                    <option value="year">Bouwjaar</option>
-                  </select>
+                  {/* Spacer zodat sort rechts komt */}
+                  <div className="flex-1" />
 
-                  {/* Richtingspijl sorteer-volgorde */}
-                  <button
-                    type="button"
-                    onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
-                    aria-label="Draai sorteer volgorde"
-                    className={[
-                      "inline-flex items-center text-sm text-[#1C448E]",
-                      "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
-                      "focus:!outline-none focus:!ring-0",
-                      "hover:!bg-transparent active:!bg-transparent",
-                      "border-b-2 border-transparent hover:border-[#1C448E]",
-                      "shrink-0",
-                    ].join(" ")}
-                  >
-                    <FaArrowUp className={sortDir === 'desc' ? 'rotate-180' : ''} />
-                  </button>
+                  {/* Sort controls rechts */}
+                  <div className="flex items-center gap-3 shrink-0">
+                    {/* Custom dropdown voor sorteer-optie */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setMobileSortOpen(o => !o)}
+                        className={[
+                          "inline-flex items-center gap-1 text-sm text-[#1C448E]",
+                          "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
+                          "focus:!outline-none focus:!ring-0",
+                          "hover:!bg-transparent active:!bg-transparent",
+                          "border-b-2 border-transparent hover:border-[#1C448E]",
+                        ].join(" ")}
+                      >
+                        <span>Sorteer: {currentSortLabel}</span>
+                        <FaChevronDown
+                          className={[
+                            "transition-transform duration-150",
+                            mobileSortOpen ? "rotate-180" : "rotate-0",
+                          ].join(" ")}
+                          size={12}
+                        />
+                      </button>
+
+                      {mobileSortOpen && (
+                        <div
+                          className="absolute right-0 mt-1 w-40 rounded-md border border-gray-200 bg-white shadow-lg text-sm z-40"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleMobileSortSelect('brandModelVariant')}
+                            className={[
+                              "block w-full text-left px-3 py-1.5",
+                              "hover:bg-gray-100",
+                              sortBy === 'brandModelVariant' ? "font-semibold text-[#1C448E]" : "text-gray-800",
+                            ].join(" ")}
+                          >
+                            Merk / Model
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMobileSortSelect('price')}
+                            className={[
+                              "block w-full text-left px-3 py-1.5",
+                              "hover:bg-gray-100",
+                              sortBy === 'price' ? "font-semibold text-[#1C448E]" : "text-gray-800",
+                            ].join(" ")}
+                          >
+                            Prijs
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMobileSortSelect('km')}
+                            className={[
+                              "block w-full text-left px-3 py-1.5",
+                              "hover:bg-gray-100",
+                              sortBy === 'km' ? "font-semibold text-[#1C448E]" : "text-gray-800",
+                            ].join(" ")}
+                          >
+                            Kilometerstand
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMobileSortSelect('year')}
+                            className={[
+                              "block w-full text-left px-3 py-1.5",
+                              "hover:bg-gray-100",
+                              sortBy === 'year' ? "font-semibold text-[#1C448E]" : "text-gray-800",
+                            ].join(" ")}
+                          >
+                            Bouwjaar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Richtingspijl sorteer-volgorde */}
+                    <button
+                      type="button"
+                      onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+                      aria-label="Draai sorteer volgorde"
+                      className={[
+                        "inline-flex items-center text-sm text-[#1C448E]",
+                        "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
+                        "focus:!outline-none focus:!ring-0",
+                        "hover:!bg-transparent active:!bg-transparent",
+                        "border-b-2 border-transparent hover:border-[#1C448E]",
+                      ].join(" ")}
+                    >
+                      <FaArrowUp className={sortDir === 'desc' ? 'rotate-180' : ''} />
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
