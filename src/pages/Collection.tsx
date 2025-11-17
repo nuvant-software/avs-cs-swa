@@ -759,7 +759,6 @@ const Collection: React.FC = () => {
                           "border-b-2 border-transparent hover:border-[#1C448E]",
                         ].join(" ")}
                       >
-                        <span>Sorteer: {currentSortLabel}</span>
                         <FaChevronDown
                           className={[
                             "transition-transform duration-150",
