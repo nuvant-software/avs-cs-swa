@@ -10,8 +10,7 @@ import { AnimatePresence, LayoutGroup, motion } from 'framer-motion'
 import { TbAlphabetLatin } from "react-icons/tb";
 import { MdSpeed, MdDateRange } from "react-icons/md";
 import { IoMdPricetags } from "react-icons/io";
-import { FaArrowUp } from "react-icons/fa";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaArrowUp, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 interface CarOverview {
   id?: string
@@ -240,7 +239,7 @@ const Collection: React.FC = () => {
           .map(item => {
             if (item && typeof item === 'object') {
               const record = item as Record<string, unknown>
-              const nested = record.car_overview ?? record.carOverview
+              const nested = (record as any).car_overview ?? (record as any).carOverview
               if (nested && typeof nested === 'object') return nested as Record<string, unknown>
               return record
             }
@@ -543,11 +542,9 @@ const Collection: React.FC = () => {
       onClick={onClick}
       className={[
         'px-1.5 py-1 text-sm',
-        // harde reset
         '!bg-transparent !border-0 rounded-none',
         'shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0',
         'hover:bg-transparent active:bg-transparent',
-        // kleur + underline
         'text-[#1C448E] border-b-2',
         active ? 'font-semibold border-[#1C448E]' : 'font-normal border-transparent hover:border-[#1C448E]',
         'inline-flex items-center gap-1'
@@ -557,17 +554,15 @@ const Collection: React.FC = () => {
     </button>
   )
 
-  // Sorteercontrols (in witte balk; teller links, acties rechts)
+  // Sorteercontrols (desktop)
   const renderSortControls = () => (
     <div className="flex items-center justify-between w-full">
-      {/* Teller links */}
       <span className="text-sm text-gray-700">
         {gridCardData.length === 0
           ? '0 resultaten'
           : `${pageStartIndex + 1}–${pageEndIndex} van ${gridCardData.length} resultaten`}
       </span>
 
-      {/* Sorteeropties rechts */}
       <div className="flex items-center gap-4 justify-end">
         <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>
           <TbAlphabetLatin size={22} className="text-base" />
@@ -588,7 +583,6 @@ const Collection: React.FC = () => {
           Jaar
         </SortPill>
 
-        {/* Richtingspijl */}
         <button
           type="button"
           onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
@@ -683,28 +677,123 @@ const Collection: React.FC = () => {
 
           {/* Resultaten */}
           <section className="min-w-0">
-            {/* Mobiele filter- en sort-balk (sticky) */}
+            {/* Mobiele filter- & sort-topbar (sticky, horizontaal scrollen, transparante knoppen) */}
             {!mobileFiltersOpen && (
-              <div className="md:hidden sticky z-30 bg-white" style={{ top: `${navOffset}px` }}>
-                <div className="flex items-center justify-between px-4 py-2">
+              <div className="md:hidden sticky z-30" style={{ top: `${navOffset}px` }}>
+                <div
+                  className={[
+                    "flex items-center gap-3",
+                    "overflow-x-auto whitespace-nowrap",
+                    "px-4 py-2",
+                    "snap-x snap-mandatory",
+                    "[-webkit-overflow-scrolling:touch]",
+                    "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']",
+                  ].join(" ")}
+                >
+                  {/* Filters-knop — transparant */}
                   <button
                     type="button"
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm bg-white shadow-sm active:scale-[.99]"
                     onClick={() => setMobileFiltersOpen(true)}
                     aria-label="Open filters"
+                    className={[
+                      "inline-flex items-center gap-2",
+                      "text-sm text-[#1C448E]",
+                      "bg-transparent border-0 rounded-none shadow-none",
+                      "focus:outline-none focus:ring-0",
+                      "border-b-2 border-transparent hover:border-[#1C448E]",
+                      "snap-start",
+                    ].join(" ")}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path d="M3 5h18M6 12h12M10 19h4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 -mt-px" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M3 6h18M6 12h12M10 18h4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     Filters
                   </button>
-                  <div className="flex items-center gap-4 w-full">
-                    <div className="text-sm text-gray-700 ml-auto">
-                      {gridCardData.length === 0
-                        ? '0 resultaten'
-                        : `${pageStartIndex + 1}–${pageEndIndex} van ${gridCardData.length} resultaten`}
-                    </div>
-                  </div>
+
+                  {/* Sorteer: A–Z */}
+                  <button
+                    type="button"
+                    onClick={() => setSortBy('brandModelVariant')}
+                    className={[
+                      "inline-flex items-center gap-1 text-sm",
+                      "text-[#1C448E]",
+                      "bg-transparent border-0 rounded-none shadow-none",
+                      "focus:outline-none focus:ring-0",
+                      "border-b-2",
+                      sortBy === 'brandModelVariant' ? "font-semibold border-[#1C448E]" : "border-transparent hover:border-[#1C448E]",
+                    ].join(" ")}
+                  >
+                    <TbAlphabetLatin size={20} />
+                    A–Z
+                  </button>
+
+                  {/* Sorteer: Prijs */}
+                  <button
+                    type="button"
+                    onClick={() => setSortBy('price')}
+                    className={[
+                      "inline-flex items-center gap-1 text-sm",
+                      "text-[#1C448E]",
+                      "bg-transparent border-0 rounded-none shadow-none",
+                      "focus:outline-none focus:ring-0",
+                      "border-b-2",
+                      sortBy === 'price' ? "font-semibold border-[#1C448E]" : "border-transparent hover:border-[#1C448E]",
+                    ].join(" ")}
+                  >
+                    <IoMdPricetags size={20} />
+                    Prijs
+                  </button>
+
+                  {/* Sorteer: km */}
+                  <button
+                    type="button"
+                    onClick={() => setSortBy('km')}
+                    className={[
+                      "inline-flex items-center gap-1 text-sm",
+                      "text-[#1C448E]",
+                      "bg-transparent border-0 rounded-none shadow-none",
+                      "focus:outline-none focus:ring-0",
+                      "border-b-2",
+                      sortBy === 'km' ? "font-semibold border-[#1C448E]" : "border-transparent hover:border-[#1C448E]",
+                    ].join(" ")}
+                  >
+                    <MdSpeed size={20} />
+                    km
+                  </button>
+
+                  {/* Sorteer: Jaar */}
+                  <button
+                    type="button"
+                    onClick={() => setSortBy('year')}
+                    className={[
+                      "inline-flex items-center gap-1 text-sm",
+                      "text-[#1C448E]",
+                      "bg-transparent border-0 rounded-none shadow-none",
+                      "focus:outline-none focus:ring-0",
+                      "border-b-2",
+                      sortBy === 'year' ? "font-semibold border-[#1C448E]" : "border-transparent hover:border-[#1C448E]",
+                    ].join(" ")}
+                  >
+                    <MdDateRange size={20} />
+                    Jaar
+                  </button>
+
+                  {/* Richtingspijl (asc/desc) — transparant */}
+                  <button
+                    type="button"
+                    onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+                    aria-label="Draai sorteer volgorde"
+                    className={[
+                      "inline-flex items-center text-sm",
+                      "text-[#1C448E]",
+                      "bg-transparent border-0 rounded-none shadow-none",
+                      "focus:outline-none focus:ring-0",
+                      "border-b-2 border-transparent hover:border-[#1C448E]",
+                      "snap-end",
+                    ].join(" ")}
+                  >
+                    <FaArrowUp className={sortDir === 'desc' ? 'rotate-180' : ''} />
+                  </button>
                 </div>
               </div>
             )}
