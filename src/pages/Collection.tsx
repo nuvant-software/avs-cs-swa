@@ -759,6 +759,8 @@ const Collection: React.FC = () => {
                           "border-b-2 border-transparent hover:border-[#1C448E]",
                         ].join(" ")}
                       >
+                        {/* 👇 Statische tekst, verandert nooit */}
+                        <span>Sorteer op</span>
                         <FaChevronDown
                           className={[
                             "transition-transform duration-150",
@@ -793,52 +795,52 @@ const Collection: React.FC = () => {
                             ].join(" ")}
                           >
                             Prijs
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMobileSortSelect('km')}
-                            className={[
-                              "block w-full text-left px-3 py-1.5",
-                              "hover:bg-gray-100",
-                              sortBy === 'km' ? "font-semibold text-[#1C448E]" : "text-gray-800",
-                            ].join(" ")}
-                          >
-                            Kilometerstand
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMobileSortSelect('year')}
-                            className={[
-                              "block w-full text-left px-3 py-1.5",
-                              "hover:bg-gray-100",
-                              sortBy === 'year' ? "font-semibold text-[#1C448E]" : "text-gray-800",
-                            ].join(" ")}
-                          >
-                            Bouwjaar
-                          </button>
-                        </div>
-                      )}
-                    </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMobileSortSelect('km')}
+                className={[
+                  "block w-full text-left px-3 py-1.5",
+                  "hover:bg-gray-100",
+                  sortBy === 'km' ? "font-semibold text-[#1C448E]" : "text-gray-800",
+                ].join(" ")}
+              >
+                Kilometerstand
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMobileSortSelect('year')}
+                className={[
+                  "block w-full text-left px-3 py-1.5",
+                  "hover:bg-gray-100",
+                  sortBy === 'year' ? "font-semibold text-[#1C448E]" : "text-gray-800",
+                ].join(" ")}
+              >
+                Bouwjaar
+              </button>
+            </div>
+          )}
+        </div>
 
-                    {/* Richtingspijl sorteer-volgorde */}
-                    <button
-                      type="button"
-                      onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
-                      aria-label="Draai sorteer volgorde"
-                      className={[
-                        "inline-flex items-center text-sm text-[#1C448E]",
-                        "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
-                        "focus:!outline-none focus:!ring-0",
-                        "hover:!bg-transparent active:!bg-transparent",
-                        "border-b-2 border-transparent hover:border-[#1C448E]",
-                      ].join(" ")}
-                    >
-                      <FaArrowUp className={sortDir === 'desc' ? 'rotate-180' : ''} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+        {/* Richtingspijl sorteer-volgorde */}
+        <button
+          type="button"
+          onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+          aria-label="Draai sorteer volgorde"
+          className={[
+            "inline-flex items-center text-sm text-[#1C448E]",
+            "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
+            "focus:!outline-none focus:!ring-0",
+            "hover:!bg-transparent active:!bg-transparent",
+            "border-b-2 border-transparent hover:border-[#1C448E]",
+          ].join(" ")}
+        >
+          <FaArrowUp className={sortDir === 'desc' ? 'rotate-180' : ''} />
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
             {/* Desktop sort-balk sticky — witte balk */}
             <div
