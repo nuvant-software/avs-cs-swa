@@ -11,6 +11,7 @@ import { TbAlphabetLatin } from "react-icons/tb"
 import { MdSpeed, MdDateRange } from "react-icons/md"
 import { IoMdPricetags } from "react-icons/io"
 import { FaArrowUp, FaChevronLeft, FaChevronRight, FaChevronDown } from "react-icons/fa"
+import { HiViewGrid, HiViewList } from "react-icons/hi"
 
 interface CarOverview {
   id?: string
@@ -171,12 +172,8 @@ const Collection: React.FC = () => {
 
   // Filters
   const initialBrandSelection = (() => {
-    if (isStructuredFilters(initialFilters) && initialFilters.brands) {
-      return ensureStringArray(initialFilters.brands)
-    }
-    if (isLegacyFilters(initialFilters) && initialFilters.brand) {
-      return ensureStringArray(initialFilters.brand)
-    }
+    if (isStructuredFilters(initialFilters) && initialFilters.brands) return ensureStringArray(initialFilters.brands)
+    if (isLegacyFilters(initialFilters) && initialFilters.brand) return ensureStringArray(initialFilters.brand)
     return []
   })()
   const [brandSelected, setBrandSelected] = useState<string[]>(initialBrandSelection)
@@ -209,7 +206,6 @@ const Collection: React.FC = () => {
           ensureStringArray(variants).forEach(variant => out.push(`${brand} — ${model} — ${variant}`))
         )
       })
-      return out
     }
     return out
   })()
@@ -269,7 +265,7 @@ const Collection: React.FC = () => {
             const imageFolder = pickString(record, ['imageFolder', 'image_folder', 'folder', 'imagefolder'])
 
             return {
-              id: id,
+              id,
               brand,
               model,
               variant,
@@ -380,7 +376,7 @@ const Collection: React.FC = () => {
     })
   }, [cars, brandSelected, modelsByBrand, variantsByBrandModel, priceRange, kmRange, pkRange])
 
-  // Altijd-beschikbare facet-options (union met dataset-afgeleide)
+  // Altijd-beschikbare facet-options
   const bodyOptions = useMemo(() => {
     const set = new Set<string>(BASE_BODIES)
     baseAfterBMVAndSliders.forEach(c => { if (c.body) set.add(String(c.body)) })
@@ -474,9 +470,7 @@ const Collection: React.FC = () => {
   const PAGE_SIZE = 12
   const [page, setPage] = useState(1)
 
-  const totalPages = useMemo(() => {
-    return Math.max(1, Math.ceil(gridCardData.length / PAGE_SIZE))
-  }, [gridCardData.length])
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(gridCardData.length / PAGE_SIZE)), [gridCardData.length])
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages)
@@ -486,11 +480,12 @@ const Collection: React.FC = () => {
   const pageStartIndex = (page - 1) * PAGE_SIZE
   const pageEndIndex = Math.min(page * PAGE_SIZE, gridCardData.length)
 
-  const pagedGridData = useMemo(() => {
-    return gridCardData.slice(pageStartIndex, pageEndIndex)
-  }, [gridCardData, pageStartIndex, pageEndIndex])
+  const pagedGridData = useMemo(
+    () => gridCardData.slice(pageStartIndex, pageEndIndex),
+    [gridCardData, pageStartIndex, pageEndIndex]
+  )
 
-  // list gebruikt exact dezelfde paged data (zelfde cars + imageFolder)
+  // list gebruikt exact dezelfde paged data
   const pagedListData = pagedGridData
 
   // Reset naar pagina 1 bij filter-/sort-wijzigingen
@@ -676,6 +671,50 @@ const Collection: React.FC = () => {
     setMobileSortOpen(false)
   }
 
+  // Desktop view switch (icons + slider)
+  const ViewSwitch = () => (
+    <div
+      className="relative flex items-center rounded-full border border-gray-200 bg-white p-1 shadow-sm"
+      role="tablist"
+      aria-label="Weergave"
+    >
+      {/* sliding thumb */}
+      <span
+        aria-hidden
+        className={[
+          "absolute top-1 bottom-1 w-9 rounded-full bg-[#1C448E] transition-transform duration-200",
+          viewMode === "grid" ? "translate-x-0" : "translate-x-9",
+        ].join(" ")}
+      />
+
+      <button
+        type="button"
+        onClick={() => setViewMode("grid")}
+        className={[
+          "relative z-10 grid h-9 w-9 place-items-center rounded-full transition",
+          viewMode === "grid" ? "text-white" : "text-[#1C448E] hover:bg-gray-50",
+        ].join(" ")}
+        aria-pressed={viewMode === "grid"}
+        title="Grid"
+      >
+        <HiViewGrid size={18} />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setViewMode("list")}
+        className={[
+          "relative z-10 grid h-9 w-9 place-items-center rounded-full transition",
+          viewMode === "list" ? "text-white" : "text-[#1C448E] hover:bg-gray-50",
+        ].join(" ")}
+        aria-pressed={viewMode === "list"}
+        title="Lijst"
+      >
+        <HiViewList size={18} />
+      </button>
+    </div>
+  )
+
   return (
     <div className="w-full bg-white">
       {/* HERO */}
@@ -709,12 +748,7 @@ const Collection: React.FC = () => {
                 className="md:hidden sticky z-30 bg-white border-b border-gray-200"
                 style={{ top: `${navOffset}px` }}
               >
-                <div
-                  className={[
-                    "flex items-center px-4 py-2",
-                    "[-webkit-overflow-scrolling:touch]",
-                  ].join(" ")}
-                >
+                <div className={["flex items-center px-4 py-2", "[-webkit-overflow-scrolling:touch]"].join(" ")}>
                   {/* Filters-knop links */}
                   <button
                     type="button"
@@ -742,7 +776,6 @@ const Collection: React.FC = () => {
 
                   {/* Sort controls rechts */}
                   <div className="flex items-center gap-3 shrink-0">
-                    {/* Custom dropdown voor sorteer-optie */}
                     <div className="relative">
                       <button
                         type="button"
@@ -815,7 +848,6 @@ const Collection: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Richtingspijl sorteer-volgorde */}
                     <button
                       type="button"
                       onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
@@ -835,47 +867,15 @@ const Collection: React.FC = () => {
               </div>
             )}
 
-            {/* Desktop sort-balk sticky + view toggle */}
+            {/* Desktop sort-balk sticky + view switch */}
             <div
               className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6 sticky bg-white z-20"
               style={{ top: `${navOffset}px` }}
             >
               <div className="py-2 w-full flex items-center justify-between gap-4">
                 <div className="flex-1">{renderSortControls()}</div>
-
-                {/* desktop grid/list toggle */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("grid")}
-                    className={[
-                      "px-1.5 py-1 text-sm",
-                      "!bg-transparent !border-0 rounded-none",
-                      "shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0",
-                      "hover:bg-transparent active:bg-transparent",
-                      "text-[#1C448E] border-b-2",
-                      viewMode === "grid" ? "font-semibold border-[#1C448E]" : "font-normal border-transparent hover:border-[#1C448E]",
-                    ].join(" ")}
-                    aria-pressed={viewMode === "grid"}
-                  >
-                    Grid
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("list")}
-                    className={[
-                      "px-1.5 py-1 text-sm",
-                      "!bg-transparent !border-0 rounded-none",
-                      "shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0",
-                      "hover:bg-transparent active:bg-transparent",
-                      "text-[#1C448E] border-b-2",
-                      viewMode === "list" ? "font-semibold border-[#1C448E]" : "font-normal border-transparent hover:border-[#1C448E]",
-                    ].join(" ")}
-                    aria-pressed={viewMode === "list"}
-                  >
-                    Lijst
-                  </button>
+                <div className="shrink-0">
+                  <ViewSwitch />
                 </div>
               </div>
             </div>
@@ -898,7 +898,7 @@ const Collection: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* DESKTOP: toggle */}
+                  {/* DESKTOP: toggle grid/list */}
                   <div className="hidden md:block">
                     {viewMode === "grid" ? (
                       <LayoutGroup>
@@ -956,7 +956,6 @@ const Collection: React.FC = () => {
                         "[&_button:hover]:bg-transparent [&_button:active]:bg-transparent",
                       ].join(" ")}
                     >
-                      {/* Vorige */}
                       <button
                         type="button"
                         onClick={() => goToPage(page - 1)}
@@ -975,7 +974,6 @@ const Collection: React.FC = () => {
                         <span className="sr-only">Vorige</span>
                       </button>
 
-                      {/* Nummers */}
                       {(() => {
                         const items: (number | "…")[] = []
                         const add = (n: number | "…") => items.push(n)
@@ -1019,7 +1017,6 @@ const Collection: React.FC = () => {
                         )
                       })()}
 
-                      {/* Volgende */}
                       <button
                         type="button"
                         onClick={() => goToPage(page + 1)}
