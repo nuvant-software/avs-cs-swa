@@ -164,17 +164,6 @@ const Collection: React.FC = () => {
   const [sortBy, setSortBy] = useState<SortBy>('brandModelVariant')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
-  const currentSortLabel = (() => {
-    switch (sortBy) {
-      case 'price': return 'Prijs'
-      case 'km': return 'Kilometerstand'
-      case 'year': return 'Bouwjaar'
-      case 'brandModelVariant':
-      default:
-        return 'Merk / Model'
-    }
-  })()
-
   // Filters
   const initialBrandSelection = (() => {
     if (isStructuredFilters(initialFilters) && initialFilters.brands) {
