@@ -7,10 +7,10 @@ import CarCard from '../components/CarCard'
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion'
 
 // ✅ React-Icons
-import { TbAlphabetLatin } from "react-icons/tb";
-import { MdSpeed, MdDateRange } from "react-icons/md";
-import { IoMdPricetags } from "react-icons/io";
-import { FaArrowUp, FaChevronLeft, FaChevronRight, FaChevronDown } from "react-icons/fa";
+import { TbAlphabetLatin } from "react-icons/tb"
+import { MdSpeed, MdDateRange } from "react-icons/md"
+import { IoMdPricetags } from "react-icons/io"
+import { FaArrowUp, FaChevronLeft, FaChevronRight, FaChevronDown } from "react-icons/fa"
 
 interface CarOverview {
   id?: string
@@ -146,6 +146,8 @@ const BASE_BODIES = ['Hatchback','Sedan','Stationwagon','SUV','MPV','Coupé','Ca
 const BASE_FUELS = ['Benzine','Diesel','Elektrisch','Hybride','LPG']
 const BASE_DOORS = ['2','3','4','5']
 
+type ViewMode = "grid" | "list"
+
 const Collection: React.FC = () => {
   const location = useLocation()
   const navState = (location.state as { filters?: IncomingFilters; includeItems?: boolean } | undefined) || {}
@@ -159,6 +161,9 @@ const Collection: React.FC = () => {
   // UI
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [mobileSortOpen, setMobileSortOpen] = useState(false)
+
+  // Desktop: grid/list toggle
+  const [viewMode, setViewMode] = useState<ViewMode>("grid")
 
   // Sort state
   const [sortBy, setSortBy] = useState<SortBy>('brandModelVariant')
@@ -485,6 +490,9 @@ const Collection: React.FC = () => {
     return gridCardData.slice(pageStartIndex, pageEndIndex)
   }, [gridCardData, pageStartIndex, pageEndIndex])
 
+  // list gebruikt exact dezelfde paged data (zelfde cars + imageFolder)
+  const pagedListData = pagedGridData
+
   // Reset naar pagina 1 bij filter-/sort-wijzigingen
   useEffect(() => { setPage(1) }, [brandSelected, modelSelected, variantSelected])
   useEffect(() => { setPage(1) }, [priceRange, kmRange, pkRange, bodySelected, transSelected, doorsSelected, fuelSelected])
@@ -695,7 +703,7 @@ const Collection: React.FC = () => {
 
           {/* Resultaten */}
           <section className="min-w-0">
-            {/* Mobiele filter- & sort-topbar (sticky, filters links, sort rechts, custom dropdown) */}
+            {/* Mobiele filter- & sort-topbar */}
             {!mobileFiltersOpen && (
               <div
                 className="md:hidden sticky z-30 bg-white border-b border-gray-200"
@@ -730,7 +738,6 @@ const Collection: React.FC = () => {
                     Filters
                   </button>
 
-                  {/* Spacer zodat sort rechts komt */}
                   <div className="flex-1" />
 
                   {/* Sort controls rechts */}
@@ -748,7 +755,6 @@ const Collection: React.FC = () => {
                           "border-b-2 border-transparent hover:border-[#1C448E]",
                         ].join(" ")}
                       >
-                        {/* 👇 Statische tekst, verandert nooit */}
                         <span>Sorteer op</span>
                         <FaChevronDown
                           className={[
@@ -760,9 +766,7 @@ const Collection: React.FC = () => {
                       </button>
 
                       {mobileSortOpen && (
-                        <div
-                          className="absolute right-0 mt-1 w-40 rounded-md border border-gray-200 bg-white shadow-lg text-sm z-40"
-                        >
+                        <div className="absolute right-0 mt-1 w-40 rounded-md border border-gray-200 bg-white shadow-lg text-sm z-40">
                           <button
                             type="button"
                             onClick={() => handleMobileSortSelect('brandModelVariant')}
@@ -784,62 +788,99 @@ const Collection: React.FC = () => {
                             ].join(" ")}
                           >
                             Prijs
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMobileSortSelect('km')}
-                className={[
-                  "block w-full text-left px-3 py-1.5",
-                  "hover:bg-gray-100",
-                  sortBy === 'km' ? "font-semibold text-[#1C448E]" : "text-gray-800",
-                ].join(" ")}
-              >
-                Kilometerstand
-              </button>
-              <button
-                type="button"
-                onClick={() => handleMobileSortSelect('year')}
-                className={[
-                  "block w-full text-left px-3 py-1.5",
-                  "hover:bg-gray-100",
-                  sortBy === 'year' ? "font-semibold text-[#1C448E]" : "text-gray-800",
-                ].join(" ")}
-              >
-                Bouwjaar
-              </button>
-            </div>
-          )}
-        </div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMobileSortSelect('km')}
+                            className={[
+                              "block w-full text-left px-3 py-1.5",
+                              "hover:bg-gray-100",
+                              sortBy === 'km' ? "font-semibold text-[#1C448E]" : "text-gray-800",
+                            ].join(" ")}
+                          >
+                            Kilometerstand
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMobileSortSelect('year')}
+                            className={[
+                              "block w-full text-left px-3 py-1.5",
+                              "hover:bg-gray-100",
+                              sortBy === 'year' ? "font-semibold text-[#1C448E]" : "text-gray-800",
+                            ].join(" ")}
+                          >
+                            Bouwjaar
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
-        {/* Richtingspijl sorteer-volgorde */}
-        <button
-          type="button"
-          onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
-          aria-label="Draai sorteer volgorde"
-          className={[
-            "inline-flex items-center text-sm text-[#1C448E]",
-            "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
-            "focus:!outline-none focus:!ring-0",
-            "hover:!bg-transparent active:!bg-transparent",
-            "border-b-2 border-transparent hover:border-[#1C448E]",
-          ].join(" ")}
-        >
-          <FaArrowUp className={sortDir === 'desc' ? 'rotate-180' : ''} />
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+                    {/* Richtingspijl sorteer-volgorde */}
+                    <button
+                      type="button"
+                      onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+                      aria-label="Draai sorteer volgorde"
+                      className={[
+                        "inline-flex items-center text-sm text-[#1C448E]",
+                        "!bg-transparent !border-0 !rounded-none !shadow-none !ring-0",
+                        "focus:!outline-none focus:!ring-0",
+                        "hover:!bg-transparent active:!bg-transparent",
+                        "border-b-2 border-transparent hover:border-[#1C448E]",
+                      ].join(" ")}
+                    >
+                      <FaArrowUp className={sortDir === 'desc' ? 'rotate-180' : ''} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
-            {/* Desktop sort-balk sticky — witte balk */}
+            {/* Desktop sort-balk sticky + view toggle */}
             <div
               className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6 sticky bg-white z-20"
               style={{ top: `${navOffset}px` }}
             >
-              <div className="py-2 w-full">{renderSortControls()}</div>
+              <div className="py-2 w-full flex items-center justify-between gap-4">
+                <div className="flex-1">{renderSortControls()}</div>
+
+                {/* desktop grid/list toggle */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("grid")}
+                    className={[
+                      "px-1.5 py-1 text-sm",
+                      "!bg-transparent !border-0 rounded-none",
+                      "shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0",
+                      "hover:bg-transparent active:bg-transparent",
+                      "text-[#1C448E] border-b-2",
+                      viewMode === "grid" ? "font-semibold border-[#1C448E]" : "font-normal border-transparent hover:border-[#1C448E]",
+                    ].join(" ")}
+                    aria-pressed={viewMode === "grid"}
+                  >
+                    Grid
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    className={[
+                      "px-1.5 py-1 text-sm",
+                      "!bg-transparent !border-0 rounded-none",
+                      "shadow-none outline-none appearance-none ring-0 focus:outline-none focus:ring-0",
+                      "hover:bg-transparent active:bg-transparent",
+                      "text-[#1C448E] border-b-2",
+                      viewMode === "list" ? "font-semibold border-[#1C448E]" : "font-normal border-transparent hover:border-[#1C448E]",
+                    ].join(" ")}
+                    aria-pressed={viewMode === "list"}
+                  >
+                    Lijst
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* Grid */}
+            {/* Results */}
             <div className="px-4 md:px-6 lg:px-8 pb-8">
               <div ref={gridTopRef} />
               {gridCardData.length === 0 ? (
@@ -848,29 +889,59 @@ const Collection: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <LayoutGroup>
-                    <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
-                      <AnimatePresence initial={false} mode="popLayout">
-                        {pagedGridData.map((data) => (
-                          <motion.div
-                            key={data.id}
-                            layout="position"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, y: 28 }}
-                            transition={{
-                              layout: { type: 'spring', stiffness: 420, damping: 32, mass: 0.3 },
-                              duration: 0.22,
-                              opacity: { duration: 0.18 }
-                            }}
-                            className="w-full will-change-transform"
-                          >
-                            <CarCard car={data.car} layout="grid" imageFolder={data.imageFolder} />
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
+                  {/* MOBILE: altijd list */}
+                  <div className="md:hidden">
+                    <div className="flex flex-col gap-4">
+                      {pagedListData.map((data) => (
+                        <CarCard key={data.id} car={data.car} layout="list" imageFolder={data.imageFolder} />
+                      ))}
                     </div>
-                  </LayoutGroup>
+                  </div>
+
+                  {/* DESKTOP: toggle */}
+                  <div className="hidden md:block">
+                    {viewMode === "grid" ? (
+                      <LayoutGroup>
+                        <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+                          <AnimatePresence initial={false} mode="popLayout">
+                            {pagedGridData.map((data) => (
+                              <motion.div
+                                key={data.id}
+                                layout="position"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, y: 28 }}
+                                transition={{
+                                  layout: { type: 'spring', stiffness: 420, damping: 32, mass: 0.3 },
+                                  duration: 0.22,
+                                  opacity: { duration: 0.18 }
+                                }}
+                                className="w-full will-change-transform"
+                              >
+                                <CarCard car={data.car} layout="grid" imageFolder={data.imageFolder} />
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+                        </div>
+                      </LayoutGroup>
+                    ) : (
+                      <div className="flex flex-col gap-4">
+                        <AnimatePresence initial={false} mode="popLayout">
+                          {pagedListData.map((data) => (
+                            <motion.div
+                              key={data.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: 10 }}
+                              transition={{ duration: 0.18 }}
+                            >
+                              <CarCard car={data.car} layout="list" imageFolder={data.imageFolder} />
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Pagination controls */}
                   {totalPages > 1 && (
