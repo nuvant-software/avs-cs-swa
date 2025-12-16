@@ -16,6 +16,14 @@ import { FaArrowUp, FaChevronLeft, FaChevronRight, FaChevronDown } from "react-i
 import { FaThList } from "react-icons/fa"
 import { RiGalleryView2 } from "react-icons/ri"
 
+// ✅ extra icons voor specs
+import { FaGasPump } from "react-icons/fa"
+import { FaRoad } from "react-icons/fa"
+import { FaCogs } from "react-icons/fa"
+import { FaCalendarAlt } from "react-icons/fa"
+import { FaBolt } from "react-icons/fa"
+import { FaWrench } from "react-icons/fa"
+
 interface CarOverview {
   id?: string
   brand: string
@@ -151,6 +159,10 @@ const BASE_FUELS = ['Benzine', 'Diesel', 'Elektrisch', 'Hybride', 'LPG']
 const BASE_DOORS = ['2', '3', '4', '5']
 
 type ViewMode = "grid" | "list"
+
+const formatNumberNL = (n: number) => n.toLocaleString('nl-NL')
+const formatPriceEUR = (n: number) =>
+  new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
 
 const Collection: React.FC = () => {
   const location = useLocation()
@@ -698,6 +710,113 @@ const Collection: React.FC = () => {
     setMobileSortOpen(false)
   }
 
+  // ✅ ListRow (3 blokken)
+  const ListRow: React.FC<{ data: GridCardData }> = ({ data }) => {
+    const car = data.car
+    const folder = (data.imageFolder && data.imageFolder.trim().length) ? data.imageFolder : FALLBACK_IMAGE_FOLDER
+
+    // 3 foto's (gallery-idee)
+    const imgs = [
+      `/images/cars/${folder}/1.jpg`,
+      `/images/cars/${folder}/2.jpg`,
+      `/images/cars/${folder}/3.jpg`,
+    ]
+
+    const title = `${car.brand} ${car.model} ${car.variant}`.trim()
+
+    const specItem = (icon: React.ReactNode, label: string) => (
+      <div className="flex items-center gap-2 text-sm text-gray-700">
+        <span className="text-gray-500">{icon}</span>
+        <span className="truncate">{label}</span>
+      </div>
+    )
+
+    return (
+      <div
+        className={[
+          "w-full",
+          "rounded-2xl border border-gray-200 bg-white",
+          "shadow-[0_8px_24px_rgba(0,0,0,0.06)]",
+          "overflow-hidden",
+        ].join(" ")}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-[260px_1fr_220px]">
+          {/* [1] FOTO + 3 BALKJES */}
+          <div className="relative bg-gray-100">
+            <div className="aspect-[4/3] md:aspect-auto md:h-full w-full overflow-hidden">
+              <img
+                src={imgs[0]}
+                alt={title}
+                className="h-full w-full object-cover"
+                loading="lazy"
+                onError={(e) => {
+                  // fallback naar algemeen plaatje
+                  ;(e.currentTarget as HTMLImageElement).src = `/images/cars/${FALLBACK_IMAGE_FOLDER}/1.jpg`
+                }}
+              />
+            </div>
+
+            {/* 3 balkjes (zoals gallery) */}
+            <div className="absolute left-3 right-3 bottom-3 flex items-center gap-1">
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className={[
+                    "h-1.5 flex-1 rounded-full",
+                    i === 0 ? "bg-white/90" : "bg-white/40",
+                  ].join(" ")}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* [2] TITEL + 6 SPECS */}
+          <div className="p-4 md:p-5">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 leading-snug">
+              {title}
+            </h3>
+
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+              {specItem(<FaGasPump className="text-[14px]" />, car.fuel || 'Onbekend')}
+              {specItem(<FaRoad className="text-[14px]" />, `${formatNumberNL(car.mileage || 0)} km`)}
+              {specItem(<FaCogs className="text-[14px]" />, car.transmission || 'Onbekend')}
+              {specItem(<FaCalendarAlt className="text-[14px]" />, `${car.year || 0}`)}
+              {specItem(<FaBolt className="text-[14px]" />, `${car.pk || 0} pk`)}
+              {specItem(<FaWrench className="text-[14px]" />, (car.engine_size && car.engine_size.trim().length) ? car.engine_size : '—')}
+            </div>
+          </div>
+
+          {/* [3] PRIJS + BUTTON */}
+          <div className="p-4 md:p-5 border-t md:border-t-0 md:border-l border-gray-200 flex md:flex-col items-start md:items-end justify-between gap-3">
+            <div className="text-left md:text-right w-full">
+              <div className="text-xs text-gray-500">Prijs</div>
+              <div className="text-lg md:text-xl font-bold text-gray-900">
+                {formatPriceEUR(car.price || 0)}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className={[
+                btnReset,
+                "inline-flex items-center justify-center",
+                "rounded-xl px-3 py-2 text-sm font-medium",
+                "text-[#1C448E]",
+                "border border-[#1C448E]/40", // ✅ kleine blauwe rand
+                "hover:border-[#1C448E] hover:bg-[#1C448E]/5",
+                "transition",
+                "w-full md:w-auto",
+              ].join(" ")}
+              aria-label={`Meer weten over ${title}`}
+            >
+              Meer weten
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="w-full bg-white">
       {/* HERO */}
@@ -926,12 +1045,22 @@ const Collection: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* MOBILE: altijd list */}
+                  {/* MOBILE: nu ook dezelfde 3-blokken list */}
                   <div className="md:hidden">
                     <div className="flex flex-col gap-4">
-                      {pagedListData.map((data) => (
-                        <CarCard key={data.id} car={data.car} layout="list" imageFolder={data.imageFolder} />
-                      ))}
+                      <AnimatePresence initial={false} mode="popLayout">
+                        {pagedListData.map((data) => (
+                          <motion.div
+                            key={data.id}
+                            initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                            transition={{ duration: 0.18 }}
+                          >
+                            <ListRow data={data} />
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
                     </div>
                   </div>
 
@@ -962,17 +1091,18 @@ const Collection: React.FC = () => {
                         </div>
                       </LayoutGroup>
                     ) : (
+                      // ✅ LIST VIEW: scale-in bij switchen + 3-blokken layout
                       <div className="flex flex-col gap-4">
                         <AnimatePresence initial={false} mode="popLayout">
                           {pagedListData.map((data) => (
                             <motion.div
                               key={data.id}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: 10 }}
+                              initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: 12, scale: 0.96 }}
                               transition={{ duration: 0.18 }}
                             >
-                              <CarCard car={data.car} layout="list" imageFolder={data.imageFolder} />
+                              <ListRow data={data} />
                             </motion.div>
                           ))}
                         </AnimatePresence>
