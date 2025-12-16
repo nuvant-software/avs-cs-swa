@@ -173,6 +173,22 @@ const Collection: React.FC = () => {
   const [sortBy, setSortBy] = useState<SortBy>('brandModelVariant')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
+  // ✅ Mobiel: toon gekozen sorteer optie als label (ipv "Sorteer op")
+  const mobileSortLabel = useMemo(() => {
+    switch (sortBy) {
+      case "brandModelVariant":
+        return "Naam"
+      case "price":
+        return "Prijs"
+      case "km":
+        return "Kilometerstand"
+      case "year":
+        return "Bouwjaar"
+      default:
+        return "Naam"
+    }
+  }, [sortBy])
+
   // Filters
   const initialBrandSelection = (() => {
     if (isStructuredFilters(initialFilters) && initialFilters.brands) {
@@ -717,7 +733,8 @@ const Collection: React.FC = () => {
                           "inline-flex items-center gap-1 text-sm text-[#1C448E]",
                         ].join(" ")}
                       >
-                        <span>Sorteer op</span>
+                        {/* ✅ hier vervangen we "Sorteer op" door label */}
+                        <span>{mobileSortLabel}</span>
                         <FaChevronDown
                           className={[
                             "transition-transform duration-150",
