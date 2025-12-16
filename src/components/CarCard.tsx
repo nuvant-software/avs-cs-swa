@@ -76,7 +76,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
     const cached = blobCache.get(baseFolder);
     if (cached) {
       setAllImages(cached);
-      return; // geen nieuwe fetch nodig
+      return;
     }
 
     const listBlobs = async () => {
@@ -101,14 +101,14 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
       } catch (e) {
         console.error("Blob list error:", e);
         blobCache.set(baseFolder, []);
-        setAllImages([]); // UI blijft werken
+        setAllImages([]);
       }
     };
 
     listBlobs();
   }, [car.id, imageFolder]);
 
-  // ✅ Als de afbeeldingen wijzigen: reset hover naar 0
+  // ✅ Als de afbeeldingen wijzigen: reset hover
   useEffect(() => {
     setHoverZone(null);
   }, [allImages]);
@@ -131,7 +131,6 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
   );
 
   const getZoneContent = () => {
-    // ✅ Altijd terug naar eerste foto buiten hover
     const zone = hoverZone ?? 0;
 
     if (zone === 2) {
@@ -149,9 +148,8 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
             }}
           >
             <i className="icon-Group4 text-[3rem] !text-[#bfbfbf] mb-1" />
-            <span className="text-sm !text-[#bfbfbf] font-medium">
-              +{extra} EXTRA FOTO{extra !== 1 ? "'S" : ""}
-            </span>
+            {/* ✅ kort: geen “klik”/“extra foto’s” tekst */}
+            <span className="text-2xl font-semibold !text-[#bfbfbf]">+{extra}</span>
           </div>
         );
       }
@@ -165,20 +163,19 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
       : null;
   };
 
-    // ─── List Layout (3 blokken) ─────────────────────────────────────
+  // ─── List Layout (3 blokken) ─────────────────────────────────────
   if (layout === "list") {
     return (
       <>
         <div className="w-full overflow-hidden rounded-[10px] border border-gray-200 bg-white transition-shadow duration-300 hover:shadow-lg">
           <div className="grid grid-cols-1 md:grid-cols-[34%_44%_22%]">
-            {/* [1] FOTO + 3 BALKJES (zelfde logic als grid) */}
+            {/* [1] FOTO + 3 BALKJES */}
             <div
               className="relative w-full h-60 md:h-full min-h-[240px] overflow-hidden bg-gray-100"
               onMouseLeave={() => setHoverZone(null)}
             >
               {getZoneContent()}
 
-              {/* klik/hover zones */}
               <div className="absolute inset-0 flex">
                 {[0, 1, 2].map((zone) => (
                   <div
@@ -194,7 +191,6 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
                 ))}
               </div>
 
-              {/* 3 balkjes */}
               <div className="absolute bottom-0 left-0 w-full flex px-3 pb-3">
                 {[0, 1, 2].map((zone, i) => (
                   <div
@@ -202,14 +198,13 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
                     className={[
                       "flex-1 rounded-full transition-colors duration-200",
                       (hoverZone ?? 0) === zone ? "!bg-[#1C448E]" : "!bg-white/70",
-                      "h-[5px]", // net wat dikker dan grid voor list
+                      "h-[5px]",
                       i === 1 ? "mx-2" : "",
                     ].join(" ")}
                   />
                 ))}
               </div>
 
-              {/* fallback als er (nog) geen images zijn */}
               {totalPhotos === 0 && (
                 <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-500">
                   Geen foto’s gevonden
@@ -226,45 +221,43 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
 
               <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm !text-[#6e6e6e]">
                 <div className="flex items-center gap-2">
-                  <i className="icon-Vector-13 text-[1.2rem]" />
+                  <i className="icon-Vector-13 text-[1.2rem] !text-[#1C448E]" />
                   <span>{car.year}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <i className="icon-dashboard-2 text-[1.2rem]" />
+                  <i className="icon-dashboard-2 text-[1.2rem] !text-[#1C448E]" />
                   <span>{car.mileage.toLocaleString()} km</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <i className="icon-gearbox-1 text-[1.2rem]" />
+                  <i className="icon-gearbox-1 text-[1.2rem] !text-[#1C448E]" />
                   <span>{car.transmission}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <i className="icon-gasoline-pump-1 text-[1.2rem]" />
+                  <i className="icon-gasoline-pump-1 text-[1.2rem] !text-[#1C448E]" />
                   <span>{car.fuel}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <i className="icon-dashboard-2 text-[1.2rem]" />
+                  <i className="icon-dashboard-2 text-[1.2rem] !text-[#1C448E]" />
                   <span>{car.pk} PK</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <i className="icon-engine-1 text-[1.2rem]" />
+                  <i className="icon-engine-1 text-[1.2rem] !text-[#1C448E]" />
                   <span>{car.engine_size}</span>
                 </div>
               </div>
             </div>
 
-            {/* [3] PRIJS + MEER WETEN (kleine blauwe rand) */}
+            {/* [3] PRIJS + MEER WETEN */}
             <div className="p-5 md:p-6 md:border-l border-gray-200 flex flex-col justify-between">
               <div>
-                <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-2">
-                  Prijs
-                </p>
-                <p className="text-2xl font-semibold !text-[#1C448E]">
+                {/* ✅ label “Prijs” weg */}
+                <p className="text-[26px] leading-none font-semibold !text-[#1C448E]">
                   € {car.price.toLocaleString()}
                 </p>
               </div>
 
               <div className="mt-5">
-                <button className="group inline-flex w-full items-center justify-center rounded-md bg-white px-4 py-2 text-sm font-semibold !text-[#1C448E] border border-[#1C448E]/40 hover:border-[#1C448E] transition-colors">
+                <button className="group inline-flex w-full items-center justify-center rounded-md !bg-transparent px-4 py-2 text-sm font-semibold !text-[#1C448E] border border-[#1C448E]/40 hover:border-[#1C448E] transition-colors">
                   MEER WETEN
                   <div className="relative ml-2 h-5 w-5 overflow-hidden">
                     <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
@@ -278,9 +271,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
                   </div>
                 </button>
 
-                <p className="mt-3 text-xs text-gray-500 leading-relaxed">
-                  Klik voor meer foto’s & details.
-                </p>
+                {/* ✅ “Klik voor meer…” weg */}
               </div>
             </div>
           </div>
@@ -312,10 +303,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
       <div className={cardClassName} style={transitionStyle}>
         <div
           className="relative w-full h-56 overflow-hidden group rounded-t-[6px]"
-          // ✅ Bij verlaten van de afbeelding: reset naar beginfoto
-          onMouseLeave={() => {
-            setHoverZone(null);
-          }}
+          onMouseLeave={() => setHoverZone(null)}
         >
           {getZoneContent()}
 
@@ -324,9 +312,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
               <div
                 key={zone}
                 className="w-1/3 h-full"
-                onMouseEnter={() => {
-                  setHoverZone(zone);
-                }}
+                onMouseEnter={() => setHoverZone(zone)}
                 onClick={() => {
                   const idx = zone < 2 ? zone : 2;
                   setCurrentSlide(idx);
@@ -341,7 +327,6 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
               <div
                 key={zone}
                 className={`h-[3px] flex-1 transition-colors duration-300 ${
-                  // ✅ indicator volgt ook hover met fallback 0
                   (hoverZone ?? 0) === zone ? "!bg-[#1C448E]" : "!bg-white/60"
                 } ${i === 1 ? "mx-[6px]" : ""}`}
               />
@@ -354,6 +339,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
             {car.brand} {car.model}
             {car.variant && ` – ${car.variant}`}
           </h3>
+
           <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm !text-[#6e6e6e] mb-4">
             <div className="flex items-center gap-2">
               <i className="icon-Vector-13 text-[1.2rem] !text-[#1C448E]" />
@@ -380,12 +366,15 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
               <span>{car.engine_size}</span>
             </div>
           </div>
+
           <div className="border-t !border-gray-300 my-4" />
+
           <div className="flex items-center justify-between">
-            <p className="text-xl font-semibold">
+            <p className="text-2xl font-semibold">
               € {car.price.toLocaleString()}
             </p>
-            <button className="!border-none inline-flex h-8 items-center justify-center rounded !bg-white px-4 py-1 font-bold !text-[#1C448E] transition-opacity hover:!opacity-90 group cursor-pointer">
+
+            <button className="!border-none inline-flex h-8 items-center justify-center rounded !bg-transparent px-4 py-1 font-bold !text-[#1C448E] transition-opacity hover:!opacity-90 group cursor-pointer">
               MEER WETEN
               <div className="relative ml-2 h-5 w-5 overflow-hidden">
                 <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
@@ -394,7 +383,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
                   </svg>
                   <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 -translate-x-4">
                     <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
-                </svg>
+                  </svg>
                 </div>
               </div>
             </button>

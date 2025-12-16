@@ -846,14 +846,15 @@ const Collection: React.FC = () => {
                     {viewMode === "grid" ? (
                       <LayoutGroup>
                         <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
-                          <AnimatePresence initial={false} mode="popLayout">
+                          {/* ✅ initial niet uitzetten, anders geen “poof” bij eerste render */}
+                          <AnimatePresence initial={true} mode="popLayout">
                             {pagedGridData.map((data) => (
                               <motion.div
                                 key={data.id}
                                 layout="position"
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, y: 28 }}
+                                initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 18, scale: 0.98 }}
                                 transition={{
                                   layout: { type: 'spring', stiffness: 420, damping: 32, mass: 0.3 },
                                   duration: 0.22,
@@ -861,11 +862,7 @@ const Collection: React.FC = () => {
                                 }}
                                 className="w-full will-change-transform"
                               >
-                                <CarCard
-                                  car={data.car}
-                                  layout="grid"
-                                  imageFolder={data.imageFolder || FALLBACK_IMAGE_FOLDER}
-                                />
+                                <CarCard car={data.car} layout="grid" imageFolder={data.imageFolder || FALLBACK_IMAGE_FOLDER} />
                               </motion.div>
                             ))}
                           </AnimatePresence>
