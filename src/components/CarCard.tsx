@@ -374,7 +374,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
               € {car.price.toLocaleString()}
             </p>
 
-            <button className="!border-none inline-flex h-8 items-center justify-center rounded !bg-transparent px-4 py-1 font-bold !text-[#1C448E] transition-opacity hover:!opacity-90 group cursor-pointer">
+            <button className="inline-flex h-8 items-center justify-center rounded !bg-transparent px-4 py-1 font-bold !text-[#1C448E] transition-opacity hover:!opacity-90 group cursor-pointer">
               MEER WETEN
               <div className="relative ml-2 h-5 w-5 overflow-hidden">
                 <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
