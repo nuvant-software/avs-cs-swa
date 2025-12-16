@@ -566,7 +566,7 @@ const Collection: React.FC = () => {
     </button>
   )
 
-  // ✅ alleen sort pills (links in de sticky balk)
+  // ✅ alleen sort pills (zonder arrow)
   const renderSortPills = () => (
     <div className="flex items-center gap-4">
       <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>
@@ -587,32 +587,6 @@ const Collection: React.FC = () => {
         <MdDateRange size={22} className="text-base" />
         Jaar
       </SortPill>
-
-      <button
-        type="button"
-        onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
-        aria-label="Draai sorteer volgorde"
-        title="Draai sorteer volgorde"
-        className={[
-          'p-0 m-0 text-[#1C448E]',
-          '!bg-transparent border-0 rounded-none',
-          'border-b-2 !border-transparent hover:border-[#1C448E]',
-          'transition-transform duration-200'
-        ].join(' ')}
-      >
-        <FaArrowUp className={['text-base inline-block', sortDir === 'desc' ? 'rotate-180' : 'rotate-0'].join(' ')} />
-      </button>
-    </div>
-  )
-
-  // ✅ resultaten tekst komt onder de sticky balk (desktop)
-  const renderResultsSummary = () => (
-    <div className="px-6 lg:px-8 mb-4">
-      <span className="text-sm text-gray-700">
-        {gridCardData.length === 0
-          ? '0 resultaten'
-          : `${pageStartIndex + 1}–${pageEndIndex} van ${gridCardData.length} resultaten`}
-      </span>
     </div>
   )
 
@@ -837,57 +811,83 @@ const Collection: React.FC = () => {
               </div>
             )}
 
-            {/* Desktop sort-balk sticky + view toggle */}
+            {/* ✅ Desktop sticky control bar (gray background, results on top, arrows above view icons) */}
             <div
-              className="hidden md:flex items-center justify-between px-6 lg:px-8 sticky bg-white z-20"
+              className="hidden md:block sticky z-20"
               style={{ top: `${navOffset}px` }}
             >
-              <div className="py-2 w-full flex items-center justify-between gap-4">
-                {/* ✅ links: sort */}
-                <div className="flex items-center gap-4">
-                  {renderSortPills()}
-                </div>
+              <div className="bg-gray-100 border-b border-gray-200">
+                <div className="px-6 lg:px-8 py-3 space-y-2">
+                  {/* Row 1: results */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">
+                      {gridCardData.length === 0
+                        ? '0 resultaten'
+                        : `${pageStartIndex + 1}–${pageEndIndex} van ${gridCardData.length} resultaten`}
+                    </span>
 
-                {/* ✅ rechts: grid/list icons (blauw actief, grijs inactief) */}
-                <div className="flex items-center gap-3 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("grid")}
-                    className={[
-                      "!bg-transparent !border-0 !shadow-none !ring-0 !p-0",
-                      "focus:!outline-none focus:!ring-0",
-                      "hover:opacity-90 transition-opacity",
-                      viewMode === "grid" ? "text-[#1C448E]" : "text-gray-400",
-                    ].join(" ")}
-                    aria-pressed={viewMode === "grid"}
-                    aria-label="Grid weergave"
-                    title="Grid"
-                  >
-                    <RiGalleryView2 size={22} />
-                  </button>
+                    {/* (optional empty space for balance) */}
+                    <div />
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("list")}
-                    className={[
-                      "!bg-transparent !border-0 !shadow-none !ring-0 !p-0",
-                      "focus:!outline-none focus:!ring-0",
-                      "hover:opacity-90 transition-opacity",
-                      viewMode === "list" ? "text-[#1C448E]" : "text-gray-400",
-                    ].join(" ")}
-                    aria-pressed={viewMode === "list"}
-                    aria-label="Lijst weergave"
-                    title="Lijst"
-                  >
-                    <FaThList size={20} />
-                  </button>
+                  {/* Row 2: sort + arrow (LEFT) and view icons (RIGHT) */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      {renderSortPills()}
+
+                      <button
+                        type="button"
+                        onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+                        aria-label="Draai sorteer volgorde"
+                        title="Draai sorteer volgorde"
+                        className={[
+                          "text-[#1C448E]",
+                          "hover:opacity-80 transition-transform duration-200",
+                        ].join(" ")}
+                      >
+                        <FaArrowUp className={sortDir === 'desc' ? 'rotate-180' : 'rotate-0'} />
+                      </button>
+                    </div>
+
+                    {/* ✅ view icons with hover */}
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setViewMode("grid")}
+                        className={[
+                          "!bg-transparent !border-0 !shadow-none !ring-0 !p-0",
+                          "focus:!outline-none focus:!ring-0",
+                          "transition-all",
+                          "hover:scale-[1.06] hover:opacity-90",
+                          viewMode === "grid" ? "text-[#1C448E]" : "text-gray-400 hover:text-gray-500",
+                        ].join(" ")}
+                        aria-pressed={viewMode === "grid"}
+                        aria-label="Grid weergave"
+                        title="Grid"
+                      >
+                        <RiGalleryView2 size={22} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setViewMode("list")}
+                        className={[
+                          "!bg-transparent !border-0 !shadow-none !ring-0 !p-0",
+                          "focus:!outline-none focus:!ring-0",
+                          "transition-all",
+                          "hover:scale-[1.06] hover:opacity-90",
+                          viewMode === "list" ? "text-[#1C448E]" : "text-gray-400 hover:text-gray-500",
+                        ].join(" ")}
+                        aria-pressed={viewMode === "list"}
+                        aria-label="Lijst weergave"
+                        title="Lijst"
+                      >
+                        <FaThList size={20} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* ✅ Desktop: resultaten onder de balk */}
-            <div className="hidden md:block">
-              {renderResultsSummary()}
             </div>
 
             {/* Results */}
@@ -918,6 +918,7 @@ const Collection: React.FC = () => {
                               <motion.div
                                 key={data.id}
                                 layout="position"
+                                whileHover={{ y: -4 }}
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, y: 28 }}
@@ -926,7 +927,7 @@ const Collection: React.FC = () => {
                                   duration: 0.22,
                                   opacity: { duration: 0.18 }
                                 }}
-                                className="w-full will-change-transform"
+                                className="w-full will-change-transform rounded-xl transition-shadow hover:shadow-lg"
                               >
                                 <CarCard car={data.car} layout="grid" imageFolder={data.imageFolder} />
                               </motion.div>
@@ -940,10 +941,12 @@ const Collection: React.FC = () => {
                           {pagedListData.map((data) => (
                             <motion.div
                               key={data.id}
+                              whileHover={{ scale: 1.01 }}
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: 10 }}
                               transition={{ duration: 0.18 }}
+                              className="rounded-xl transition-shadow hover:shadow-md"
                             >
                               <CarCard car={data.car} layout="list" imageFolder={data.imageFolder} />
                             </motion.div>
