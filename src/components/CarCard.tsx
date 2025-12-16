@@ -258,13 +258,13 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
 
               <button
                 className="
-                  group inline-flex w-full items-center justify-center rounded-md
-                  bg-white
-                  px-4 py-2 text-sm font-semibold
-                  text-[#1C448E]
-                  border border-[#1C448E]/50
-                  transition-colors
-                  hover:bg-[#1C448E] hover:text-white hover:border-[#1C448E]
+                  !group !inline-flex !w-full !items-center !justify-center !rounded-md
+                  !bg-white
+                  !px-4 py-2 !text-sm !font-semibold
+                  !text-[#1C448E]
+                  !border !border-[#1C448E]/50
+                  !transition-colors
+                  !hover:bg-[#1C448E] !hover:text-white !hover:border-[#1C448E]
                 "
               >
                 MEER WETEN
