@@ -256,20 +256,29 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
                 </p>
               </div>
 
-              <div className="mt-5">
-                <button className="group inline-flex w-full items-center justify-center rounded-md !bg-transparent px-4 py-2 text-sm font-semibold !text-[#1C448E] border border-[#1C448E]/40 hover:border-[#1C448E] transition-colors">
-                  MEER WETEN
-                  <div className="relative ml-2 h-5 w-5 overflow-hidden">
-                    <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
-                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5">
-                        <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
-                      </svg>
-                      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 -translate-x-4">
-                        <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
-                      </svg>
-                    </div>
+              <button
+                className="
+                  group inline-flex w-full items-center justify-center rounded-md
+                  bg-white
+                  px-4 py-2 text-sm font-semibold
+                  text-[#1C448E]
+                  border border-[#1C448E]/50
+                  transition-colors
+                  hover:bg-[#1C448E] hover:text-white hover:border-[#1C448E]
+                "
+              >
+                MEER WETEN
+                <div className="relative ml-2 h-5 w-5 overflow-hidden">
+                  <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5">
+                      <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
+                    </svg>
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 -translate-x-4">
+                      <path d="M3.64645 11.3536C3.45118 11.1583 3.45118 10.8417 3.64645 10.6465L10.2929 4L6 4C5.72386 4 5.5 3.77614 5.5 3.5C5.5 3.22386 5.72386 3 6 3L11.5 3C11.6326 3 11.7598 3.05268 11.8536 3.14645C11.9473 3.24022 12 3.36739 12 3.5L12 9C12 9.27614 11.7761 9.5 11.5 9.5C11.2239 9.5 11 9.27614 11 9V4.70711L4.35355 11.3536C4.15829 11.5488 3.84171 11.5488 3.64645 11.3536Z" fill="currentColor"/>
+                    </svg>
                   </div>
-                </button>
+                </div>
+              </button>
 
                 {/* ✅ “Klik voor meer…” weg */}
               </div>
@@ -374,7 +383,7 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
               € {car.price.toLocaleString()}
             </p>
 
-            <button className="inline-flex h-8 items-center justify-center rounded !bg-transparent px-4 py-1 font-bold !text-[#1C448E] transition-opacity hover:!opacity-90 group cursor-pointer">
+            <button className="!border-none inline-flex h-8 items-center justify-center rounded !bg-transparent px-4 py-1 font-bold !text-[#1C448E] transition-opacity hover:!opacity-90 group cursor-pointer">
               MEER WETEN
               <div className="relative ml-2 h-5 w-5 overflow-hidden">
                 <div className="absolute transition-all duration-300 group-hover:-translate-y-5 group-hover:translate-x-4">
