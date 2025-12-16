@@ -16,14 +16,6 @@ import { FaArrowUp, FaChevronLeft, FaChevronRight, FaChevronDown } from "react-i
 import { FaThList } from "react-icons/fa"
 import { RiGalleryView2 } from "react-icons/ri"
 
-// ✅ extra icons voor specs
-import { FaGasPump } from "react-icons/fa"
-import { FaRoad } from "react-icons/fa"
-import { FaCogs } from "react-icons/fa"
-import { FaCalendarAlt } from "react-icons/fa"
-import { FaBolt } from "react-icons/fa"
-import { FaWrench } from "react-icons/fa"
-
 interface CarOverview {
   id?: string
   brand: string
@@ -111,8 +103,8 @@ const mapCarToGridData = (car: CarOverview): GridCardData => {
     engine_size: car.engine_size || '',
     pk: typeof car.pk === 'number' ? car.pk : 0,
   }
-  const imageFolder = car.imageFolder && car.imageFolder.trim().length ? car.imageFolder.trim() : FALLBACK_IMAGE_FOLDER
-  return { id, car: card, imageFolder }
+  const folder = car.imageFolder && car.imageFolder.trim().length ? car.imageFolder.trim() : FALLBACK_IMAGE_FOLDER
+  return { id, car: card, imageFolder: folder }
 }
 
 const pickString = (record: Record<string, unknown>, keys: string[]): string | undefined => {
@@ -160,10 +152,6 @@ const BASE_DOORS = ['2', '3', '4', '5']
 
 type ViewMode = "grid" | "list"
 
-const formatNumberNL = (n: number) => n.toLocaleString('nl-NL')
-const formatPriceEUR = (n: number) =>
-  new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n)
-
 const Collection: React.FC = () => {
   const location = useLocation()
   const navState = (location.state as { filters?: IncomingFilters; includeItems?: boolean } | undefined) || {}
@@ -185,35 +173,23 @@ const Collection: React.FC = () => {
   const [sortBy, setSortBy] = useState<SortBy>('brandModelVariant')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
-  // ✅ NEW: pas nadat user echt kiest/togglet, tonen we de gekozen sort label
   const [hasUserSorted, setHasUserSorted] = useState(false)
 
-  // ✅ Mobiel: placeholder tot user echt iets kiest (default sort blijft wel op naam)
   const mobileSortLabel = useMemo(() => {
     if (!hasUserSorted) return "Sorteer op"
-
     switch (sortBy) {
-      case "brandModelVariant":
-        return "Merk / Model"
-      case "price":
-        return "Prijs"
-      case "km":
-        return "Kilometerstand"
-      case "year":
-        return "Bouwjaar"
-      default:
-        return "Merk / Model"
+      case "brandModelVariant": return "Merk / Model"
+      case "price": return "Prijs"
+      case "km": return "Kilometerstand"
+      case "year": return "Bouwjaar"
+      default: return "Merk / Model"
     }
   }, [sortBy, hasUserSorted])
 
   // Filters
   const initialBrandSelection = (() => {
-    if (isStructuredFilters(initialFilters) && initialFilters.brands) {
-      return ensureStringArray(initialFilters.brands)
-    }
-    if (isLegacyFilters(initialFilters) && initialFilters.brand) {
-      return ensureStringArray(initialFilters.brand)
-    }
+    if (isStructuredFilters(initialFilters) && initialFilters.brands) return ensureStringArray(initialFilters.brands)
+    if (isLegacyFilters(initialFilters) && initialFilters.brand) return ensureStringArray(initialFilters.brand)
     return []
   })()
   const [brandSelected, setBrandSelected] = useState<string[]>(initialBrandSelection)
@@ -257,17 +233,15 @@ const Collection: React.FC = () => {
   const [kmBounds, setKmBounds] = useState<[number, number]>([0, 0])
   const [kmRange, setKmRange] = useState<[number, number]>([0, 0])
 
-  // PK-slider
   const [pkBounds, setPkBounds] = useState<[number, number]>([0, 0])
   const [pkRange, setPkRange] = useState<[number, number]>([0, 0])
 
-  // Multi-select filters
   const [bodySelected, setBodySelected] = useState<string[]>([])
   const [transSelected, setTransSelected] = useState<string[]>([])
   const [doorsSelected, setDoorsSelected] = useState<string[]>([])
   const [fuelSelected, setFuelSelected] = useState<string[]>([])
 
-  // Fetch
+  // Fetch (ongewijzigd)
   useEffect(() => {
     setLoading(true)
     fetch('/api/filter_cars', {
@@ -375,7 +349,7 @@ const Collection: React.FC = () => {
     return Array.from(uniq).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [cars, modelSelected])
 
-  // Lookups voor gekozen model/variant
+  // Lookups
   const modelsByBrand = useMemo(() => {
     const map: Record<string, Set<string>> = {}
     modelSelected.forEach(token => {
@@ -417,7 +391,6 @@ const Collection: React.FC = () => {
     })
   }, [cars, brandSelected, modelsByBrand, variantsByBrandModel, priceRange, kmRange, pkRange])
 
-  // Altijd-beschikbare facet-options (union met dataset-afgeleide)
   const bodyOptions = useMemo(() => {
     const set = new Set<string>(BASE_BODIES)
     baseAfterBMVAndSliders.forEach(c => { if (c.body) set.add(String(c.body)) })
@@ -444,13 +417,11 @@ const Collection: React.FC = () => {
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'nl', { sensitivity: 'base' }))
   }, [baseAfterBMVAndSliders])
 
-  // Houd geselecteerde waarden in sync met beschikbare opties
   useEffect(() => setBodySelected(sel => sel.filter(v => bodyOptions.includes(v))), [bodyOptions])
   useEffect(() => setTransSelected(sel => sel.filter(v => transOptions.includes(v))), [transOptions])
   useEffect(() => setDoorsSelected(sel => sel.filter(v => doorsOptions.includes(v))), [doorsOptions])
   useEffect(() => setFuelSelected(sel => sel.filter(v => fuelOptions.includes(v))), [fuelOptions])
 
-  // Als een merk wordt gedeselecteerd: verwijder alle modellen van die merken
   useEffect(() => {
     setModelSelected((sel) =>
       sel.filter((token) => {
@@ -460,7 +431,6 @@ const Collection: React.FC = () => {
     )
   }, [brandSelected])
 
-  // Als (merk, model) niet meer bestaat in modelSelected: verwijder varianten daarvan
   useEffect(() => {
     setVariantSelected((sel) =>
       sel.filter((token) => {
@@ -470,7 +440,6 @@ const Collection: React.FC = () => {
     )
   }, [modelSelected])
 
-  // Eindfilter + sorteren
   const filteredAndSortedCars = useMemo(() => {
     const afterFacets = baseAfterBMVAndSliders.filter(c => {
       if (bodySelected.length && !(c.body && bodySelected.includes(String(c.body)))) return false
@@ -507,13 +476,11 @@ const Collection: React.FC = () => {
     [filteredAndSortedCars]
   )
 
-  // ——— Pagination ———
+  // Pagination
   const PAGE_SIZE = 12
   const [page, setPage] = useState(1)
 
-  const totalPages = useMemo(() => {
-    return Math.max(1, Math.ceil(gridCardData.length / PAGE_SIZE))
-  }, [gridCardData.length])
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(gridCardData.length / PAGE_SIZE)), [gridCardData.length])
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages)
@@ -523,13 +490,9 @@ const Collection: React.FC = () => {
   const pageStartIndex = (page - 1) * PAGE_SIZE
   const pageEndIndex = Math.min(page * PAGE_SIZE, gridCardData.length)
 
-  const pagedGridData = useMemo(() => {
-    return gridCardData.slice(pageStartIndex, pageEndIndex)
-  }, [gridCardData, pageStartIndex, pageEndIndex])
-
+  const pagedGridData = useMemo(() => gridCardData.slice(pageStartIndex, pageEndIndex), [gridCardData, pageStartIndex, pageEndIndex])
   const pagedListData = pagedGridData
 
-  // Reset naar pagina 1 bij filter-/sort-wijzigingen
   useEffect(() => { setPage(1) }, [brandSelected, modelSelected, variantSelected])
   useEffect(() => { setPage(1) }, [priceRange, kmRange, pkRange, bodySelected, transSelected, doorsSelected, fuelSelected])
   useEffect(() => { setPage(1) }, [sortBy, sortDir])
@@ -565,7 +528,6 @@ const Collection: React.FC = () => {
     return () => obs.disconnect()
   }, [navOffset])
 
-  // Smooth scroll naar de grid bij paginawissel
   const gridTopRef = useRef<HTMLDivElement | null>(null)
   const goToPage = (p: number) => {
     const next = Math.min(Math.max(1, p), totalPages)
@@ -579,13 +541,11 @@ const Collection: React.FC = () => {
   if (loading) return <Loader />
   if (error) return <Loader />
 
-  // ✅ NO borders / NO backgrounds / NO outlines on click
   const btnReset =
     "!bg-transparent !border-0 !shadow-none !ring-0 !outline-none appearance-none " +
     "focus:!outline-none focus:!ring-0 focus-visible:!outline-none focus-visible:!ring-0 " +
     "active:!outline-none active:!ring-0"
 
-  // Sort pill: inactief grijs/zwart, actief blauw + semi-bold
   const SortPill: React.FC<{ active: boolean; onClick: () => void; children: React.ReactNode }> = ({ active, onClick, children }) => (
     <button
       type="button"
@@ -602,47 +562,20 @@ const Collection: React.FC = () => {
 
   const renderSortPills = () => (
     <div className="flex items-center gap-4">
-      <SortPill
-        active={sortBy === 'brandModelVariant'}
-        onClick={() => {
-          setSortBy('brandModelVariant')
-          setHasUserSorted(true)
-        }}
-      >
+      <SortPill active={sortBy === 'brandModelVariant'} onClick={() => { setSortBy('brandModelVariant'); setHasUserSorted(true) }}>
         <TbAlphabetLatin size={22} />
       </SortPill>
 
-      <SortPill
-        active={sortBy === 'price'}
-        onClick={() => {
-          setSortBy('price')
-          setHasUserSorted(true)
-        }}
-      >
-        <IoMdPricetags size={22} />
-        Prijs
+      <SortPill active={sortBy === 'price'} onClick={() => { setSortBy('price'); setHasUserSorted(true) }}>
+        <IoMdPricetags size={22} /> Prijs
       </SortPill>
 
-      <SortPill
-        active={sortBy === 'km'}
-        onClick={() => {
-          setSortBy('km')
-          setHasUserSorted(true)
-        }}
-      >
-        <MdSpeed size={22} />
-        km
+      <SortPill active={sortBy === 'km'} onClick={() => { setSortBy('km'); setHasUserSorted(true) }}>
+        <MdSpeed size={22} /> km
       </SortPill>
 
-      <SortPill
-        active={sortBy === 'year'}
-        onClick={() => {
-          setSortBy('year')
-          setHasUserSorted(true)
-        }}
-      >
-        <MdDateRange size={22} />
-        Jaar
+      <SortPill active={sortBy === 'year'} onClick={() => { setSortBy('year'); setHasUserSorted(true) }}>
+        <MdDateRange size={22} /> Jaar
       </SortPill>
     </div>
   )
@@ -703,118 +636,10 @@ const Collection: React.FC = () => {
     </>
   )
 
-  // Handler voor mobiele sort dropdown
   const handleMobileSortSelect = (value: SortBy) => {
     setSortBy(value)
     setHasUserSorted(true)
     setMobileSortOpen(false)
-  }
-
-  // ✅ ListRow (3 blokken)
-  const ListRow: React.FC<{ data: GridCardData }> = ({ data }) => {
-    const car = data.car
-    const folder = (data.imageFolder && data.imageFolder.trim().length) ? data.imageFolder : FALLBACK_IMAGE_FOLDER
-
-    // 3 foto's (gallery-idee)
-    const imgs = [
-      `/images/cars/${folder}/1.jpg`,
-      `/images/cars/${folder}/2.jpg`,
-      `/images/cars/${folder}/3.jpg`,
-    ]
-
-    const title = `${car.brand} ${car.model} ${car.variant}`.trim()
-
-    const specItem = (icon: React.ReactNode, label: string) => (
-      <div className="flex items-center gap-2 text-sm text-gray-700">
-        <span className="text-gray-500">{icon}</span>
-        <span className="truncate">{label}</span>
-      </div>
-    )
-
-    return (
-      <div
-        className={[
-          "w-full",
-          "rounded-2xl border border-gray-200 bg-white",
-          "shadow-[0_8px_24px_rgba(0,0,0,0.06)]",
-          "overflow-hidden",
-        ].join(" ")}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-[260px_1fr_220px]">
-          {/* [1] FOTO + 3 BALKJES */}
-          <div className="relative bg-gray-100">
-            <div className="aspect-[4/3] md:aspect-auto md:h-full w-full overflow-hidden">
-              <img
-                src={imgs[0]}
-                alt={title}
-                className="h-full w-full object-cover"
-                loading="lazy"
-                onError={(e) => {
-                  // fallback naar algemeen plaatje
-                  ;(e.currentTarget as HTMLImageElement).src = `/images/cars/${FALLBACK_IMAGE_FOLDER}/1.jpg`
-                }}
-              />
-            </div>
-
-            {/* 3 balkjes (zoals gallery) */}
-            <div className="absolute left-3 right-3 bottom-3 flex items-center gap-1">
-              {[0, 1, 2].map((i) => (
-                <span
-                  key={i}
-                  className={[
-                    "h-1.5 flex-1 rounded-full",
-                    i === 0 ? "bg-white/90" : "bg-white/40",
-                  ].join(" ")}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* [2] TITEL + 6 SPECS */}
-          <div className="p-4 md:p-5">
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 leading-snug">
-              {title}
-            </h3>
-
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
-              {specItem(<FaGasPump className="text-[14px]" />, car.fuel || 'Onbekend')}
-              {specItem(<FaRoad className="text-[14px]" />, `${formatNumberNL(car.mileage || 0)} km`)}
-              {specItem(<FaCogs className="text-[14px]" />, car.transmission || 'Onbekend')}
-              {specItem(<FaCalendarAlt className="text-[14px]" />, `${car.year || 0}`)}
-              {specItem(<FaBolt className="text-[14px]" />, `${car.pk || 0} pk`)}
-              {specItem(<FaWrench className="text-[14px]" />, (car.engine_size && car.engine_size.trim().length) ? car.engine_size : '—')}
-            </div>
-          </div>
-
-          {/* [3] PRIJS + BUTTON */}
-          <div className="p-4 md:p-5 border-t md:border-t-0 md:border-l border-gray-200 flex md:flex-col items-start md:items-end justify-between gap-3">
-            <div className="text-left md:text-right w-full">
-              <div className="text-xs text-gray-500">Prijs</div>
-              <div className="text-lg md:text-xl font-bold text-gray-900">
-                {formatPriceEUR(car.price || 0)}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className={[
-                btnReset,
-                "inline-flex items-center justify-center",
-                "rounded-xl px-3 py-2 text-sm font-medium",
-                "text-[#1C448E]",
-                "border border-[#1C448E]/40", // ✅ kleine blauwe rand
-                "hover:border-[#1C448E] hover:bg-[#1C448E]/5",
-                "transition",
-                "w-full md:w-auto",
-              ].join(" ")}
-              aria-label={`Meer weten over ${title}`}
-            >
-              Meer weten
-            </button>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -848,7 +673,6 @@ const Collection: React.FC = () => {
             {!mobileFiltersOpen && (
               <div className="md:hidden sticky z-30 bg-white border-b border-gray-200" style={{ top: `${navOffset}px` }}>
                 <div className="flex items-center px-4 py-2 [-webkit-overflow-scrolling:touch]">
-                  {/* Filters-knop links */}
                   <button
                     type="button"
                     onClick={() => {
@@ -870,9 +694,7 @@ const Collection: React.FC = () => {
 
                   <div className="flex-1" />
 
-                  {/* Sort controls rechts */}
                   <div className="flex items-center gap-3 shrink-0">
-                    {/* Custom dropdown voor sorteer-optie */}
                     <div className="relative">
                       <button
                         type="button"
@@ -882,7 +704,6 @@ const Collection: React.FC = () => {
                           "inline-flex items-center gap-1 text-sm text-[#1C448E]",
                         ].join(" ")}
                       >
-                        {/* ✅ placeholder tot user echt kiest */}
                         <span>{mobileSortLabel}</span>
                         <FaChevronDown
                           className={[
@@ -898,44 +719,28 @@ const Collection: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleMobileSortSelect('brandModelVariant')}
-                            className={[
-                              btnReset,
-                              "block w-full text-left px-3 py-1.5 hover:bg-gray-100",
-                              sortBy === 'brandModelVariant' ? "font-semibold text-[#1C448E]" : "text-gray-800",
-                            ].join(" ")}
+                            className={[btnReset, "block w-full text-left px-3 py-1.5 hover:bg-gray-100", sortBy === 'brandModelVariant' ? "font-semibold text-[#1C448E]" : "text-gray-800"].join(" ")}
                           >
                             Merk / Model
                           </button>
                           <button
                             type="button"
                             onClick={() => handleMobileSortSelect('price')}
-                            className={[
-                              btnReset,
-                              "block w-full text-left px-3 py-1.5 hover:bg-gray-100",
-                              sortBy === 'price' ? "font-semibold text-[#1C448E]" : "text-gray-800",
-                            ].join(" ")}
+                            className={[btnReset, "block w-full text-left px-3 py-1.5 hover:bg-gray-100", sortBy === 'price' ? "font-semibold text-[#1C448E]" : "text-gray-800"].join(" ")}
                           >
                             Prijs
                           </button>
                           <button
                             type="button"
                             onClick={() => handleMobileSortSelect('km')}
-                            className={[
-                              btnReset,
-                              "block w-full text-left px-3 py-1.5 hover:bg-gray-100",
-                              sortBy === 'km' ? "font-semibold text-[#1C448E]" : "text-gray-800",
-                            ].join(" ")}
+                            className={[btnReset, "block w-full text-left px-3 py-1.5 hover:bg-gray-100", sortBy === 'km' ? "font-semibold text-[#1C448E]" : "text-gray-800"].join(" ")}
                           >
                             Kilometerstand
                           </button>
                           <button
                             type="button"
                             onClick={() => handleMobileSortSelect('year')}
-                            className={[
-                              btnReset,
-                              "block w-full text-left px-3 py-1.5 hover:bg-gray-100",
-                              sortBy === 'year' ? "font-semibold text-[#1C448E]" : "text-gray-800",
-                            ].join(" ")}
+                            className={[btnReset, "block w-full text-left px-3 py-1.5 hover:bg-gray-100", sortBy === 'year' ? "font-semibold text-[#1C448E]" : "text-gray-800"].join(" ")}
                           >
                             Bouwjaar
                           </button>
@@ -943,7 +748,6 @@ const Collection: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Richtingspijl sorteer-volgorde */}
                     <button
                       type="button"
                       onClick={() => {
@@ -951,11 +755,7 @@ const Collection: React.FC = () => {
                         setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
                       }}
                       aria-label="Draai sorteer volgorde"
-                      className={[
-                        btnReset,
-                        "inline-flex items-center text-sm",
-                        "text-[#1C448E]",
-                      ].join(" ")}
+                      className={[btnReset, "inline-flex items-center text-sm", "text-[#1C448E]"].join(" ")}
                     >
                       <FaArrowUp className={sortDir === 'desc' ? 'rotate-180' : ''} />
                     </button>
@@ -965,12 +765,8 @@ const Collection: React.FC = () => {
             )}
 
             {/* ✅ Desktop sticky bar */}
-            <div
-              className="hidden md:flex sticky bg-white z-20 px-6 lg:px-8 py-3"
-              style={{ top: `${navOffset}px` }}
-            >
+            <div className="hidden md:flex sticky bg-white z-20 px-6 lg:px-8 py-3" style={{ top: `${navOffset}px` }}>
               <div className="w-full flex items-end justify-between gap-6">
-                {/* LEFT: results + sort */}
                 <div className="flex flex-col gap-2 min-w-0">
                   <span className="text-sm text-gray-700">
                     {gridCardData.length === 0
@@ -989,28 +785,18 @@ const Collection: React.FC = () => {
                       }}
                       aria-label="Draai sorteer volgorde"
                       title="Draai sorteer volgorde"
-                      className={[
-                        btnReset,
-                        "text-sm",
-                        sortDir ? "text-gray-700 hover:text-gray-900" : "text-gray-700",
-                        "transition-transform duration-200",
-                      ].join(" ")}
+                      className={[btnReset, "text-sm", "text-gray-700 hover:text-gray-900", "transition-transform duration-200"].join(" ")}
                     >
                       <FaArrowUp className={sortDir === 'desc' ? 'rotate-180' : 'rotate-0'} />
                     </button>
                   </div>
                 </div>
 
-                {/* RIGHT: view icons */}
                 <div className="flex items-center gap-3 shrink-0 pb-1">
                   <button
                     type="button"
                     onClick={() => setViewMode("grid")}
-                    className={[
-                      btnReset,
-                      "transition-opacity hover:opacity-90",
-                      viewMode === "grid" ? "text-[#1C448E]" : "text-gray-500 hover:text-gray-700",
-                    ].join(" ")}
+                    className={[btnReset, "transition-opacity hover:opacity-90", viewMode === "grid" ? "text-[#1C448E]" : "text-gray-500 hover:text-gray-700"].join(" ")}
                     aria-pressed={viewMode === "grid"}
                     aria-label="Grid weergave"
                     title="Grid"
@@ -1021,11 +807,7 @@ const Collection: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setViewMode("list")}
-                    className={[
-                      btnReset,
-                      "transition-opacity hover:opacity-90",
-                      viewMode === "list" ? "text-[#1C448E]" : "text-gray-500 hover:text-gray-700",
-                    ].join(" ")}
+                    className={[btnReset, "transition-opacity hover:opacity-90", viewMode === "list" ? "text-[#1C448E]" : "text-gray-500 hover:text-gray-700"].join(" ")}
                     aria-pressed={viewMode === "list"}
                     aria-label="Lijst weergave"
                     title="Lijst"
@@ -1045,22 +827,17 @@ const Collection: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* MOBILE: nu ook dezelfde 3-blokken list */}
+                  {/* MOBILE: altijd list */}
                   <div className="md:hidden">
                     <div className="flex flex-col gap-4">
-                      <AnimatePresence initial={false} mode="popLayout">
-                        {pagedListData.map((data) => (
-                          <motion.div
-                            key={data.id}
-                            initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                            transition={{ duration: 0.18 }}
-                          >
-                            <ListRow data={data} />
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
+                      {pagedListData.map((data) => (
+                        <CarCard
+                          key={data.id}
+                          car={data.car}
+                          layout="list"
+                          imageFolder={data.imageFolder || FALLBACK_IMAGE_FOLDER}
+                        />
+                      ))}
                     </div>
                   </div>
 
@@ -1084,25 +861,33 @@ const Collection: React.FC = () => {
                                 }}
                                 className="w-full will-change-transform"
                               >
-                                <CarCard car={data.car} layout="grid" imageFolder={data.imageFolder} />
+                                <CarCard
+                                  car={data.car}
+                                  layout="grid"
+                                  imageFolder={data.imageFolder || FALLBACK_IMAGE_FOLDER}
+                                />
                               </motion.div>
                             ))}
                           </AnimatePresence>
                         </div>
                       </LayoutGroup>
                     ) : (
-                      // ✅ LIST VIEW: scale-in bij switchen + 3-blokken layout
                       <div className="flex flex-col gap-4">
                         <AnimatePresence initial={false} mode="popLayout">
                           {pagedListData.map((data) => (
                             <motion.div
                               key={data.id}
-                              initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                              initial={{ opacity: 0, y: 10, scale: 0.96 }}
                               animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: 12, scale: 0.96 }}
+                              exit={{ opacity: 0, y: 10, scale: 0.98 }}
                               transition={{ duration: 0.18 }}
+                              className="origin-top"
                             >
-                              <ListRow data={data} />
+                              <CarCard
+                                car={data.car}
+                                layout="list"
+                                imageFolder={data.imageFolder || FALLBACK_IMAGE_FOLDER}
+                              />
                             </motion.div>
                           ))}
                         </AnimatePresence>
@@ -1113,7 +898,6 @@ const Collection: React.FC = () => {
                   {/* Pagination controls */}
                   {totalPages > 1 && (
                     <div className="mt-6 flex items-center justify-center gap-2 select-none">
-                      {/* Vorige */}
                       <button
                         type="button"
                         onClick={() => goToPage(page - 1)}
@@ -1126,10 +910,8 @@ const Collection: React.FC = () => {
                         aria-label="Vorige pagina"
                       >
                         <FaChevronLeft className="inline-block align-[-2px]" size={16} />
-                        <span className="sr-only">Vorige</span>
                       </button>
 
-                      {/* Nummers */}
                       {(() => {
                         const items: (number | "…")[] = []
                         const add = (n: number | "…") => items.push(n)
@@ -1159,7 +941,6 @@ const Collection: React.FC = () => {
                                     it === page ? "text-[#1C448E] font-semibold" : "text-gray-700 hover:text-gray-900",
                                   ].join(" ")}
                                   aria-current={it === page ? "page" : undefined}
-                                  aria-label={`Ga naar pagina ${it}`}
                                 >
                                   {it}
                                 </button>
@@ -1169,7 +950,6 @@ const Collection: React.FC = () => {
                         )
                       })()}
 
-                      {/* Volgende */}
                       <button
                         type="button"
                         onClick={() => goToPage(page + 1)}
@@ -1182,7 +962,6 @@ const Collection: React.FC = () => {
                         aria-label="Volgende pagina"
                       >
                         <FaChevronRight className="inline-block align-[-2px]" size={16} />
-                        <span className="sr-only">Volgende</span>
                       </button>
                     </div>
                   )}
