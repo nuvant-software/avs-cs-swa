@@ -11,6 +11,8 @@ import { TbAlphabetLatin } from "react-icons/tb"
 import { MdSpeed, MdDateRange } from "react-icons/md"
 import { IoMdPricetags } from "react-icons/io"
 import { FaArrowUp, FaChevronLeft, FaChevronRight, FaChevronDown } from "react-icons/fa"
+
+// ✅ view toggle icons (geen tekst)
 import { FaThList } from "react-icons/fa"
 import { RiGalleryView2 } from "react-icons/ri"
 
@@ -144,9 +146,9 @@ const cmpNum = (a: number, b: number) => (a < b ? -1 : a > b ? 1 : 0)
 
 // Altijd-beschikbare keuzes
 const BASE_TRANSMISSIONS = ['Automaat', 'Handgeschakeld']
-const BASE_BODIES = ['Hatchback','Sedan','Stationwagon','SUV','MPV','Coupé','Cabrio','Pick-up','Bestel']
-const BASE_FUELS = ['Benzine','Diesel','Elektrisch','Hybride','LPG']
-const BASE_DOORS = ['2','3','4','5']
+const BASE_BODIES = ['Hatchback', 'Sedan', 'Stationwagon', 'SUV', 'MPV', 'Coupé', 'Cabrio', 'Pick-up', 'Bestel']
+const BASE_FUELS = ['Benzine', 'Diesel', 'Elektrisch', 'Hybride', 'LPG']
+const BASE_DOORS = ['2', '3', '4', '5']
 
 type ViewMode = "grid" | "list"
 
@@ -564,55 +566,53 @@ const Collection: React.FC = () => {
     </button>
   )
 
-  // Sorteercontrols (desktop)
-  const renderSortControls = () => (
-    <div className="flex items-center justify-between w-full">
+  // ✅ alleen sort pills (links in de sticky balk)
+  const renderSortPills = () => (
+    <div className="flex items-center gap-4">
+      <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>
+        <TbAlphabetLatin size={22} className="text-base" />
+      </SortPill>
+
+      <SortPill active={sortBy === 'price'} onClick={() => setSortBy('price')}>
+        <IoMdPricetags size={22} className="text-base" />
+        Prijs
+      </SortPill>
+
+      <SortPill active={sortBy === 'km'} onClick={() => setSortBy('km')}>
+        <MdSpeed size={22} className="text-base" />
+        km
+      </SortPill>
+
+      <SortPill active={sortBy === 'year'} onClick={() => setSortBy('year')}>
+        <MdDateRange size={22} className="text-base" />
+        Jaar
+      </SortPill>
+
+      <button
+        type="button"
+        onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+        aria-label="Draai sorteer volgorde"
+        title="Draai sorteer volgorde"
+        className={[
+          'p-0 m-0 text-[#1C448E]',
+          '!bg-transparent border-0 rounded-none',
+          'border-b-2 !border-transparent hover:border-[#1C448E]',
+          'transition-transform duration-200'
+        ].join(' ')}
+      >
+        <FaArrowUp className={['text-base inline-block', sortDir === 'desc' ? 'rotate-180' : 'rotate-0'].join(' ')} />
+      </button>
+    </div>
+  )
+
+  // ✅ resultaten tekst komt onder de sticky balk (desktop)
+  const renderResultsSummary = () => (
+    <div className="px-6 lg:px-8 mb-4">
       <span className="text-sm text-gray-700">
         {gridCardData.length === 0
           ? '0 resultaten'
           : `${pageStartIndex + 1}–${pageEndIndex} van ${gridCardData.length} resultaten`}
       </span>
-
-      <div className="flex items-center gap-4 justify-end">
-        <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>
-          <TbAlphabetLatin size={22} className="text-base" />
-        </SortPill>
-
-        <SortPill active={sortBy === 'price'} onClick={() => setSortBy('price')}>
-          <IoMdPricetags size={22} className="text-base" />
-          Prijs
-        </SortPill>
-
-        <SortPill active={sortBy === 'km'} onClick={() => setSortBy('km')}>
-          <MdSpeed size={22} className="text-base" />
-          km
-        </SortPill>
-
-        <SortPill active={sortBy === 'year'} onClick={() => setSortBy('year')}>
-          <MdDateRange size={22} className="text-base" />
-          Jaar
-        </SortPill>
-
-        <button
-          type="button"
-          onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
-          aria-label="Draai sorteer volgorde"
-          title="Draai sorteer volgorde"
-          className={[
-            'p-0 m-0 text-[#1C448E]',
-            '!bg-transparent border-0 rounded-none',
-            'border-b-2 !border-transparent hover:border-[#1C448E]',
-            'transition-transform duration-200'
-          ].join(' ')}
-        >
-          <FaArrowUp
-            className={[
-              'text-base inline-block',
-              sortDir === 'desc' ? 'rotate-180' : 'rotate-0'
-            ].join(' ')}
-          />
-        </button>
-      </div>
     </div>
   )
 
@@ -839,13 +839,16 @@ const Collection: React.FC = () => {
 
             {/* Desktop sort-balk sticky + view toggle */}
             <div
-              className="hidden md:flex items-center justify-between px-6 lg:px-8 mb-4 md:mb-6 sticky bg-white z-20"
+              className="hidden md:flex items-center justify-between px-6 lg:px-8 sticky bg-white z-20"
               style={{ top: `${navOffset}px` }}
             >
               <div className="py-2 w-full flex items-center justify-between gap-4">
-                <div className="flex-1">{renderSortControls()}</div>
+                {/* ✅ links: sort */}
+                <div className="flex items-center gap-4">
+                  {renderSortPills()}
+                </div>
 
-                {/* ✅ icon-only grid/list toggle */}
+                {/* ✅ rechts: grid/list icons (blauw actief, grijs inactief) */}
                 <div className="flex items-center gap-3 shrink-0">
                   <button
                     type="button"
@@ -880,6 +883,11 @@ const Collection: React.FC = () => {
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* ✅ Desktop: resultaten onder de balk */}
+            <div className="hidden md:block">
+              {renderResultsSummary()}
             </div>
 
             {/* Results */}
