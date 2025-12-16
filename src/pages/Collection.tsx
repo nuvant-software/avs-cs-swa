@@ -173,11 +173,16 @@ const Collection: React.FC = () => {
   const [sortBy, setSortBy] = useState<SortBy>('brandModelVariant')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
-  // ✅ Mobiel: toon gekozen sorteer optie als label (ipv "Sorteer op")
+  // ✅ NEW: pas nadat user echt kiest/togglet, tonen we de gekozen sort label
+  const [hasUserSorted, setHasUserSorted] = useState(false)
+
+  // ✅ Mobiel: placeholder tot user echt iets kiest (default sort blijft wel op naam)
   const mobileSortLabel = useMemo(() => {
+    if (!hasUserSorted) return "Sorteer op"
+
     switch (sortBy) {
       case "brandModelVariant":
-        return "Naam"
+        return "Merk / Model"
       case "price":
         return "Prijs"
       case "km":
@@ -185,9 +190,9 @@ const Collection: React.FC = () => {
       case "year":
         return "Bouwjaar"
       default:
-        return "Naam"
+        return "Merk / Model"
     }
-  }, [sortBy])
+  }, [sortBy, hasUserSorted])
 
   // Filters
   const initialBrandSelection = (() => {
@@ -585,21 +590,45 @@ const Collection: React.FC = () => {
 
   const renderSortPills = () => (
     <div className="flex items-center gap-4">
-      <SortPill active={sortBy === 'brandModelVariant'} onClick={() => setSortBy('brandModelVariant')}>
+      <SortPill
+        active={sortBy === 'brandModelVariant'}
+        onClick={() => {
+          setSortBy('brandModelVariant')
+          setHasUserSorted(true)
+        }}
+      >
         <TbAlphabetLatin size={22} />
       </SortPill>
 
-      <SortPill active={sortBy === 'price'} onClick={() => setSortBy('price')}>
+      <SortPill
+        active={sortBy === 'price'}
+        onClick={() => {
+          setSortBy('price')
+          setHasUserSorted(true)
+        }}
+      >
         <IoMdPricetags size={22} />
         Prijs
       </SortPill>
 
-      <SortPill active={sortBy === 'km'} onClick={() => setSortBy('km')}>
+      <SortPill
+        active={sortBy === 'km'}
+        onClick={() => {
+          setSortBy('km')
+          setHasUserSorted(true)
+        }}
+      >
         <MdSpeed size={22} />
         km
       </SortPill>
 
-      <SortPill active={sortBy === 'year'} onClick={() => setSortBy('year')}>
+      <SortPill
+        active={sortBy === 'year'}
+        onClick={() => {
+          setSortBy('year')
+          setHasUserSorted(true)
+        }}
+      >
         <MdDateRange size={22} />
         Jaar
       </SortPill>
@@ -665,6 +694,7 @@ const Collection: React.FC = () => {
   // Handler voor mobiele sort dropdown
   const handleMobileSortSelect = (value: SortBy) => {
     setSortBy(value)
+    setHasUserSorted(true)
     setMobileSortOpen(false)
   }
 
@@ -733,7 +763,7 @@ const Collection: React.FC = () => {
                           "inline-flex items-center gap-1 text-sm text-[#1C448E]",
                         ].join(" ")}
                       >
-                        {/* ✅ hier vervangen we "Sorteer op" door label */}
+                        {/* ✅ placeholder tot user echt kiest */}
                         <span>{mobileSortLabel}</span>
                         <FaChevronDown
                           className={[
@@ -797,7 +827,10 @@ const Collection: React.FC = () => {
                     {/* Richtingspijl sorteer-volgorde */}
                     <button
                       type="button"
-                      onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+                      onClick={() => {
+                        setHasUserSorted(true)
+                        setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+                      }}
                       aria-label="Draai sorteer volgorde"
                       className={[
                         btnReset,
@@ -812,7 +845,7 @@ const Collection: React.FC = () => {
               </div>
             )}
 
-            {/* ✅ Desktop sticky bar: alles netjes uitgelijnd, geen grijze balk, geen randjes */}
+            {/* ✅ Desktop sticky bar */}
             <div
               className="hidden md:flex sticky bg-white z-20 px-6 lg:px-8 py-3"
               style={{ top: `${navOffset}px` }}
@@ -831,7 +864,10 @@ const Collection: React.FC = () => {
 
                     <button
                       type="button"
-                      onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+                      onClick={() => {
+                        setHasUserSorted(true)
+                        setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+                      }}
                       aria-label="Draai sorteer volgorde"
                       title="Draai sorteer volgorde"
                       className={[
@@ -846,7 +882,7 @@ const Collection: React.FC = () => {
                   </div>
                 </div>
 
-                {/* RIGHT: view icons (zelfde baseline als sort row) */}
+                {/* RIGHT: view icons */}
                 <div className="flex items-center gap-3 shrink-0 pb-1">
                   <button
                     type="button"
