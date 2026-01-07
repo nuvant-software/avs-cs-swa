@@ -6,6 +6,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Footer from './components/Footer';
 import Collection from './pages/Collection';
+import CarDetail from './pages/CarDetail'; // ✅ nieuw
 
 function App() {
   return (
@@ -16,7 +17,11 @@ function App() {
         <main className="!flex-grow !pt-[40px]">
           <Routes>
             <Route path="/" element={<Home />} />
-             <Route path="/collection" element={<Collection />} />
+            <Route path="/collection" element={<Collection />} />
+
+            {/* ✅ nieuw: detailpagina per auto */}
+            <Route path="/car/:id" element={<CarDetail />} />
+
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
           </Routes>
