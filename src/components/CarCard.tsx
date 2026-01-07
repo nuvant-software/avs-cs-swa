@@ -284,7 +284,6 @@ const CarCard: React.FC<Props> = ({ car, layout = "grid", imageFolder, animation
               </div>
             </div>
           </div>
-        </div>
 
         <Lightbox
           images={allImages}

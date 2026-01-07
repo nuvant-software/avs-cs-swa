@@ -642,6 +642,18 @@ const Collection: React.FC = () => {
     setMobileSortOpen(false)
   }
 
+  // ✅ gedeelde animatie instellingen (grid + list consistent)
+  const itemMotion = {
+    initial: { opacity: 0, y: 12, scale: 0.98 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    exit: { opacity: 0, y: 18, scale: 0.98 },
+    transition: {
+      layout: { type: 'spring', stiffness: 420, damping: 32, mass: 0.3 },
+      duration: 0.22,
+      opacity: { duration: 0.18 }
+    }
+  } as const
+
   return (
     <div className="w-full bg-white">
       {/* HERO */}
@@ -827,58 +839,17 @@ const Collection: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  {/* MOBILE: altijd list */}
+                  {/* ✅ MOBILE: altijd list (nu mét animatie + layout reflow) */}
                   <div className="md:hidden">
-                    <div className="flex flex-col gap-4">
-                      {pagedListData.map((data) => (
-                        <CarCard
-                          key={data.id}
-                          car={data.car}
-                          layout="list"
-                          imageFolder={data.imageFolder || FALLBACK_IMAGE_FOLDER}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* DESKTOP: toggle */}
-                  <div className="hidden md:block">
-                    {viewMode === "grid" ? (
-                      <LayoutGroup>
-                        <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
-                          {/* ✅ initial niet uitzetten, anders geen “poof” bij eerste render */}
-                          <AnimatePresence initial={true} mode="popLayout">
-                            {pagedGridData.map((data) => (
-                              <motion.div
-                                key={data.id}
-                                layout="position"
-                                initial={{ opacity: 0, y: 12, scale: 0.98 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 18, scale: 0.98 }}
-                                transition={{
-                                  layout: { type: 'spring', stiffness: 420, damping: 32, mass: 0.3 },
-                                  duration: 0.22,
-                                  opacity: { duration: 0.18 }
-                                }}
-                                className="w-full will-change-transform"
-                              >
-                                <CarCard car={data.car} layout="grid" imageFolder={data.imageFolder || FALLBACK_IMAGE_FOLDER} />
-                              </motion.div>
-                            ))}
-                          </AnimatePresence>
-                        </div>
-                      </LayoutGroup>
-                    ) : (
+                    <LayoutGroup>
                       <div className="flex flex-col gap-4">
-                        <AnimatePresence initial={false} mode="popLayout">
+                        <AnimatePresence initial={true} mode="popLayout">
                           {pagedListData.map((data) => (
                             <motion.div
                               key={data.id}
-                              initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                              transition={{ duration: 0.18 }}
-                              className="origin-top"
+                              layout="position"
+                              {...itemMotion}
+                              className="w-full will-change-transform origin-top"
                             >
                               <CarCard
                                 car={data.car}
@@ -889,6 +860,54 @@ const Collection: React.FC = () => {
                           ))}
                         </AnimatePresence>
                       </div>
+                    </LayoutGroup>
+                  </div>
+
+                  {/* DESKTOP: toggle */}
+                  <div className="hidden md:block">
+                    {viewMode === "grid" ? (
+                      <LayoutGroup>
+                        <div className="grid gap-6 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
+                          <AnimatePresence initial={true} mode="popLayout">
+                            {pagedGridData.map((data) => (
+                              <motion.div
+                                key={data.id}
+                                layout="position"
+                                {...itemMotion}
+                                className="w-full will-change-transform"
+                              >
+                                <CarCard
+                                  car={data.car}
+                                  layout="grid"
+                                  imageFolder={data.imageFolder || FALLBACK_IMAGE_FOLDER}
+                                />
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+                        </div>
+                      </LayoutGroup>
+                    ) : (
+                      // ✅ DESKTOP list: nu ook LayoutGroup + layout="position" + dezelfde animatie
+                      <LayoutGroup>
+                        <div className="flex flex-col gap-4">
+                          <AnimatePresence initial={true} mode="popLayout">
+                            {pagedListData.map((data) => (
+                              <motion.div
+                                key={data.id}
+                                layout="position"
+                                {...itemMotion}
+                                className="w-full will-change-transform origin-top"
+                              >
+                                <CarCard
+                                  car={data.car}
+                                  layout="list"
+                                  imageFolder={data.imageFolder || FALLBACK_IMAGE_FOLDER}
+                                />
+                              </motion.div>
+                            ))}
+                          </AnimatePresence>
+                        </div>
+                      </LayoutGroup>
                     )}
                   </div>
 
