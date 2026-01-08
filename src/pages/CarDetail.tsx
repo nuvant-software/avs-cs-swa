@@ -185,7 +185,7 @@ export default function CarDetail() {
   const [pageReady, setPageReady] = useState(false)
   const [activeTab, setActiveTab] = useState<"kenmerken" | "opties">("kenmerken")
 
-  // --- reel arrows ---
+  // 1) laad cars via dezelfde API als Collection
   useEffect(() => {
     setLoading(true)
     setError(null)
@@ -410,7 +410,7 @@ export default function CarDetail() {
     return groups.length ? groups : null
   }, [car])
 
-  // vergelijkbare auto's: vul scherm (geen fixed 8)
+  // vergelijkbare auto's: “3/3” (max 6), gecentreerd en vullend
   const similar = useMemo(() => {
     if (!car) return []
 
@@ -424,7 +424,6 @@ export default function CarDetail() {
     const sortNewFirst = (a: CarOverview, b: CarOverview) => (b.year ?? 0) - (a.year ?? 0)
     const base = (primary.length ? primary : list).slice().sort(sortNewFirst)
 
-    // ✅ “3/3” -> max 6 maar mag minder als niet genoeg
     return base.slice(0, 6).map(mapCarToGridData)
   }, [cars, car])
 
@@ -440,14 +439,14 @@ export default function CarDetail() {
           </div>
         </div>
 
-        <div className="mt-8 relative left-1/2 -translate-x-1/2 w-[100vw] overflow-x-clip">
-          <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
-            <Skeleton className="h-[340px] sm:h-[620px] w-full" />
-            <div className="mt-4 flex gap-2 overflow-hidden justify-center">
-              <Skeleton className="h-16 w-24" />
-              <Skeleton className="h-16 w-24" />
-              <Skeleton className="h-16 w-24" />
-              <Skeleton className="h-16 w-24" />
+        <div className="mt-8 relative left-1/2 -translate-x-1/2 w-[100vw] overflow-hidden">
+          <Skeleton className="h-[340px] sm:h-[680px] w-full rounded-none" />
+          <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 mt-4">
+            <div className="flex gap-3 overflow-hidden justify-center">
+              <Skeleton className="h-16 w-24 rounded-xl" />
+              <Skeleton className="h-16 w-24 rounded-xl" />
+              <Skeleton className="h-16 w-24 rounded-xl" />
+              <Skeleton className="h-16 w-24 rounded-xl" />
             </div>
           </div>
         </div>
@@ -529,68 +528,70 @@ export default function CarDetail() {
         </div>
       </div>
 
-      {/* ✅ FOTO: rand-tot-rand + pijlen OVER de foto (geen grijze zijkanten) */}
-      <div className="mt-8 relative left-1/2 -translate-x-1/2 w-[100vw] overflow-x-clip">
-        <div className="w-full">
-          {!pageReady ? (
-            <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
-              <Skeleton className="h-[340px] sm:h-[620px] w-full" />
-              <div className="mt-4 flex gap-2 overflow-hidden justify-center">
-                <Skeleton className="h-16 w-24" />
-                <Skeleton className="h-16 w-24" />
-                <Skeleton className="h-16 w-24" />
-                <Skeleton className="h-16 w-24" />
+      {/* ✅ FOTO: rand-tot-rand + pijlen OVER de foto + thumbs eronder (afgerond) */}
+      <div className="mt-8 relative left-1/2 -translate-x-1/2 w-[100vw] overflow-hidden">
+        {!pageReady ? (
+          <>
+            <Skeleton className="h-[340px] sm:h-[680px] w-full rounded-none" />
+            <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 mt-4">
+              <div className="flex gap-3 overflow-hidden justify-center">
+                <Skeleton className="h-16 w-24 rounded-xl" />
+                <Skeleton className="h-16 w-24 rounded-xl" />
+                <Skeleton className="h-16 w-24 rounded-xl" />
+                <Skeleton className="h-16 w-24 rounded-xl" />
               </div>
             </div>
-          ) : (
-            <>
-              {/* slider */}
-              <div className="relative w-full h-[340px] sm:h-[680px] bg-black overflow-hidden">
-                {hasImages ? (
-                  <>
-                    <div
-                      className="flex h-full transition-transform duration-500 ease-in-out"
-                      style={{ transform: `translateX(-${slide * 100}%)` }}
-                    >
-                      {images.map((src, i) => (
-                        <img
-                          key={src}
-                          src={src}
-                          alt={`Slide ${i + 1}`}
-                          className="w-full h-full object-cover flex-shrink-0 cursor-pointer"
-                          onClick={() => setLightboxOpen(true)}
-                        />
-                      ))}
-                    </div>
-
-                    {/* ✅ pijlen: wit op blauw (of lightbox-style) */}
-                    <button
-                      type="button"
-                      onClick={prev}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95 focus:outline-none"
-                      aria-label="Vorige foto"
-                    >
-                      &#10094;
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={next}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95 focus:outline-none"
-                      aria-label="Volgende foto"
-                    >
-                      &#10095;
-                    </button>
-                  </>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-200">
-                    Geen foto’s gevonden
+          </>
+        ) : (
+          <>
+            <div className="relative w-[100vw] h-[340px] sm:h-[680px] bg-black overflow-hidden">
+              {hasImages ? (
+                <>
+                  <div
+                    className="flex h-full transition-transform duration-500 ease-in-out"
+                    style={{ transform: `translateX(-${slide * 100}%)` }}
+                  >
+                    {images.map((src, i) => (
+                      <img
+                        key={src}
+                        src={src}
+                        alt={`Slide ${i + 1}`}
+                        className="w-full h-full object-cover flex-shrink-0 cursor-pointer select-none"
+                        onClick={() => setLightboxOpen(true)}
+                        draggable={false}
+                      />
+                    ))}
                   </div>
-                )}
-              </div>
 
-              {/* thumbs eronder, gecentreerd */}
-              <div className="bg-white border-y border-gray-200">
+                  {/* ✅ pijlen: wit op blauw (mooi, zichtbaar) */}
+                  <button
+                    type="button"
+                    onClick={prev}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95 focus:outline-none"
+                    aria-label="Vorige foto"
+                  >
+                    &#10094;
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={next}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95 focus:outline-none"
+                    aria-label="Volgende foto"
+                  >
+                    &#10095;
+                  </button>
+                </>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-sm text-white/70">
+                  Geen foto’s gevonden
+                </div>
+              )}
+            </div>
+
+            {/* thumbs: GEEN grijze blokken, alleen afgeronde thumbs */}
+            {hasImages && (
+              <div className="bg-white">
                 <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-4">
                   <div className="w-full flex justify-center">
                     <div className="flex gap-2 overflow-x-auto max-w-full pb-1">
@@ -600,7 +601,7 @@ export default function CarDetail() {
                           type="button"
                           onClick={() => setSlide(i)}
                           className={[
-                            "flex-shrink-0 rounded-lg overflow-hidden border-2 transition-opacity hover:opacity-80",
+                            "flex-shrink-0 rounded-xl overflow-hidden border-2 transition-opacity hover:opacity-80 bg-white",
                             i === slide ? "border-[#1C448E]" : "border-transparent",
                           ].join(" ")}
                           aria-label={`Foto ${i + 1}`}
@@ -612,17 +613,19 @@ export default function CarDetail() {
                   </div>
                 </div>
               </div>
-            </>
-          )}
-        </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* ONDERSTUK */}
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
+        {/* links */}
         <div className="min-w-0">
           <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
           <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">{car.description ?? "—"}</p>
 
+          {/* Tabs */}
           <div className="mt-8">
             <div className="flex items-center gap-2">
               <button
@@ -652,16 +655,14 @@ export default function CarDetail() {
               </button>
             </div>
 
+            {/* ✅ FIX: minmax + min-w-0 zodat het niet “uit scherm verdwijnt” */}
             <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-5 overflow-hidden">
               {activeTab === "kenmerken" ? (
                 <>
                   <h3 className="text-lg font-semibold !text-[#1C448E] mb-4">Car overview</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-3">
                     {overviewItems.map((it) => (
-                      <div
-                        key={it.label}
-                        className="flex items-center justify-between gap-4 border-b border-gray-100 py-2 min-w-0"
-                      >
+                      <div key={it.label} className="flex items-center justify-between gap-4 border-b border-gray-100 py-2 min-w-0">
                         <span className="text-sm font-medium text-gray-600 truncate">{it.label}</span>
                         <span className="text-sm text-gray-900 truncate">{it.value}</span>
                       </div>
@@ -696,12 +697,13 @@ export default function CarDetail() {
             </div>
           </div>
 
+          {/* Lease calculator placeholder */}
           <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-5">
             <h3 className="text-lg font-semibold !text-[#1C448E]">Lease calculator</h3>
             <p className="mt-2 text-sm text-gray-600">Tijdelijke placeholder.</p>
           </div>
 
-          {/* ✅ vergelijkbare auto's: midden uitgelijnd + 3/3 grid die vult */}
+          {/* ✅ vergelijkbare auto’s: grid 1/2/3 cols, gecentreerd */}
           <div className="mt-10">
             <h3 className="text-xl font-semibold !text-[#1C448E] text-center">Vergelijkbare auto’s</h3>
 
@@ -719,13 +721,11 @@ export default function CarDetail() {
           </div>
         </div>
 
+        {/* rechts */}
         <aside className="h-fit">
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95"
-              >
+              <button type="button" className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95">
                 Contact opnemen
               </button>
 
@@ -742,14 +742,8 @@ export default function CarDetail() {
               <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="Naam" />
               <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2" placeholder="E-mail" />
               <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2" placeholder="Telefoon" />
-              <textarea
-                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2 min-h-[120px]"
-                placeholder="Je bericht..."
-              />
-              <button
-                type="button"
-                className="mt-3 w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95"
-              >
+              <textarea className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2 min-h-[120px]" placeholder="Je bericht..." />
+              <button type="button" className="mt-3 w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95">
                 Verzenden
               </button>
             </div>
