@@ -180,8 +180,20 @@ const Skeleton = ({ className }: { className: string }) => (
   <div className={`animate-pulse rounded-2xl bg-gray-100 ${className}`} />
 )
 
+// ----------------- robust route matching -----------------
+const norm = (v: unknown) => String(v ?? "").trim().toLowerCase()
+const normId = (v: unknown) => norm(v).replace(/\s+/g, "")
+
 export default function CarDetail() {
-  const { id: routeId } = useParams<{ id: string }>()
+  const params = useParams()
+  const routeIdRaw = (params.id ?? params.carId ?? params.slug ?? "").trim()
+  const routeId = (() => {
+    try {
+      return decodeURIComponent(routeIdRaw)
+    } catch {
+      return routeIdRaw
+    }
+  })()
 
   const [cars, setCars] = useState<CarOverview[]>([])
   const [loading, setLoading] = useState(true)
@@ -308,16 +320,33 @@ export default function CarDetail() {
       .finally(() => setLoading(false))
   }, [])
 
-  // 2) vind car
+  // 2) vind car (robust)
   const car = useMemo(() => {
     if (!routeId) return null
-    const rid = String(routeId).trim()
+    const rid = normId(routeId)
 
-    const direct = cars.find((c) => String(c.id ?? "").trim() === rid || String(c.sourceId ?? "").trim() === rid)
+    // direct id/sourceId
+    const direct = cars.find((c) => normId(c.id) === rid || normId(c.sourceId) === rid)
     if (direct) return direct
 
-    const stable = cars.find((c) => buildStableId(c) === rid)
+    // stableId
+    const stable = cars.find((c) => normId(buildStableId(c)) === rid)
     if (stable) return stable
+
+    // vin / stock fallback
+    const byVin = cars.find((c) => normId(c.vin_number ?? c.id) === rid)
+    if (byVin) return byVin
+
+    const byStock = cars.find((c) => normId(c.stock_number) === rid)
+    if (byStock) return byStock
+
+    // startsWith fallback (handig bij korte ids)
+    const byStarts = cars.find((c) => {
+      const cid = normId(c.id)
+      const sid = normId(c.sourceId)
+      return (cid && cid.startsWith(rid)) || (sid && sid.startsWith(rid))
+    })
+    if (byStarts) return byStarts
 
     return null
   }, [cars, routeId])
@@ -340,12 +369,11 @@ export default function CarDetail() {
       setImages(urls)
       setSlide(0)
 
-      // preload de eerste foto -> dan pas UI “echt” tonen
       if (urls[0]) {
         try {
           await preloadImage(urls[0])
         } catch {
-          // ok, dan alsnog door
+          // ok
         }
       }
 
@@ -414,12 +442,12 @@ export default function CarDetail() {
 
         {/* full-width foto skeleton */}
         <div className="mt-8 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen px-4 md:px-6 lg:px-8">
-          <Skeleton className="h-[320px] sm:h-[520px] w-full" />
-          <div className="mt-3 flex gap-3 overflow-hidden">
-            <Skeleton className="h-24 w-40" />
-            <Skeleton className="h-24 w-40" />
-            <Skeleton className="h-24 w-40" />
-            <Skeleton className="h-24 w-40" />
+          <Skeleton className="h-[340px] sm:h-[620px] w-full" />
+          <div className="mt-4 flex gap-4 overflow-hidden">
+            <Skeleton className="h-28 w-52" />
+            <Skeleton className="h-28 w-52" />
+            <Skeleton className="h-28 w-52" />
+            <Skeleton className="h-28 w-52" />
           </div>
         </div>
 
@@ -455,7 +483,12 @@ export default function CarDetail() {
         <Link to="/collection" className="underline opacity-80">
           ← Terug naar collectie
         </Link>
-        <div className="mt-6">Auto niet gevonden.</div>
+        <div className="mt-6">
+          <div className="font-semibold">Auto niet gevonden.</div>
+          <div className="text-sm opacity-70 mt-2">
+            routeId: <span className="font-mono">{routeId}</span> • cars geladen: {cars.length}
+          </div>
+        </div>
       </div>
     )
   }
@@ -497,74 +530,71 @@ export default function CarDetail() {
 
       {/* FOTO (full width) */}
       <div className="mt-8 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen px-4 md:px-6 lg:px-8">
-        {/* als pageReady nog false: show foto-skeleton -> geen lelijke pop-in */}
         {!pageReady ? (
           <>
-            <Skeleton className="h-[320px] sm:h-[520px] w-full" />
-            <div className="mt-3 flex gap-3 overflow-hidden">
-              <Skeleton className="h-24 w-40" />
-              <Skeleton className="h-24 w-40" />
-              <Skeleton className="h-24 w-40" />
-              <Skeleton className="h-24 w-40" />
+            <Skeleton className="h-[340px] sm:h-[620px] w-full" />
+            <div className="mt-4 flex gap-4 overflow-hidden">
+              <Skeleton className="h-28 w-52" />
+              <Skeleton className="h-28 w-52" />
+              <Skeleton className="h-28 w-52" />
+              <Skeleton className="h-28 w-52" />
             </div>
           </>
         ) : (
-          <>
-            <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white">
-              <div className="relative w-full h-[320px] sm:h-[520px] bg-gray-100">
-                {hasImages ? (
-                  <img
-                    src={currentImg}
-                    alt={`${car.brand} ${car.model}`}
-                    className="w-full h-full object-cover cursor-pointer"
-                    onClick={() => setLightboxOpen(true)}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
-                    Geen foto’s gevonden
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={prev}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/90 border border-gray-200 grid place-items-center hover:bg-white"
-                  aria-label="Vorige foto"
-                >
-                  ‹
-                </button>
-
-                <button
-                  type="button"
-                  onClick={next}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/90 border border-gray-200 grid place-items-center hover:bg-white"
-                  aria-label="Volgende foto"
-                >
-                  ›
-                </button>
-              </div>
-
-              {/* thumbs groter */}
-              <div className="p-4 border-t border-gray-200">
-                <div className="flex gap-3 overflow-x-auto pb-1">
-                  {images.map((src, idx) => (
-                    <button
-                      key={src}
-                      type="button"
-                      onClick={() => setSlide(idx)}
-                      className={[
-                        "h-24 w-40 flex-shrink-0 overflow-hidden rounded-xl border",
-                        idx === slide ? "border-[#1C448E]" : "border-gray-200",
-                      ].join(" ")}
-                      aria-label={`Foto ${idx + 1}`}
-                    >
-                      <img src={src} alt={`thumb ${idx + 1}`} className="h-full w-full object-cover" />
-                    </button>
-                  ))}
+          <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white">
+            <div className="relative w-full h-[340px] sm:h-[620px] bg-gray-100">
+              {hasImages ? (
+                <img
+                  src={currentImg}
+                  alt={`${car.brand} ${car.model}`}
+                  className="w-full h-full object-cover cursor-pointer"
+                  onClick={() => setLightboxOpen(true)}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
+                  Geen foto’s gevonden
                 </div>
+              )}
+
+              <button
+                type="button"
+                onClick={prev}
+                className="absolute left-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/90 border border-gray-200 grid place-items-center hover:bg-white"
+                aria-label="Vorige foto"
+              >
+                ‹
+              </button>
+
+              <button
+                type="button"
+                onClick={next}
+                className="absolute right-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/90 border border-gray-200 grid place-items-center hover:bg-white"
+                aria-label="Volgende foto"
+              >
+                ›
+              </button>
+            </div>
+
+            {/* thumbs groter & zichtbaar */}
+            <div className="p-4 border-t border-gray-200">
+              <div className="flex gap-4 overflow-x-auto pb-1">
+                {images.map((src, idx) => (
+                  <button
+                    key={src}
+                    type="button"
+                    onClick={() => setSlide(idx)}
+                    className={[
+                      "h-28 w-52 flex-shrink-0 overflow-hidden rounded-xl border",
+                      idx === slide ? "border-[#1C448E]" : "border-gray-200",
+                    ].join(" ")}
+                    aria-label={`Foto ${idx + 1}`}
+                  >
+                    <img src={src} alt={`thumb ${idx + 1}`} className="h-full w-full object-cover" />
+                  </button>
+                ))}
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
 
@@ -613,7 +643,10 @@ export default function CarDetail() {
                   <h3 className="text-lg font-semibold !text-[#1C448E] mb-4">Car overview</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-3">
                     {overviewItems.map((it) => (
-                      <div key={it.label} className="flex items-center justify-between gap-4 border-b border-gray-100 py-2">
+                      <div
+                        key={it.label}
+                        className="flex items-center justify-between gap-4 border-b border-gray-100 py-2"
+                      >
                         <span className="text-sm font-medium text-gray-600">{it.label}</span>
                         <span className="text-sm text-gray-900">{it.value}</span>
                       </div>
@@ -661,11 +694,7 @@ export default function CarDetail() {
             <div className="mt-4 flex gap-6 overflow-x-auto pb-2">
               {similar.map((d) => (
                 <div key={d.id} className="flex-shrink-0 w-[320px]">
-                  <CarCard
-                    car={d.car}
-                    layout="grid"
-                    imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER}
-                  />
+                  <CarCard car={d.car} layout="grid" imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER} />
                 </div>
               ))}
             </div>
@@ -694,8 +723,14 @@ export default function CarDetail() {
             <div className="mt-6">
               <div className="text-sm font-semibold text-gray-900 mb-3">Bericht</div>
               <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="Naam" />
-              <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2" placeholder="E-mail" />
-              <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2" placeholder="Telefoon" />
+              <input
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2"
+                placeholder="E-mail"
+              />
+              <input
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2"
+                placeholder="Telefoon"
+              />
               <textarea
                 className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2 min-h-[120px]"
                 placeholder="Je bericht..."
