@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import CarCard from "../components/CarCard"
 import { Lightbox } from "../components/Lightbox"
@@ -186,16 +186,6 @@ export default function CarDetail() {
   const [activeTab, setActiveTab] = useState<"kenmerken" | "opties">("kenmerken")
 
   // --- reel arrows ---
-  const reelRef = useRef<HTMLDivElement | null>(null)
-
-  const scrollReel = (dir: "left" | "right") => {
-    const el = reelRef.current
-    if (!el) return
-    const amount = Math.min(900, el.clientWidth * 0.9)
-    el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" })
-  }
-
-  // 1) load cars
   useEffect(() => {
     setLoading(true)
     setError(null)
