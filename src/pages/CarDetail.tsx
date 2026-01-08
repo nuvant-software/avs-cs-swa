@@ -66,13 +66,12 @@ type GridCardData = {
 
 const FALLBACK_IMAGE_FOLDER = "car_001"
 
-// ✅ tijdelijk: altijd car_001 (zoals jij wil)
+// ✅ tijdelijk: altijd car_001
 const STATIC_FOLDER = "car_001"
 const STATIC_COUNT = 5
 const buildStaticImageUrls = () =>
   Array.from({ length: STATIC_COUNT }, (_, i) => {
     const n = i + 1
-    // pas dit aan als jouw bestanden anders heten
     return `https://avsapisa.blob.core.windows.net/carimages/${STATIC_FOLDER}/foto-${n}.jpg`
   })
 
@@ -140,11 +139,9 @@ const mapCarToGridData = (car: CarOverview): GridCardData => {
   }
 
   const folder = car.imageFolder && car.imageFolder.trim().length ? car.imageFolder.trim() : FALLBACK_IMAGE_FOLDER
-
   return { id, car: card, imageFolder: folder, raw: car }
 }
 
-// pictures "./images/autos/005/" -> "car_005"
 const picturesToFolder = (pictures?: string): string | undefined => {
   if (!pictures) return undefined
   const m = pictures.match(/\/(\d{3})\/?$/)
@@ -160,12 +157,10 @@ const preloadImage = (src: string) =>
     img.src = src
   })
 
-// ----------------- UI: skeleton -----------------
 const Skeleton = ({ className }: { className: string }) => (
   <div className={`animate-pulse rounded-2xl bg-gray-100 ${className}`} />
 )
 
-// ----------------- robust route matching -----------------
 const norm = (v: unknown) => String(v ?? "").trim().toLowerCase()
 const normId = (v: unknown) => norm(v).replace(/\s+/g, "")
 
@@ -187,13 +182,10 @@ export default function CarDetail() {
   const [images, setImages] = useState<string[]>([])
   const [slide, setSlide] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
-
-  // “geen lelijke flash”: pas true als data + hero image klaar
   const [pageReady, setPageReady] = useState(false)
-
   const [activeTab, setActiveTab] = useState<"kenmerken" | "opties">("kenmerken")
 
-  // --- reel arrows (Vergelijkbare auto's) ---
+  // --- reel arrows ---
   const reelRef = useRef<HTMLDivElement | null>(null)
 
   const scrollReel = (dir: "left" | "right") => {
@@ -203,7 +195,7 @@ export default function CarDetail() {
     el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" })
   }
 
-  // 1) laad cars via dezelfde API als Collection
+  // 1) load cars
   useEffect(() => {
     setLoading(true)
     setError(null)
@@ -313,7 +305,7 @@ export default function CarDetail() {
       .finally(() => setLoading(false))
   }, [])
 
-  // 2) vind car (robust)
+  // 2) match car
   const car = useMemo(() => {
     if (!routeId) return null
 
@@ -345,18 +337,15 @@ export default function CarDetail() {
         if (hasRouteYear) {
           const carYear = typeof c.year === "number" ? c.year : undefined
           const regYear = getRegYear(c.registration)
-
           if (carYear === routeYear || regYear === routeYear) s += 2
           else if (carYear && Math.abs(carYear - routeYear) <= 1) s += 1
           else if (regYear && Math.abs(regYear - routeYear) <= 1) s += 1
         }
-
         return s
       }
 
       let best: CarOverview | null = null
       let bestScore = -1
-
       for (const c of cars) {
         const s = score(c)
         if (s > bestScore) {
@@ -364,7 +353,6 @@ export default function CarDetail() {
           best = c
         }
       }
-
       if (best && bestScore >= 8) return best
     }
 
@@ -377,7 +365,7 @@ export default function CarDetail() {
     return null
   }, [cars, routeId])
 
-  // ✅ 3) images: statisch car_001
+  // 3) images: static
   useEffect(() => {
     let cancelled = false
 
@@ -419,7 +407,7 @@ export default function CarDetail() {
     setSlide((s) => (s + 1) % images.length)
   }
 
-  // opties uit jouw velden
+  // opties
   const optionsGroups = useMemo(() => {
     if (!car) return null
 
@@ -432,23 +420,24 @@ export default function CarDetail() {
     return groups.length ? groups : null
   }, [car])
 
-  // vergelijkbare auto's als reel
+  // vergelijkbare auto's: vul scherm (geen fixed 8)
   const similar = useMemo(() => {
     if (!car) return []
-    const list = cars.filter((c) => c !== car)
 
+    const list = cars.filter((c) => c !== car)
     const primary = list.filter((c) => {
       const sameBrand = (c.brand || "").toLowerCase() === (car.brand || "").toLowerCase()
-      const sameBody = car.body && c.body ? String(c.body).toLowerCase() === String(c.body).toLowerCase() : false
+      const sameBody = car.body && c.body ? String(c.body).toLowerCase() === String(car.body).toLowerCase() : false
       return sameBrand || sameBody
     })
 
     const sortNewFirst = (a: CarOverview, b: CarOverview) => (b.year ?? 0) - (a.year ?? 0)
+    const base = (primary.length ? primary : list).slice().sort(sortNewFirst)
 
-    return (primary.length ? primary : list).slice().sort(sortNewFirst).slice(0, 8).map(mapCarToGridData)
+    // ✅ “3/3” -> max 6 maar mag minder als niet genoeg
+    return base.slice(0, 6).map(mapCarToGridData)
   }, [cars, car])
 
-  // ----------------- skeleton state -----------------
   if (loading) {
     return (
       <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-8">
@@ -464,11 +453,11 @@ export default function CarDetail() {
         <div className="mt-8 relative left-1/2 -translate-x-1/2 w-[100vw] overflow-x-clip">
           <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
             <Skeleton className="h-[340px] sm:h-[620px] w-full" />
-            <div className="mt-4 flex gap-4 overflow-hidden">
-              <Skeleton className="h-28 w-52" />
-              <Skeleton className="h-28 w-52" />
-              <Skeleton className="h-28 w-52" />
-              <Skeleton className="h-28 w-52" />
+            <div className="mt-4 flex gap-2 overflow-hidden justify-center">
+              <Skeleton className="h-16 w-24" />
+              <Skeleton className="h-16 w-24" />
+              <Skeleton className="h-16 w-24" />
+              <Skeleton className="h-16 w-24" />
             </div>
           </div>
         </div>
@@ -532,26 +521,29 @@ export default function CarDetail() {
 
   return (
     <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-8 overflow-x-hidden">
-      {/* BOVENSTUK */}
       <Link to="/collection" className="inline-flex items-center gap-2 text-sm underline opacity-80">
         ← Terug
       </Link>
 
       <div className="mt-4 text-sm opacity-70">{topSmall}</div>
 
-      <div className="mt-3 flex items-start justify-between gap-4">
+      {/* ✅ prijs bijna zo groot als titel */}
+      <div className="mt-3 flex flex-col md:flex-row md:items-start md:justify-between gap-3">
         <h1 className="text-3xl md:text-4xl font-semibold !text-[#1C448E]">{title}</h1>
-        <div className="text-right">
+
+        <div className="md:text-right">
           <div className="text-xs opacity-60 mb-1">Prijs</div>
-          <div className="text-2xl md:text-3xl font-semibold !text-[#1C448E]">€ {car.price.toLocaleString("nl-NL")}</div>
+          <div className="text-3xl md:text-4xl font-semibold !text-[#1C448E] leading-none">
+            € {car.price.toLocaleString("nl-NL")}
+          </div>
         </div>
       </div>
 
-      {/* ✅ SLIDER (zoals Lightbox: echte slide + mooie arrows) */}
+      {/* ✅ FOTO: rand-tot-rand + pijlen OVER de foto (geen grijze zijkanten) */}
       <div className="mt-8 relative left-1/2 -translate-x-1/2 w-[100vw] overflow-x-clip">
-        <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
+        <div className="w-full">
           {!pageReady ? (
-            <>
+            <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
               <Skeleton className="h-[340px] sm:h-[620px] w-full" />
               <div className="mt-4 flex gap-2 overflow-hidden justify-center">
                 <Skeleton className="h-16 w-24" />
@@ -559,11 +551,11 @@ export default function CarDetail() {
                 <Skeleton className="h-16 w-24" />
                 <Skeleton className="h-16 w-24" />
               </div>
-            </>
+            </div>
           ) : (
-            <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white">
-              {/* Slider viewport */}
-              <div className="relative w-full h-[340px] sm:h-[620px] bg-gray-100 overflow-hidden">
+            <>
+              {/* slider */}
+              <div className="relative w-full h-[340px] sm:h-[680px] bg-black overflow-hidden">
                 {hasImages ? (
                   <>
                     <div
@@ -575,73 +567,72 @@ export default function CarDetail() {
                           key={src}
                           src={src}
                           alt={`Slide ${i + 1}`}
-                          className="w-full h-full object-contain flex-shrink-0 cursor-pointer"
+                          className="w-full h-full object-cover flex-shrink-0 cursor-pointer"
                           onClick={() => setLightboxOpen(true)}
                         />
                       ))}
                     </div>
 
-                    {/* Prev (mooie lightbox-stijl) */}
+                    {/* ✅ pijlen: wit op blauw (of lightbox-style) */}
                     <button
                       type="button"
                       onClick={prev}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 !bg-transparent !border-none !text-white !text-3xl transition-transform !duration-200 hover:!scale-110 active:!scale-95 cursor-pointer focus:!outline-none drop-shadow"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95 focus:outline-none"
                       aria-label="Vorige foto"
                     >
                       &#10094;
                     </button>
 
-                    {/* Next */}
                     <button
                       type="button"
                       onClick={next}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 !bg-transparent !border-none !text-white !text-3xl transition-transform !duration-200 hover:!scale-110 active:!scale-95 cursor-pointer focus:!outline-none drop-shadow"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95 focus:outline-none"
                       aria-label="Volgende foto"
                     >
                       &#10095;
                     </button>
                   </>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
+                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-200">
                     Geen foto’s gevonden
                   </div>
                 )}
               </div>
 
-              {/* ✅ Thumbnails: eronder, gecentreerd en niet “in” de foto */}
-              <div className="p-4 border-t border-gray-200">
-                <div className="w-full flex justify-center">
-                  <div className="flex gap-2 overflow-x-auto max-w-full pb-1">
-                    {images.map((src, i) => (
-                      <button
-                        key={src}
-                        type="button"
-                        onClick={() => setSlide(i)}
-                        className={[
-                          "flex-shrink-0 rounded-lg overflow-hidden border-2 transition-opacity hover:opacity-80",
-                          i === slide ? "border-[#1C448E]" : "border-transparent",
-                        ].join(" ")}
-                        aria-label={`Foto ${i + 1}`}
-                      >
-                        <img src={src} alt={`Thumb ${i + 1}`} className="h-16 w-24 sm:w-28 object-cover" />
-                      </button>
-                    ))}
+              {/* thumbs eronder, gecentreerd */}
+              <div className="bg-white border-y border-gray-200">
+                <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-4">
+                  <div className="w-full flex justify-center">
+                    <div className="flex gap-2 overflow-x-auto max-w-full pb-1">
+                      {images.map((src, i) => (
+                        <button
+                          key={src}
+                          type="button"
+                          onClick={() => setSlide(i)}
+                          className={[
+                            "flex-shrink-0 rounded-lg overflow-hidden border-2 transition-opacity hover:opacity-80",
+                            i === slide ? "border-[#1C448E]" : "border-transparent",
+                          ].join(" ")}
+                          aria-label={`Foto ${i + 1}`}
+                        >
+                          <img src={src} alt={`Thumb ${i + 1}`} className="h-16 w-24 sm:w-28 object-cover" />
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>
 
       {/* ONDERSTUK */}
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
-        {/* links */}
         <div className="min-w-0">
           <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
           <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">{car.description ?? "—"}</p>
 
-          {/* Tabs (Kenmerken/Opties) */}
           <div className="mt-8">
             <div className="flex items-center gap-2">
               <button
@@ -671,7 +662,6 @@ export default function CarDetail() {
               </button>
             </div>
 
-            {/* ✅ FIX: te-breed issue -> min-w-0 + overflow-hidden + responsive cols */}
             <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-5 overflow-hidden">
               {activeTab === "kenmerken" ? (
                 <>
@@ -716,51 +706,36 @@ export default function CarDetail() {
             </div>
           </div>
 
-          {/* Lease calculator placeholder */}
           <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-5">
             <h3 className="text-lg font-semibold !text-[#1C448E]">Lease calculator</h3>
             <p className="mt-2 text-sm text-gray-600">Tijdelijke placeholder.</p>
           </div>
 
-          {/* Featured cars als reel */}
+          {/* ✅ vergelijkbare auto's: midden uitgelijnd + 3/3 grid die vult */}
           <div className="mt-10">
-            <h3 className="text-xl font-semibold !text-[#1C448E]">Vergelijkbare auto’s</h3>
+            <h3 className="text-xl font-semibold !text-[#1C448E] text-center">Vergelijkbare auto’s</h3>
 
-            <div className="mt-4 relative">
-              <button
-                type="button"
-                onClick={() => scrollReel("left")}
-                className="hidden md:grid absolute left-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white border border-gray-200 place-items-center hover:bg-gray-50"
-                aria-label="Scroll links"
-              >
-                ‹
-              </button>
-
-              <button
-                type="button"
-                onClick={() => scrollReel("right")}
-                className="hidden md:grid absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white border border-gray-200 place-items-center hover:bg-gray-50"
-                aria-label="Scroll rechts"
-              >
-                ›
-              </button>
-
-              <div ref={reelRef} className="flex gap-6 overflow-x-auto scroll-smooth pb-2 pr-2 md:px-12">
-                {similar.map((d) => (
-                  <div key={d.id} className="flex-shrink-0 w-[320px]">
-                    <CarCard car={d.car} layout="grid" imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER} />
-                  </div>
-                ))}
+            <div className="mt-5 flex justify-center">
+              <div className="w-full max-w-screen-2xl">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
+                  {similar.map((d) => (
+                    <div key={d.id} className="w-full max-w-[380px]">
+                      <CarCard car={d.car} layout="grid" imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER} />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* rechts */}
         <aside className="h-fit">
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <div className="flex flex-col gap-3">
-              <button type="button" className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95">
+              <button
+                type="button"
+                className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95"
+              >
                 Contact opnemen
               </button>
 
@@ -777,8 +752,14 @@ export default function CarDetail() {
               <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="Naam" />
               <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2" placeholder="E-mail" />
               <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2" placeholder="Telefoon" />
-              <textarea className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2 min-h-[120px]" placeholder="Je bericht..." />
-              <button type="button" className="mt-3 w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95">
+              <textarea
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2 min-h-[120px]"
+                placeholder="Je bericht..."
+              />
+              <button
+                type="button"
+                className="mt-3 w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95"
+              >
                 Verzenden
               </button>
             </div>
