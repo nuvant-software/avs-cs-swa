@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import CarCard from "../components/CarCard"
 import { Lightbox } from "../components/Lightbox"
@@ -80,7 +80,6 @@ const getRegYear = (reg?: string): number | undefined => {
   return m ? Number(m[1]) : undefined
 }
 
-// ----------------- helpers -----------------
 const pickString = (record: Record<string, unknown>, keys: string[]): string | undefined => {
   for (const key of keys) {
     const value = record[key]
@@ -107,7 +106,6 @@ const pickNumber = (record: Record<string, unknown>, keys: string[]): number | u
   return undefined
 }
 
-// Stable id (zelfde idee als Collection)
 const buildStableId = (car: CarOverview): string => {
   const raw = [car.id, car.sourceId].find((v) => typeof v === "string" && v.trim().length)
   if (raw) return raw!.trim()
@@ -183,9 +181,13 @@ export default function CarDetail() {
   const [slide, setSlide] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [pageReady, setPageReady] = useState(false)
+
   const [activeTab, setActiveTab] = useState<"kenmerken" | "opties">("kenmerken")
 
-  // 1) laad cars via dezelfde API als Collection
+  // vergelijkbare autos carousel
+  const simWrapRef = useRef<HTMLDivElement | null>(null)
+
+  // 1) laad cars
   useEffect(() => {
     setLoading(true)
     setError(null)
@@ -355,7 +357,7 @@ export default function CarDetail() {
     return null
   }, [cars, routeId])
 
-  // 3) images: static
+  // 3) images (static)
   useEffect(() => {
     let cancelled = false
 
@@ -387,34 +389,44 @@ export default function CarDetail() {
   }, [car])
 
   const hasImages = images.length > 0
+  const prev = () => hasImages && setSlide((s) => (s - 1 + images.length) % images.length)
+  const next = () => hasImages && setSlide((s) => (s + 1) % images.length)
 
-  const prev = () => {
-    if (!hasImages) return
-    setSlide((s) => (s - 1 + images.length) % images.length)
-  }
-  const next = () => {
-    if (!hasImages) return
-    setSlide((s) => (s + 1) % images.length)
-  }
+  // 4) content: kenmerken + opties
+  const overviewItems: Array<{ label: string; value: string }> = useMemo(() => {
+    if (!car) return []
+    return [
+      { label: "Conditie", value: car.condition ?? "—" },
+      { label: "Nummer", value: car.stock_number ?? "—" },
+      { label: "VIN", value: car.vin_number ?? car.id ?? "—" },
+      { label: "Jaar", value: String(car.year ?? "—") },
+      { label: "Kilometerstand", value: `${(car.mileage ?? 0).toLocaleString("nl-NL")} km` },
+      { label: "Transmissie", value: car.transmission ?? "—" },
+      { label: "Motorinhoud", value: car.engine_size ?? "—" },
+      { label: "Aandrijving", value: car.driver_type ?? "—" },
+      { label: "Kleur", value: car.color ?? "—" },
+      { label: "Brandstof", value: car.fuel ?? "—" },
+      { label: "Deuren", value: String(car.doors ?? "—") },
+      { label: "Zitplaatsen", value: String(car.seats ?? "—") },
+      { label: "PK", value: String(car.pk ?? "—") },
+    ]
+  }, [car])
 
-  // opties
   const optionsGroups = useMemo(() => {
     if (!car) return null
-
     const groups: Array<{ title: string; items: string[] }> = []
     if (car.safety_features?.length) groups.push({ title: "Safety", items: car.safety_features })
     if (car.exterior_features?.length) groups.push({ title: "Exterior", items: car.exterior_features })
     if (car.interior_features?.length) groups.push({ title: "Interior", items: car.interior_features })
     if (car.convenience_features?.length) groups.push({ title: "Convenience", items: car.convenience_features })
-
     return groups.length ? groups : null
   }, [car])
 
-  // vergelijkbare auto's: “3/3” (max 6), gecentreerd en vullend
+  // 5) vergelijkbare autos (top 5-6)
   const similar = useMemo(() => {
     if (!car) return []
-
     const list = cars.filter((c) => c !== car)
+
     const primary = list.filter((c) => {
       const sameBrand = (c.brand || "").toLowerCase() === (car.brand || "").toLowerCase()
       const sameBody = car.body && c.body ? String(c.body).toLowerCase() === String(car.body).toLowerCase() : false
@@ -424,41 +436,31 @@ export default function CarDetail() {
     const sortNewFirst = (a: CarOverview, b: CarOverview) => (b.year ?? 0) - (a.year ?? 0)
     const base = (primary.length ? primary : list).slice().sort(sortNewFirst)
 
-    return base.slice(0, 6).map(mapCarToGridData)
+    return base.slice(0, 8).map(mapCarToGridData) // 8 in data, UI toont per scroll wat past
   }, [cars, car])
 
+  const scrollSimilar = (dir: "left" | "right") => {
+    const el = simWrapRef.current
+    if (!el) return
+    const amount = Math.max(280, Math.floor(el.clientWidth * 0.9))
+    el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" })
+  }
+
+  // ---------- states ----------
   if (loading) {
     return (
       <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-8">
         <Skeleton className="h-5 w-24" />
         <div className="mt-4">
-          <Skeleton className="h-4 w-72" />
-          <div className="mt-3 flex items-start justify-between gap-4">
-            <Skeleton className="h-10 w-[60%]" />
-            <Skeleton className="h-10 w-40" />
-          </div>
+          <Skeleton className="h-10 w-[60%]" />
+          <Skeleton className="h-10 w-40 mt-3 ml-auto" />
         </div>
-
-        <div className="mt-8 relative left-1/2 -translate-x-1/2 w-[100vw] overflow-hidden">
-          <Skeleton className="h-[340px] sm:h-[680px] w-full rounded-none" />
-          <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 mt-4">
-            <div className="flex gap-3 overflow-hidden justify-center">
-              <Skeleton className="h-16 w-24 rounded-xl" />
-              <Skeleton className="h-16 w-24 rounded-xl" />
-              <Skeleton className="h-16 w-24 rounded-xl" />
-              <Skeleton className="h-16 w-24 rounded-xl" />
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-10 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
-          <div>
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-20 w-full mt-3" />
-            <Skeleton className="h-56 w-full mt-6" />
-          </div>
-          <div>
-            <Skeleton className="h-64 w-full" />
+        <div className="mt-8">
+          <Skeleton className="h-[360px] sm:h-[640px] w-full rounded-2xl" />
+          <div className="mt-4 flex gap-2 justify-center">
+            <Skeleton className="h-16 w-24 rounded-xl" />
+            <Skeleton className="h-16 w-24 rounded-xl" />
+            <Skeleton className="h-16 w-24 rounded-xl" />
           </div>
         </div>
       </div>
@@ -492,21 +494,8 @@ export default function CarDetail() {
     )
   }
 
-  const topSmall = `Merk: ${car.brand}  •  Model: ${car.model}  •  Body: ${car.body ?? "—"}`
-  const title = `${car.brand} ${car.model} ${car.year ?? ""}`.trim()
-
-  const overviewItems: Array<{ label: string; value: string }> = [
-    { label: "Conditie", value: car.condition ?? "—" },
-    { label: "Nummer", value: car.stock_number ?? "—" },
-    { label: "VIN", value: car.vin_number ?? car.id ?? "—" },
-    { label: "Jaar", value: String(car.year ?? "—") },
-    { label: "Kilometerstand", value: `${(car.mileage ?? 0).toLocaleString("nl-NL")} km` },
-    { label: "Transmissie", value: car.transmission ?? "—" },
-    { label: "Motorinhoud", value: car.engine_size ?? "—" },
-    { label: "Aandrijving", value: car.driver_type ?? "—" },
-    { label: "Kleur", value: car.color ?? "—" },
-    { label: "Brandstof", value: car.fuel ?? "—" },
-  ]
+  const title = `${car.brand} ${car.model}`.trim()
+  const topLine = [car.variant, car.body, car.year ? String(car.year) : null].filter(Boolean).join(" • ")
 
   return (
     <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-8 overflow-x-hidden">
@@ -514,13 +503,16 @@ export default function CarDetail() {
         ← Terug
       </Link>
 
-      <div className="mt-4 text-sm opacity-70">{topSmall}</div>
+      {/* ✅ HEADER: links titel, rechts prijs */}
+      <div className="mt-5 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-3xl md:text-4xl font-semibold !text-[#1C448E] truncate">
+            {title}
+          </h1>
+          {topLine ? <div className="mt-1 text-sm opacity-70">{topLine}</div> : null}
+        </div>
 
-      {/* ✅ prijs bijna zo groot als titel */}
-      <div className="mt-3 flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-        <h1 className="text-3xl md:text-4xl font-semibold !text-[#1C448E]">{title}</h1>
-
-        <div className="md:text-right">
+        <div className="text-right flex-shrink-0">
           <div className="text-xs opacity-60 mb-1">Prijs</div>
           <div className="text-3xl md:text-4xl font-semibold !text-[#1C448E] leading-none">
             € {car.price.toLocaleString("nl-NL")}
@@ -528,23 +520,20 @@ export default function CarDetail() {
         </div>
       </div>
 
-      {/* ✅ FOTO: rand-tot-rand + pijlen OVER de foto + thumbs eronder (afgerond) */}
-      <div className="mt-8 relative left-1/2 -translate-x-1/2 w-[100vw] overflow-hidden">
+      {/* ✅ FOTO: NIET AFSNIJDEN */}
+      <div className="mt-8">
         {!pageReady ? (
           <>
-            <Skeleton className="h-[340px] sm:h-[680px] w-full rounded-none" />
-            <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 mt-4">
-              <div className="flex gap-3 overflow-hidden justify-center">
-                <Skeleton className="h-16 w-24 rounded-xl" />
-                <Skeleton className="h-16 w-24 rounded-xl" />
-                <Skeleton className="h-16 w-24 rounded-xl" />
-                <Skeleton className="h-16 w-24 rounded-xl" />
-              </div>
+            <Skeleton className="h-[360px] sm:h-[640px] w-full rounded-2xl" />
+            <div className="mt-4 flex gap-2 justify-center">
+              <Skeleton className="h-16 w-24 rounded-xl" />
+              <Skeleton className="h-16 w-24 rounded-xl" />
+              <Skeleton className="h-16 w-24 rounded-xl" />
             </div>
           </>
         ) : (
           <>
-            <div className="relative w-[100vw] h-[340px] sm:h-[680px] bg-black overflow-hidden">
+            <div className="relative w-full h-[360px] sm:h-[640px] rounded-2xl border border-gray-200 bg-white overflow-hidden">
               {hasImages ? (
                 <>
                   <div
@@ -552,22 +541,27 @@ export default function CarDetail() {
                     style={{ transform: `translateX(-${slide * 100}%)` }}
                   >
                     {images.map((src, i) => (
-                      <img
+                      <button
                         key={src}
-                        src={src}
-                        alt={`Slide ${i + 1}`}
-                        className="w-full h-full object-cover flex-shrink-0 cursor-pointer select-none"
+                        type="button"
+                        className="w-full h-full flex-shrink-0"
                         onClick={() => setLightboxOpen(true)}
-                        draggable={false}
-                      />
+                        aria-label={`Open foto ${i + 1}`}
+                      >
+                        <img
+                          src={src}
+                          alt={`Slide ${i + 1}`}
+                          className="w-full h-full object-contain bg-black/5 select-none"
+                          draggable={false}
+                        />
+                      </button>
                     ))}
                   </div>
 
-                  {/* ✅ pijlen: wit op blauw (mooi, zichtbaar) */}
                   <button
                     type="button"
                     onClick={prev}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95 focus:outline-none"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95"
                     aria-label="Vorige foto"
                   >
                     &#10094;
@@ -576,41 +570,37 @@ export default function CarDetail() {
                   <button
                     type="button"
                     onClick={next}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95 focus:outline-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95"
                     aria-label="Volgende foto"
                   >
                     &#10095;
                   </button>
                 </>
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-sm text-white/70">
+                <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">
                   Geen foto’s gevonden
                 </div>
               )}
             </div>
 
-            {/* thumbs: GEEN grijze blokken, alleen afgeronde thumbs */}
+            {/* ✅ thumbs: onder foto, midden */}
             {hasImages && (
-              <div className="bg-white">
-                <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-4">
-                  <div className="w-full flex justify-center">
-                    <div className="flex gap-2 overflow-x-auto max-w-full pb-1">
-                      {images.map((src, i) => (
-                        <button
-                          key={src}
-                          type="button"
-                          onClick={() => setSlide(i)}
-                          className={[
-                            "flex-shrink-0 rounded-xl overflow-hidden border-2 transition-opacity hover:opacity-80 bg-white",
-                            i === slide ? "border-[#1C448E]" : "border-transparent",
-                          ].join(" ")}
-                          aria-label={`Foto ${i + 1}`}
-                        >
-                          <img src={src} alt={`Thumb ${i + 1}`} className="h-16 w-24 sm:w-28 object-cover" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+              <div className="mt-4 w-full flex justify-center">
+                <div className="flex gap-2 overflow-x-auto max-w-full pb-1">
+                  {images.map((src, i) => (
+                    <button
+                      key={src}
+                      type="button"
+                      onClick={() => setSlide(i)}
+                      className={[
+                        "flex-shrink-0 rounded-xl overflow-hidden border-2 transition-opacity hover:opacity-80 bg-white",
+                        i === slide ? "border-[#1C448E]" : "border-transparent",
+                      ].join(" ")}
+                      aria-label={`Foto ${i + 1}`}
+                    >
+                      <img src={src} alt={`Thumb ${i + 1}`} className="h-16 w-24 sm:w-28 object-cover" />
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
@@ -618,34 +608,20 @@ export default function CarDetail() {
         )}
       </div>
 
-      {/* ONDERSTUK */}
+      {/* ✅ BLOK 1 + BLOK 2 */}
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
         {/* links */}
         <div className="min-w-0">
-          <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
-          <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">{car.description ?? "—"}</p>
+          {/* omschrijving header + tabs */}
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
 
-          {/* Tabs */}
-          <div className="mt-8">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveTab("kenmerken")}
-                className={[
-                  "px-4 py-2 rounded-lg text-sm font-semibold border",
-                  activeTab === "kenmerken"
-                    ? "bg-[#1C448E] text-white border-[#1C448E]"
-                    : "bg-white text-[#1C448E] border-[#1C448E]/30 hover:border-[#1C448E]",
-                ].join(" ")}
-              >
-                Kenmerken
-              </button>
-
+            <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 type="button"
                 onClick={() => setActiveTab("opties")}
                 className={[
-                  "px-4 py-2 rounded-lg text-sm font-semibold border",
+                  "px-4 py-2 rounded-lg text-sm font-semibold border transition",
                   activeTab === "opties"
                     ? "bg-[#1C448E] text-white border-[#1C448E]"
                     : "bg-white text-[#1C448E] border-[#1C448E]/30 hover:border-[#1C448E]",
@@ -653,102 +629,157 @@ export default function CarDetail() {
               >
                 Opties
               </button>
-            </div>
 
-            {/* ✅ FIX: minmax + min-w-0 zodat het niet “uit scherm verdwijnt” */}
-            <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-5 overflow-hidden">
-              {activeTab === "kenmerken" ? (
-                <>
-                  <h3 className="text-lg font-semibold !text-[#1C448E] mb-4">Car overview</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-3">
-                    {overviewItems.map((it) => (
-                      <div key={it.label} className="flex items-center justify-between gap-4 border-b border-gray-100 py-2 min-w-0">
-                        <span className="text-sm font-medium text-gray-600 truncate">{it.label}</span>
-                        <span className="text-sm text-gray-900 truncate">{it.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <h3 className="text-lg font-semibold !text-[#1C448E] mb-4">Features</h3>
-
-                  {!optionsGroups ? (
-                    <div className="text-sm text-gray-600">—</div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
-                      {optionsGroups.map((g) => (
-                        <div key={g.title} className="min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 mb-2">{g.title}</div>
-                          <ul className="space-y-2">
-                            {g.items.map((x) => (
-                              <li key={x} className="text-sm text-gray-700 flex items-start gap-2 min-w-0">
-                                <span className="mt-[2px] inline-block h-2 w-2 rounded-full bg-[#1C448E] flex-shrink-0" />
-                                <span className="break-words">{x}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
+              <button
+                type="button"
+                onClick={() => setActiveTab("kenmerken")}
+                className={[
+                  "px-4 py-2 rounded-lg text-sm font-semibold border transition",
+                  activeTab === "kenmerken"
+                    ? "bg-[#1C448E] text-white border-[#1C448E]"
+                    : "bg-white text-[#1C448E] border-[#1C448E]/30 hover:border-[#1C448E]",
+                ].join(" ")}
+              >
+                Kenmerken
+              </button>
             </div>
           </div>
 
-          {/* Lease calculator placeholder */}
-          <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-5">
-            <h3 className="text-lg font-semibold !text-[#1C448E]">Lease calculator</h3>
-            <p className="mt-2 text-sm text-gray-600">Tijdelijke placeholder.</p>
-          </div>
+          <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">
+            {car.description ?? "—"}
+          </p>
 
-          {/* ✅ vergelijkbare auto’s: grid 1/2/3 cols, gecentreerd */}
-          <div className="mt-10">
-            <h3 className="text-xl font-semibold !text-[#1C448E] text-center">Vergelijkbare auto’s</h3>
-
-            <div className="mt-5 flex justify-center">
-              <div className="w-full max-w-screen-2xl">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 place-items-center">
-                  {similar.map((d) => (
-                    <div key={d.id} className="w-full max-w-[380px]">
-                      <CarCard car={d.car} layout="grid" imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER} />
+          {/* ✅ 1 blok: wisselt zonder scrollen */}
+          <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5 overflow-hidden">
+            {activeTab === "kenmerken" ? (
+              <>
+                <h3 className="text-lg font-semibold !text-[#1C448E] mb-4">Kenmerken</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-3">
+                  {overviewItems.map((it) => (
+                    <div
+                      key={it.label}
+                      className="flex items-center justify-between gap-4 border-b border-gray-100 py-2 min-w-0"
+                    >
+                      <span className="text-sm font-medium text-gray-600 truncate">{it.label}</span>
+                      <span className="text-sm text-gray-900 truncate">{it.value}</span>
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold !text-[#1C448E] mb-4">Opties</h3>
+
+                {!optionsGroups ? (
+                  <div className="text-sm text-gray-600">—</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
+                    {optionsGroups.map((g) => (
+                      <div key={g.title} className="min-w-0">
+                        <div className="text-sm font-semibold text-gray-900 mb-2">{g.title}</div>
+                        <ul className="space-y-2">
+                          {g.items.map((x) => (
+                            <li key={x} className="text-sm text-gray-700 flex items-start gap-2 min-w-0">
+                              <span className="mt-[2px] inline-block h-2 w-2 rounded-full bg-[#1C448E] flex-shrink-0" />
+                              <span className="break-words">{x}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
 
-        {/* rechts */}
+        {/* rechts (blok 2) */}
         <aside className="h-fit">
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <div className="flex flex-col gap-3">
-              <button type="button" className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95">
-                Contact opnemen
+              <button
+                type="button"
+                className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95"
+              >
+                Proefrit aanvragen
               </button>
 
               <button
                 type="button"
                 className="w-full rounded-xl bg-white text-[#1C448E] font-semibold py-3 border border-[#1C448E]/40 hover:border-[#1C448E]"
               >
-                Proefrit aanvragen
-              </button>
-            </div>
-
-            <div className="mt-6">
-              <div className="text-sm font-semibold text-gray-900 mb-3">Bericht</div>
-              <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="Naam" />
-              <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2" placeholder="E-mail" />
-              <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2" placeholder="Telefoon" />
-              <textarea className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2 min-h-[120px]" placeholder="Je bericht..." />
-              <button type="button" className="mt-3 w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95">
-                Verzenden
+                Contact opnemen
               </button>
             </div>
           </div>
         </aside>
+      </div>
+
+      {/* ✅ BLOK 3: onder beide */}
+      <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-6">
+        <div className="flex items-center justify-between gap-4">
+          <h3 className="text-lg font-semibold !text-[#1C448E]">Prijs calculator</h3>
+          <div className="text-xs text-gray-500">Tijdelijke placeholder</div>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-sm text-gray-600">
+          Hier komt later je calculator (lease / financiering / maandbedrag).
+        </div>
+      </div>
+
+      {/* ✅ vergelijkbare auto's: 1 rij + pijlen (geen tweede rij) */}
+      <div className="mt-12">
+        <div className="flex items-center justify-between gap-4">
+          <h3 className="text-xl font-semibold !text-[#1C448E]">Vergelijkbare auto’s</h3>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => scrollSimilar("left")}
+              className="h-10 w-10 rounded-full bg-[#1C448E] text-white text-2xl grid place-items-center shadow-sm hover:opacity-95 active:scale-95"
+              aria-label="Scroll links"
+            >
+              &#10094;
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollSimilar("right")}
+              className="h-10 w-10 rounded-full bg-[#1C448E] text-white text-2xl grid place-items-center shadow-sm hover:opacity-95 active:scale-95"
+              aria-label="Scroll rechts"
+            >
+              &#10095;
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-5 relative">
+          <div
+            ref={simWrapRef}
+            className="flex gap-4 overflow-x-auto scroll-smooth pb-2"
+            style={{
+              scrollbarWidth: "none",
+            }}
+          >
+            {/* hide scrollbar (webkit) */}
+            <style>{`
+              .hide-scrollbar::-webkit-scrollbar{ display:none; }
+            `}</style>
+
+            <div className="hide-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2 w-full" ref={simWrapRef as any}>
+              {similar.map((d) => (
+                <div key={d.id} className="flex-shrink-0 w-[280px] sm:w-[320px]">
+                  <CarCard car={d.car} layout="grid" imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ✅ “niet laten ontstaan tweede rij” = flex + nowrap + overflow */}
+          <div className="text-xs text-gray-500 mt-2">
+            Scroll met pijlen voor meer suggesties.
+          </div>
+        </div>
       </div>
 
       <Lightbox
