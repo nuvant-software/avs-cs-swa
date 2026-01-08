@@ -3,23 +3,43 @@ import { Link, useParams } from "react-router-dom"
 import CarCard from "../components/CarCard"
 import { Lightbox } from "../components/Lightbox"
 
+type ApiItem = Record<string, any>
+
 type CarOverview = {
   id?: string
+  sourceId?: string
+
   brand: string
   model: string
-  variant: string
-  price: number
-  km?: number
-  pk?: number
   body?: string
-  transmission?: string
-  doors?: number
-  fuel?: string
+  price: number
+  description?: string
+
+  condition?: string
+  stock_number?: string
+  vin_number?: string
   year?: number
+  mileage?: number
+  transmission?: string
   engine_size?: string
+  driver_type?: string
+  cylinders?: number
+  fuel?: string
+  doors?: number
+  color?: string
+  seats?: number
+  pk?: number
+  variant?: string
+  registration?: string
+
   imageFolder?: string
-  sourceId?: string
-  // extra velden ok
+  pictures?: string
+
+  safety_features?: string[]
+  exterior_features?: string[]
+  interior_features?: string[]
+  convenience_features?: string[]
+
   [key: string]: any
 }
 
@@ -46,7 +66,7 @@ type GridCardData = {
 
 const FALLBACK_IMAGE_FOLDER = "car_001"
 
-// Helpers (zelfde stijl als Collection)
+// ----------------- helpers -----------------
 const pickString = (record: Record<string, unknown>, keys: string[]): string | undefined => {
   for (const key of keys) {
     const value = record[key]
@@ -73,7 +93,7 @@ const pickNumber = (record: Record<string, unknown>, keys: string[]): number | u
   return undefined
 }
 
-// Stabiele key (kopie uit jouw Collection)
+// Stable id (zelfde idee als Collection)
 const buildStableId = (car: CarOverview): string => {
   const raw = [car.id, car.sourceId].find((v) => typeof v === "string" && v.trim().length)
   if (raw) return raw!.trim()
@@ -88,28 +108,37 @@ const buildStableId = (car: CarOverview): string => {
   ].join("|")
 }
 
-const carkmToNum = (km: number) => km
-
 const mapCarToGridData = (car: CarOverview): GridCardData => {
   const id = buildStableId(car)
   const card: GridCar = {
     id,
     brand: car.brand,
     model: car.model,
-    variant: car.variant,
+    variant: car.variant || "",
     fuel: car.fuel || "Onbekend",
-    mileage: typeof car.km === "number" ? carkmToNum(car.km) : 0,
+    mileage: typeof car.mileage === "number" ? car.mileage : 0,
     transmission: car.transmission || "Onbekend",
     price: car.price,
     year: car.year ?? 0,
     engine_size: car.engine_size || "",
     pk: typeof car.pk === "number" ? car.pk : 0,
   }
-  const folder = car.imageFolder && car.imageFolder.trim().length ? car.imageFolder.trim() : FALLBACK_IMAGE_FOLDER
+
+  const folder =
+    car.imageFolder && car.imageFolder.trim().length ? car.imageFolder.trim() : FALLBACK_IMAGE_FOLDER
+
   return { id, car: card, imageFolder: folder, raw: car }
 }
 
-// Azure blob list (zelfde als CarCard)
+// pictures "./images/autos/005/" -> "car_005"
+const picturesToFolder = (pictures?: string): string | undefined => {
+  if (!pictures) return undefined
+  const m = pictures.match(/\/(\d{3})\/?$/)
+  if (!m) return undefined
+  return `car_${m[1]}`
+}
+
+// ----------------- Azure blob list (zelfde als CarCard) -----------------
 const blobCache = new Map<string, string[]>()
 
 const listBlobImages = async (folder: string): Promise<string[]> => {
@@ -138,8 +167,22 @@ const listBlobImages = async (folder: string): Promise<string[]> => {
   return urls
 }
 
+const preloadImage = (src: string) =>
+  new Promise<void>((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve()
+    img.onerror = () => reject()
+    img.src = src
+  })
+
+// ----------------- UI: skeleton -----------------
+const Skeleton = ({ className }: { className: string }) => (
+  <div className={`animate-pulse rounded-2xl bg-gray-100 ${className}`} />
+)
+
 export default function CarDetail() {
   const { id: routeId } = useParams<{ id: string }>()
+
   const [cars, setCars] = useState<CarOverview[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -148,9 +191,12 @@ export default function CarDetail() {
   const [slide, setSlide] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
 
+  // “geen lelijke flash”: pas true als data + hero image klaar
+  const [pageReady, setPageReady] = useState(false)
+
   const [activeTab, setActiveTab] = useState<"kenmerken" | "opties">("kenmerken")
 
-  // 1) laad cars van Azure (zelfde endpoint als Collection)
+  // 1) laad cars via dezelfde API als Collection
   useEffect(() => {
     setLoading(true)
     setError(null)
@@ -166,99 +212,147 @@ export default function CarDetail() {
       })
       .then((data: { items?: unknown[] }) => {
         const items = Array.isArray(data.items) ? data.items : []
-        const valid: CarOverview[] = items
-          .map((item) => {
-            if (item && typeof item === "object") {
-              const record = item as Record<string, unknown>
-              const nested = (record as any).car_overview ?? (record as any).carOverview
-              if (nested && typeof nested === "object") return nested as Record<string, unknown>
-              return record
-            }
-            return null
-          })
-          .filter((record): record is Record<string, unknown> => !!record)
-          .map((record) => {
-            const id = pickString(record, ["id", "_id", "car_id", "carId", "slug", "vin"])
-            const brand = pickString(record, ["brand"]) ?? ""
-            const model = pickString(record, ["model"]) ?? ""
-            const variant = pickString(record, ["variant"]) ?? ""
-            const price = pickNumber(record, ["price"]) ?? 0
-            const km = pickNumber(record, ["km", "mileage", "kilometers"])
-            const pk = pickNumber(record, ["pk", "horsepower"])
-            const body = pickString(record, ["body", "body_type", "carrosserie"])
-            const transmission = pickString(record, ["transmission", "gearbox", "transmissie"])
-            const doors = pickNumber(record, ["doors", "aantal_deuren"])
-            const fuel = pickString(record, ["fuel", "brandstof"])
-            const year = pickNumber(record, ["year", "bouwjaar"])
-            const engineSize = pickString(record, ["engine_size", "motorinhoud"])
-            const imageFolder = pickString(record, ["imageFolder", "image_folder", "folder", "imagefolder"])
-            const description = pickString(record, ["description", "beschrijving", "omschrijving"])
 
-            return {
-              id: id,
+        const mapped: CarOverview[] = items
+          .map((item) => {
+            if (!item || typeof item !== "object") return null
+
+            const root = item as ApiItem
+            const nested = root.car_overview ?? root.carOverview
+
+            // we willen: overview velden + root arrays (features)
+            const base = (nested && typeof nested === "object" ? nested : root) as ApiItem
+
+            const rootId = pickString(root, ["id", "_id", "car_id", "carId", "slug", "vin"])
+            const overviewId = pickString(base, ["id", "vin_number", "vin", "_id"])
+
+            const brand = pickString(base, ["brand"]) ?? ""
+            const model = pickString(base, ["model"]) ?? ""
+            const variant = pickString(base, ["variant"]) ?? ""
+            const body = pickString(base, ["body", "carrosserie"]) ?? undefined
+
+            const price = pickNumber(base, ["price"]) ?? 0
+            const year = pickNumber(base, ["year"]) ?? undefined
+            const mileage = pickNumber(base, ["mileage", "km", "kilometers"]) ?? undefined
+            const pk = pickNumber(base, ["pk"]) ?? undefined
+
+            const transmission = pickString(base, ["transmission"]) ?? undefined
+            const engine_size = pickString(base, ["engine_size"]) ?? undefined
+            const fuel = pickString(base, ["fuel"]) ?? undefined
+            const doors = pickNumber(base, ["doors"]) ?? undefined
+
+            const description = pickString(base, ["description", "beschrijving", "omschrijving"]) ?? undefined
+            const condition = pickString(base, ["condition"]) ?? undefined
+            const stock_number = pickString(base, ["stock_number"]) ?? undefined
+            const vin_number = pickString(base, ["vin_number"]) ?? undefined
+            const driver_type = pickString(base, ["driver_type"]) ?? undefined
+            const color = pickString(base, ["color"]) ?? undefined
+            const seats = pickNumber(base, ["seats"]) ?? undefined
+            const cylinders = pickNumber(base, ["cylinders"]) ?? undefined
+            const registration = pickString(root, ["registration"]) ?? undefined
+
+            const imageFolder =
+              pickString(base, ["imageFolder", "image_folder", "folder", "imagefolder"]) ??
+              picturesToFolder(pickString(base, ["pictures"])) ??
+              undefined
+
+            const safety_features = Array.isArray(root.safety_features) ? root.safety_features : undefined
+            const exterior_features = Array.isArray(root.exterior_features) ? root.exterior_features : undefined
+            const interior_features = Array.isArray(root.interior_features) ? root.interior_features : undefined
+            const convenience_features = Array.isArray(root.convenience_features) ? root.convenience_features : undefined
+
+            const final: CarOverview = {
+              id: rootId ?? overviewId,
+              sourceId: rootId ?? overviewId,
+              registration,
+
               brand,
               model,
               variant,
+              body,
               price,
-              km: km ?? undefined,
-              pk: pk ?? undefined,
-              body: body ?? undefined,
-              transmission: transmission ?? undefined,
-              doors: doors ?? undefined,
-              fuel: fuel ?? undefined,
-              year: year ?? undefined,
-              engine_size: engineSize ?? undefined,
-              imageFolder: imageFolder ?? undefined,
-              sourceId: id ?? undefined,
-              description: description ?? undefined,
-            }
-          })
-          .filter((c) => c.brand && c.model && c.variant && typeof c.price === "number")
+              year,
+              mileage,
+              transmission,
+              engine_size,
+              fuel,
+              doors,
+              pk,
 
-        setCars(valid)
+              description,
+              condition,
+              stock_number,
+              vin_number,
+              driver_type,
+              color,
+              seats,
+              cylinders,
+
+              imageFolder,
+              pictures: pickString(base, ["pictures"]),
+
+              safety_features,
+              exterior_features,
+              interior_features,
+              convenience_features,
+            }
+
+            if (!final.brand || !final.model || !final.variant || typeof final.price !== "number") return null
+            return final
+          })
+          .filter((x): x is CarOverview => !!x)
+
+        setCars(mapped)
       })
       .catch((err) => setError(err?.message || "Onbekende fout"))
       .finally(() => setLoading(false))
   }, [])
 
-  // 2) vind de juiste auto op basis van routeId
+  // 2) vind car
   const car = useMemo(() => {
     if (!routeId) return null
     const rid = String(routeId).trim()
 
-    // Probeer matchen op raw id/sourceId
     const direct = cars.find((c) => String(c.id ?? "").trim() === rid || String(c.sourceId ?? "").trim() === rid)
     if (direct) return direct
 
-    // Probeer matchen op stable id (zelfde als in Collection)
     const stable = cars.find((c) => buildStableId(c) === rid)
     if (stable) return stable
 
     return null
   }, [cars, routeId])
 
-  const gridData = useMemo(() => {
-    if (!car) return null
-    return mapCarToGridData(car)
-  }, [car])
-
-  // 3) laad images op basis van imageFolder
+  // 3) images laden + preload eerste image (om flits te vermijden)
   useEffect(() => {
     let cancelled = false
 
     async function run() {
+      setPageReady(false)
+
       if (!car) return
-      const folder = (car.imageFolder && car.imageFolder.trim().length ? car.imageFolder.trim() : FALLBACK_IMAGE_FOLDER) as string
+
+      const folder =
+        car.imageFolder && car.imageFolder.trim().length ? car.imageFolder.trim() : FALLBACK_IMAGE_FOLDER
+
       const urls = await listBlobImages(folder)
       if (cancelled) return
+
       setImages(urls)
       setSlide(0)
+
+      // preload de eerste foto -> dan pas UI “echt” tonen
+      if (urls[0]) {
+        try {
+          await preloadImage(urls[0])
+        } catch {
+          // ok, dan alsnog door
+        }
+      }
+
+      if (!cancelled) setPageReady(true)
     }
 
-    setImages([])
-    setSlide(0)
     run()
-
     return () => {
       cancelled = true
     }
@@ -276,29 +370,77 @@ export default function CarDetail() {
     setSlide((s) => (s + 1) % images.length)
   }
 
-  // vergelijkbare auto's (simpel: zelfde brand of body, anders nieuwste)
+  // opties uit jouw velden
+  const optionsGroups = useMemo(() => {
+    if (!car) return null
+
+    const groups: Array<{ title: string; items: string[] }> = []
+    if (car.safety_features?.length) groups.push({ title: "Safety", items: car.safety_features })
+    if (car.exterior_features?.length) groups.push({ title: "Exterior", items: car.exterior_features })
+    if (car.interior_features?.length) groups.push({ title: "Interior", items: car.interior_features })
+    if (car.convenience_features?.length) groups.push({ title: "Convenience", items: car.convenience_features })
+
+    return groups.length ? groups : null
+  }, [car])
+
+  // vergelijkbare auto's als reel
   const similar = useMemo(() => {
     if (!car) return []
     const list = cars.filter((c) => c !== car)
 
     const primary = list.filter((c) => {
       const sameBrand = (c.brand || "").toLowerCase() === (car.brand || "").toLowerCase()
-      const sameBody =
-        car.body && c.body ? String(c.body).toLowerCase() === String(car.body).toLowerCase() : false
+      const sameBody = car.body && c.body ? String(c.body).toLowerCase() === String(car.body).toLowerCase() : false
       return sameBrand || sameBody
     })
 
     const sortNewFirst = (a: CarOverview, b: CarOverview) => (b.year ?? 0) - (a.year ?? 0)
 
-    const chosen = (primary.length ? primary : list).slice().sort(sortNewFirst).slice(0, 4)
-    return chosen.map(mapCarToGridData)
+    return (primary.length ? primary : list).slice().sort(sortNewFirst).slice(0, 8).map(mapCarToGridData)
   }, [cars, car])
 
-  if (loading) return <div className="max-w-screen-2xl mx-auto px-4 py-10">Laden...</div>
+  // ----------------- skeleton state (geen “Laden…”) -----------------
+  if (loading) {
+    return (
+      <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-8">
+        <Skeleton className="h-5 w-24" />
+        <div className="mt-4">
+          <Skeleton className="h-4 w-72" />
+          <div className="mt-3 flex items-start justify-between gap-4">
+            <Skeleton className="h-10 w-[60%]" />
+            <Skeleton className="h-10 w-40" />
+          </div>
+        </div>
+
+        {/* full-width foto skeleton */}
+        <div className="mt-8 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen px-4 md:px-6 lg:px-8">
+          <Skeleton className="h-[320px] sm:h-[520px] w-full" />
+          <div className="mt-3 flex gap-3 overflow-hidden">
+            <Skeleton className="h-24 w-40" />
+            <Skeleton className="h-24 w-40" />
+            <Skeleton className="h-24 w-40" />
+            <Skeleton className="h-24 w-40" />
+          </div>
+        </div>
+
+        {/* onderstuk skeleton */}
+        <div className="mt-10 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
+          <div>
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-20 w-full mt-3" />
+            <Skeleton className="h-56 w-full mt-6" />
+          </div>
+          <div>
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (error) {
     return (
-      <div className="max-w-screen-2xl mx-auto px-4 py-10">
+      <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-10">
         <Link to="/collection" className="underline opacity-80">
           ← Terug naar collectie
         </Link>
@@ -307,9 +449,9 @@ export default function CarDetail() {
     )
   }
 
-  if (!car || !gridData) {
+  if (!car) {
     return (
-      <div className="max-w-screen-2xl mx-auto px-4 py-10">
+      <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-10">
         <Link to="/collection" className="underline opacity-80">
           ← Terug naar collectie
         </Link>
@@ -318,36 +460,25 @@ export default function CarDetail() {
     )
   }
 
-  // top klein
   const topSmall = `Merk: ${car.brand}  •  Model: ${car.model}  •  Body: ${car.body ?? "—"}`
   const title = `${car.brand} ${car.model} ${car.year ?? ""}`.trim()
 
-  // omschrijving: uit API (record.description/beschrijving/omschrijving)
-  const descriptionText = (car.description && String(car.description).trim()) || "—"
-
-  // overview items exact lijst
   const overviewItems: Array<{ label: string; value: string }> = [
     { label: "Conditie", value: car.condition ?? "—" },
-    { label: "Nummer", value: car.number ?? car.stockNumber ?? "—" },
-    { label: "VIN", value: car.vin ?? "—" },
+    { label: "Nummer", value: car.stock_number ?? "—" },
+    { label: "VIN", value: car.vin_number ?? car.id ?? "—" },
     { label: "Jaar", value: String(car.year ?? "—") },
-    { label: "Kilometerstand", value: `${(car.km ?? 0).toLocaleString("nl-NL")} km` },
+    { label: "Kilometerstand", value: `${(car.mileage ?? 0).toLocaleString("nl-NL")} km` },
     { label: "Transmissie", value: car.transmission ?? "—" },
     { label: "Motorinhoud", value: car.engine_size ?? "—" },
-    { label: "Aandrijving", value: car.driver_type ?? car.drive ?? "—" },
+    { label: "Aandrijving", value: car.driver_type ?? "—" },
     { label: "Kleur", value: car.color ?? "—" },
     { label: "Brandstof", value: car.fuel ?? "—" },
   ]
 
-  // features: als jouw API dit niet levert, blijft het leeg (geen “extra”)
-  // Verwacht: car.features = { Safety: [...], Interior: [...] } of car.options etc.
-  const features: Record<string, string[]> | null =
-    (car.features && typeof car.features === "object" ? (car.features as Record<string, string[]>) : null) ||
-    (car.options && typeof car.options === "object" ? (car.options as Record<string, string[]>) : null) ||
-    null
-
   return (
     <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-8">
+      {/* BOVENSTUK */}
       <Link to="/collection" className="inline-flex items-center gap-2 text-sm underline opacity-80">
         ← Terug
       </Link>
@@ -356,7 +487,6 @@ export default function CarDetail() {
 
       <div className="mt-3 flex items-start justify-between gap-4">
         <h1 className="text-3xl md:text-4xl font-semibold !text-[#1C448E]">{title}</h1>
-
         <div className="text-right">
           <div className="text-xs opacity-60 mb-1">Prijs</div>
           <div className="text-2xl md:text-3xl font-semibold !text-[#1C448E]">
@@ -365,72 +495,89 @@ export default function CarDetail() {
         </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
-        {/* LEFT */}
-        <div>
-          {/* Grote foto + pijlen */}
-          <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white">
-            <div className="relative w-full h-[260px] sm:h-[420px] bg-gray-100">
-              {hasImages ? (
-                <img
-                  src={currentImg}
-                  alt={`${car.brand} ${car.model}`}
-                  className="w-full h-full object-cover cursor-pointer"
-                  onClick={() => setLightboxOpen(true)}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
-                  Geen foto’s gevonden
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={prev}
-                className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 border border-gray-200 grid place-items-center hover:bg-white"
-                aria-label="Vorige foto"
-              >
-                ‹
-              </button>
-
-              <button
-                type="button"
-                onClick={next}
-                className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 border border-gray-200 grid place-items-center hover:bg-white"
-                aria-label="Volgende foto"
-              >
-                ›
-              </button>
+      {/* FOTO (full width) */}
+      <div className="mt-8 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen px-4 md:px-6 lg:px-8">
+        {/* als pageReady nog false: show foto-skeleton -> geen lelijke pop-in */}
+        {!pageReady ? (
+          <>
+            <Skeleton className="h-[320px] sm:h-[520px] w-full" />
+            <div className="mt-3 flex gap-3 overflow-hidden">
+              <Skeleton className="h-24 w-40" />
+              <Skeleton className="h-24 w-40" />
+              <Skeleton className="h-24 w-40" />
+              <Skeleton className="h-24 w-40" />
             </div>
+          </>
+        ) : (
+          <>
+            <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white">
+              <div className="relative w-full h-[320px] sm:h-[520px] bg-gray-100">
+                {hasImages ? (
+                  <img
+                    src={currentImg}
+                    alt={`${car.brand} ${car.model}`}
+                    className="w-full h-full object-cover cursor-pointer"
+                    onClick={() => setLightboxOpen(true)}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
+                    Geen foto’s gevonden
+                  </div>
+                )}
 
-            {/* Thumbs */}
-            <div className="p-3 border-t border-gray-200">
-              <div className="flex gap-2 overflow-x-auto">
-                {images.slice(0, 12).map((src, idx) => (
-                  <button
-                    key={src}
-                    type="button"
-                    onClick={() => setSlide(idx)}
-                    className={[
-                      "h-16 w-24 flex-shrink-0 overflow-hidden rounded-lg border",
-                      idx === slide ? "border-[#1C448E]" : "border-gray-200",
-                    ].join(" ")}
-                    aria-label={`Foto ${idx + 1}`}
-                  >
-                    <img src={src} alt={`thumb ${idx + 1}`} className="h-full w-full object-cover" />
-                  </button>
-                ))}
+                <button
+                  type="button"
+                  onClick={prev}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/90 border border-gray-200 grid place-items-center hover:bg-white"
+                  aria-label="Vorige foto"
+                >
+                  ‹
+                </button>
+
+                <button
+                  type="button"
+                  onClick={next}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-white/90 border border-gray-200 grid place-items-center hover:bg-white"
+                  aria-label="Volgende foto"
+                >
+                  ›
+                </button>
+              </div>
+
+              {/* thumbs groter */}
+              <div className="p-4 border-t border-gray-200">
+                <div className="flex gap-3 overflow-x-auto pb-1">
+                  {images.map((src, idx) => (
+                    <button
+                      key={src}
+                      type="button"
+                      onClick={() => setSlide(idx)}
+                      className={[
+                        "h-24 w-40 flex-shrink-0 overflow-hidden rounded-xl border",
+                        idx === slide ? "border-[#1C448E]" : "border-gray-200",
+                      ].join(" ")}
+                      aria-label={`Foto ${idx + 1}`}
+                    >
+                      <img src={src} alt={`thumb ${idx + 1}`} className="h-full w-full object-cover" />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          </>
+        )}
+      </div>
 
-          {/* Omschrijving (blijft boven tabs) */}
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
-            <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">{descriptionText}</p>
-          </div>
+      {/* ONDERSTUK */}
+      <div className="mt-10 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
+        {/* links */}
+        <div>
+          <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
+          <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">
+            {car.description ?? "—"}
+          </p>
 
-          {/* Tabs */}
+          {/* Tabs (Kenmerken/Opties) */}
           <div className="mt-8">
             <div className="flex items-center gap-2">
               <button
@@ -464,13 +611,9 @@ export default function CarDetail() {
               {activeTab === "kenmerken" ? (
                 <>
                   <h3 className="text-lg font-semibold !text-[#1C448E] mb-4">Car overview</h3>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-3">
                     {overviewItems.map((it) => (
-                      <div
-                        key={it.label}
-                        className="flex items-center justify-between gap-4 border-b border-gray-100 py-2"
-                      >
+                      <div key={it.label} className="flex items-center justify-between gap-4 border-b border-gray-100 py-2">
                         <span className="text-sm font-medium text-gray-600">{it.label}</span>
                         <span className="text-sm text-gray-900">{it.value}</span>
                       </div>
@@ -481,15 +624,15 @@ export default function CarDetail() {
                 <>
                   <h3 className="text-lg font-semibold !text-[#1C448E] mb-4">Features</h3>
 
-                  {!features ? (
+                  {!optionsGroups ? (
                     <div className="text-sm text-gray-600">—</div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {Object.entries(features).map(([category, items]) => (
-                        <div key={category}>
-                          <div className="text-sm font-semibold text-gray-900 mb-2">{category}</div>
+                      {optionsGroups.map((g) => (
+                        <div key={g.title}>
+                          <div className="text-sm font-semibold text-gray-900 mb-2">{g.title}</div>
                           <ul className="space-y-2">
-                            {items.map((x) => (
+                            {g.items.map((x) => (
                               <li key={x} className="text-sm text-gray-700 flex items-start gap-2">
                                 <span className="mt-[2px] inline-block h-2 w-2 rounded-full bg-[#1C448E]" />
                                 <span>{x}</span>
@@ -505,46 +648,32 @@ export default function CarDetail() {
             </div>
           </div>
 
-          {/* Lease calculator (tijdelijk) */}
+          {/* Lease calculator placeholder */}
           <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-5">
             <h3 className="text-lg font-semibold !text-[#1C448E]">Lease calculator</h3>
             <p className="mt-2 text-sm text-gray-600">Tijdelijke placeholder.</p>
-
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="rounded-xl border border-gray-200 p-3">
-                <div className="text-xs opacity-60">Looptijd</div>
-                <div className="mt-1 text-sm font-semibold">36 maanden</div>
-              </div>
-              <div className="rounded-xl border border-gray-200 p-3">
-                <div className="text-xs opacity-60">Aanbetaling</div>
-                <div className="mt-1 text-sm font-semibold">€ 0</div>
-              </div>
-              <div className="rounded-xl border border-gray-200 p-3">
-                <div className="text-xs opacity-60">Indicatie</div>
-                <div className="mt-1 text-sm font-semibold">— / maand</div>
-              </div>
-            </div>
           </div>
 
-          {/* Vergelijkbare auto's */}
+          {/* Featured cars als reel */}
           <div className="mt-10">
             <h3 className="text-xl font-semibold !text-[#1C448E]">Vergelijkbare auto’s</h3>
 
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="mt-4 flex gap-6 overflow-x-auto pb-2">
               {similar.map((d) => (
-                <CarCard
-                  key={d.id}
-                  car={d.car}
-                  layout="grid"
-                  imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER}
-                />
+                <div key={d.id} className="flex-shrink-0 w-[320px]">
+                  <CarCard
+                    car={d.car}
+                    layout="grid"
+                    imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER}
+                  />
+                </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* RIGHT */}
-        <aside className="lg:sticky lg:top-24 h-fit">
+        {/* rechts (in ONDERSTUK, dus niet naast foto) */}
+        <aside className="h-fit">
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <div className="flex flex-col gap-3">
               <button
