@@ -66,8 +66,16 @@ type GridCardData = {
 
 const FALLBACK_IMAGE_FOLDER = "car_001"
 
+// ✅ NU: altijd dezelfde folder/urls (zoals jij wil)
+const STATIC_FOLDER = "car_001"
+const STATIC_COUNT = 5
+const buildStaticImageUrls = () =>
+  Array.from({ length: STATIC_COUNT }, (_, i) => {
+    const n = i + 1
+    return `https://avsapisa.blob.core.windows.net/carimages/${STATIC_FOLDER}/foto-${n}.jpg`
+  })
+
 const getRegYear = (reg?: string): number | undefined => {
-  // verwacht "14-07-2018"
   const m = String(reg ?? "").match(/(\d{4})$/)
   return m ? Number(m[1]) : undefined
 }
@@ -143,35 +151,6 @@ const picturesToFolder = (pictures?: string): string | undefined => {
   return `car_${m[1]}`
 }
 
-// ----------------- Azure blob list (zelfde als CarCard) -----------------
-const blobCache = new Map<string, string[]>()
-
-const listBlobImages = async (folder: string): Promise<string[]> => {
-  const cached = blobCache.get(folder)
-  if (cached) return cached
-
-  const url = `https://avsapisa.blob.core.windows.net/carimages?restype=container&comp=list&prefix=${encodeURIComponent(
-    folder + "/"
-  )}`
-
-  const res = await fetch(url)
-  if (!res.ok) {
-    blobCache.set(folder, [])
-    return []
-  }
-
-  const xmlText = await res.text()
-  const doc = new DOMParser().parseFromString(xmlText, "application/xml")
-  const blobs = Array.from(doc.getElementsByTagName("Blob"))
-  const urls = blobs
-    .map((b) => b.getElementsByTagName("Name")[0]?.textContent)
-    .filter((n): n is string => !!n && /\.(jpg|jpeg|png|webp)$/i.test(n))
-    .map((name) => `https://avsapisa.blob.core.windows.net/carimages/${name}`)
-
-  blobCache.set(folder, urls)
-  return urls
-}
-
 const preloadImage = (src: string) =>
   new Promise<void>((resolve, reject) => {
     const img = new Image()
@@ -213,7 +192,7 @@ export default function CarDetail() {
 
   const [activeTab, setActiveTab] = useState<"kenmerken" | "opties">("kenmerken")
 
-  // --- NEW: reel arrows (Vergelijkbare auto's) ---
+  // --- reel arrows (Vergelijkbare auto's) ---
   const reelRef = useRef<HTMLDivElement | null>(null)
 
   const scrollReel = (dir: "left" | "right") => {
@@ -247,7 +226,6 @@ export default function CarDetail() {
             const root = item as ApiItem
             const nested = root.car_overview ?? root.carOverview
 
-            // we willen: overview velden + root arrays (features)
             const base = (nested && typeof nested === "object" ? nested : root) as ApiItem
 
             const rootId = pickString(root, ["id", "_id", "car_id", "carId", "slug", "vin"])
@@ -342,15 +320,12 @@ export default function CarDetail() {
     const ridRaw = String(routeId).trim()
     const rid = normId(ridRaw)
 
-    // A) direct id/sourceId
     const direct = cars.find((c) => normId(c.id) === rid || normId(c.sourceId) === rid)
     if (direct) return direct
 
-    // B) stableId exact
     const stableExact = cars.find((c) => normId(buildStableId(c)) === rid)
     if (stableExact) return stableExact
 
-    // C) tolerant match voor jouw url: brand|model|variant|year|trans|engine|fuel
     if (ridRaw.includes("|")) {
       const parts = ridRaw.split("|").map((p) => p.trim())
       const [pBrand, pModel, pVariant, pYear, pTrans, pEngine, pFuel] = parts
@@ -360,25 +335,20 @@ export default function CarDetail() {
 
       const score = (c: CarOverview) => {
         let s = 0
-
         if (norm(c.brand) === norm(pBrand)) s += 3
         if (norm(c.model) === norm(pModel)) s += 3
         if (norm(c.variant) === norm(pVariant)) s += 3
-
         if (norm(c.transmission) === norm(pTrans)) s += 2
         if (norm(c.engine_size) === norm(pEngine)) s += 2
         if (norm(c.fuel) === norm(pFuel)) s += 2
 
-        // year mag uit car.year of uit registration komen
         if (hasRouteYear) {
           const carYear = typeof c.year === "number" ? c.year : undefined
           const regYear = getRegYear(c.registration)
-
           if (carYear === routeYear || regYear === routeYear) s += 2
           else if (carYear && Math.abs(carYear - routeYear) <= 1) s += 1
           else if (regYear && Math.abs(regYear - routeYear) <= 1) s += 1
         }
-
         return s
       }
 
@@ -393,11 +363,9 @@ export default function CarDetail() {
         }
       }
 
-      // drempel: brand+model+variant (=9) is al genoeg
       if (best && bestScore >= 8) return best
     }
 
-    // D) vin / stock fallback
     const byVin = cars.find((c) => normId(c.vin_number ?? c.id) === rid)
     if (byVin) return byVin
 
@@ -407,18 +375,15 @@ export default function CarDetail() {
     return null
   }, [cars, routeId])
 
-  // 3) images laden + preload eerste image (om flits te vermijden)
+  // ✅ 3) images: statisch car_001 (zoals CarCard)
   useEffect(() => {
     let cancelled = false
 
     async function run() {
       setPageReady(false)
-
       if (!car) return
 
-      const folder = car.imageFolder && car.imageFolder.trim().length ? car.imageFolder.trim() : FALLBACK_IMAGE_FOLDER
-
-      const urls = await listBlobImages(folder)
+      const urls = buildStaticImageUrls()
       if (cancelled) return
 
       setImages(urls)
@@ -473,7 +438,7 @@ export default function CarDetail() {
 
     const primary = list.filter((c) => {
       const sameBrand = (c.brand || "").toLowerCase() === (car.brand || "").toLowerCase()
-      const sameBody = car.body && c.body ? String(c.body).toLowerCase() === String(car.body).toLowerCase() : false
+      const sameBody = car.body && c.body ? String(c.body).toLowerCase() === String(c.body).toLowerCase() : false
       return sameBrand || sameBody
     })
 
@@ -482,7 +447,7 @@ export default function CarDetail() {
     return (primary.length ? primary : list).slice().sort(sortNewFirst).slice(0, 8).map(mapCarToGridData)
   }, [cars, car])
 
-  // ----------------- skeleton state (geen “Laden…”) -----------------
+  // ----------------- skeleton state -----------------
   if (loading) {
     return (
       <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-8">
@@ -495,7 +460,6 @@ export default function CarDetail() {
           </div>
         </div>
 
-        {/* full-width foto skeleton (FIXED: no horizontal overflow) */}
         <div className="mt-8 relative left-1/2 -translate-x-1/2 w-[100vw] overflow-x-clip">
           <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
             <Skeleton className="h-[340px] sm:h-[620px] w-full" />
@@ -508,7 +472,6 @@ export default function CarDetail() {
           </div>
         </div>
 
-        {/* onderstuk skeleton */}
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
           <div>
             <Skeleton className="h-6 w-40" />
@@ -568,7 +531,6 @@ export default function CarDetail() {
 
   return (
     <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-8 overflow-x-hidden">
-      {/* BOVENSTUK */}
       <Link to="/collection" className="inline-flex items-center gap-2 text-sm underline opacity-80">
         ← Terug
       </Link>
@@ -585,7 +547,7 @@ export default function CarDetail() {
         </div>
       </div>
 
-      {/* FOTO (full width)  (FIXED: no horizontal overflow) */}
+      {/* FOTO (full width) */}
       <div className="mt-8 relative left-1/2 -translate-x-1/2 w-[100vw] overflow-x-clip">
         <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8">
           {!pageReady ? (
@@ -633,7 +595,6 @@ export default function CarDetail() {
                 </button>
               </div>
 
-              {/* thumbs groter & zichtbaar */}
               <div className="p-4 border-t border-gray-200">
                 <div className="flex gap-4 overflow-x-auto pb-1">
                   {images.map((src, idx) => (
@@ -659,14 +620,10 @@ export default function CarDetail() {
 
       {/* ONDERSTUK */}
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
-        {/* links */}
         <div>
           <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
-          <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">
-            {car.description ?? "—"}
-          </p>
+          <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">{car.description ?? "—"}</p>
 
-          {/* Tabs (Kenmerken/Opties) */}
           <div className="mt-8">
             <div className="flex items-center gap-2">
               <button
@@ -740,18 +697,15 @@ export default function CarDetail() {
             </div>
           </div>
 
-          {/* Lease calculator placeholder */}
           <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-5">
             <h3 className="text-lg font-semibold !text-[#1C448E]">Lease calculator</h3>
             <p className="mt-2 text-sm text-gray-600">Tijdelijke placeholder.</p>
           </div>
 
-          {/* Featured cars als reel (FIXED + arrows) */}
           <div className="mt-10">
             <h3 className="text-xl font-semibold !text-[#1C448E]">Vergelijkbare auto’s</h3>
 
             <div className="mt-4 relative">
-              {/* pijlen */}
               <button
                 type="button"
                 onClick={() => scrollReel("left")}
@@ -770,7 +724,6 @@ export default function CarDetail() {
                 ›
               </button>
 
-              {/* reel */}
               <div ref={reelRef} className="flex gap-6 overflow-x-auto scroll-smooth pb-2 pr-2 md:px-12">
                 {similar.map((d) => (
                   <div key={d.id} className="flex-shrink-0 w-[320px]">
@@ -782,14 +735,10 @@ export default function CarDetail() {
           </div>
         </div>
 
-        {/* rechts (in ONDERSTUK, dus niet naast foto) */}
         <aside className="h-fit">
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95"
-              >
+              <button type="button" className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95">
                 Contact opnemen
               </button>
 
@@ -805,18 +754,9 @@ export default function CarDetail() {
               <div className="text-sm font-semibold text-gray-900 mb-3">Bericht</div>
               <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="Naam" />
               <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2" placeholder="E-mail" />
-              <input
-                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2"
-                placeholder="Telefoon"
-              />
-              <textarea
-                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2 min-h-[120px]"
-                placeholder="Je bericht..."
-              />
-              <button
-                type="button"
-                className="mt-3 w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95"
-              >
+              <input className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2" placeholder="Telefoon" />
+              <textarea className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm mt-2 min-h-[120px]" placeholder="Je bericht..." />
+              <button type="button" className="mt-3 w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95">
                 Verzenden
               </button>
             </div>
