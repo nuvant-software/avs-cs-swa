@@ -65,9 +65,6 @@ type GridCardData = {
 
 const FALLBACK_IMAGE_FOLDER = "car_001"
 
-// ✅ tijdelijk: altijd car_001
-const STATIC_FOLDER = "car_001"
-
 const getRegYear = (reg?: string): number | undefined => {
   const m = String(reg ?? "").match(/(\d{4})$/)
   return m ? Number(m[1]) : undefined
