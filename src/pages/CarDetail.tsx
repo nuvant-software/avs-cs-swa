@@ -520,8 +520,8 @@ export default function CarDetail() {
         ) : (
           <>
             <div className="relative w-full">
-              {/* ✅ frame zonder border en zonder background */}
-              <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-transparent">
+              {/* frame: geen border, geen bg */}
+              <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden !bg-transparent">
                 {hasImages ? (
                   <>
                     <div
@@ -532,16 +532,16 @@ export default function CarDetail() {
                         <button
                           key={src}
                           type="button"
-                          className="w-full h-full flex-shrink-0 bg-transparent"
                           onClick={() => setLightboxOpen(true)}
                           aria-label={`Open foto ${i + 1}`}
+                          className="relative w-full h-full flex-shrink-0 !p-0 !m-0 !bg-transparent overflow-hidden"
                         >
-                          {/* ✅ cover => vult frame altijd, geen grijze randen */}
+                          {/* ✅ ABSOLUTE => vult ALTIJD het frame, geen grijze randen mogelijk */}
                           <img
                             src={src}
                             alt={`Slide ${i + 1}`}
-                            className="w-full h-full object-cover select-none block"
                             draggable={false}
+                            className="absolute inset-0 w-full h-full !object-cover !block"
                           />
                         </button>
                       ))}
@@ -567,7 +567,9 @@ export default function CarDetail() {
                     </button>
                   </>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">Geen foto’s gevonden</div>
+                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">
+                    Geen foto’s gevonden
+                  </div>
                 )}
               </div>
             </div>
@@ -588,8 +590,6 @@ export default function CarDetail() {
                             "flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all bg-white",
                             selected ? "border-[#1C448E]" : "border-gray-200 hover:border-[#1C448E]/40",
                           ].join(" ")}
-                          aria-label={`Foto ${i + 1}`}
-                          aria-current={selected ? "true" : "false"}
                         >
                           <img src={src} alt={`Thumb ${i + 1}`} className="h-16 w-24 sm:w-28 object-cover block" />
                         </button>
@@ -607,6 +607,7 @@ export default function CarDetail() {
           </>
         )}
       </div>
+
 
       {/* ✅ BLOK 1 + BLOK 2 */}
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
