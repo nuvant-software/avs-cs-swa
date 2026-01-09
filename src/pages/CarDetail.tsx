@@ -547,18 +547,22 @@ export default function CarDetail() {
                       ))}
                     </div>
 
-                    {/* ✅ pijlen: lage opacity (geen grijs), subtiel blur */}
+                    {/* ✅ pijlen: GEEN achtergrond, pijl wit met lage opacity (forced met !) */}
                     <button
                       type="button"
                       onClick={prev}
                       aria-label="Vorige foto"
                       className="
                         absolute left-3 top-1/2 -translate-y-1/2
-                        h-11 w-11 rounded-full
-                        bg-[#1C448E]/30 hover:bg-[#1C448E]/50
-                        text-white text-3xl
+                        h-11 w-11
                         grid place-items-center
-                        backdrop-blur-sm
+                        !bg-transparent
+                        !shadow-none
+                        !border-0
+                        !ring-0
+                        !outline-none
+                        !text-white
+                        !opacity-40 hover:!opacity-70
                         transition
                         active:scale-95
                       "
@@ -568,71 +572,75 @@ export default function CarDetail() {
 
                     <button
                       type="button"
-                      onClick={next}
-                      aria-label="Volgende foto"
-                      className="
-                        absolute right-3 top-1/2 -translate-y-1/2
-                        h-11 w-11 rounded-full
-                        bg-[#1C448E]/30 hover:bg-[#1C448E]/50
-                        text-white text-3xl
-                        grid place-items-center
-                        backdrop-blur-sm
-                        transition
-                        active:scale-95
-                      "
-                    >
-                      &#10095;
-                    </button>
-                  </>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">
-                    Geen foto’s gevonden
-                  </div>
-                )}
-              </div>
+                onClick={next}
+                aria-label="Volgende foto"
+                className="
+                  absolute right-3 top-1/2 -translate-y-1/2
+                  h-11 w-11
+                  grid place-items-center
+                  !bg-transparent
+                  !shadow-none
+                  !border-0
+                  !ring-0
+                  !outline-none
+                  !text-white
+                  !opacity-40 hover:!opacity-70
+                  transition
+                  active:scale-95
+                "
+              >
+                &#10095;
+              </button>
+            </>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">
+              Geen foto’s gevonden
             </div>
-
-            {/* ✅ thumbs: WEL border, geen “achterkant”, image forced cover */}
-            {hasImages && (
-              <>
-                <div className="mt-4 w-full flex justify-center">
-                  <div className="flex gap-2 overflow-x-auto max-w-full pb-1">
-                    {images.map((src, i) => {
-                      const selected = i === slide
-                      return (
-                        <button
-                          key={src}
-                          type="button"
-                          onClick={() => setSlide(i)}
-                          aria-label={`Foto ${i + 1}`}
-                          aria-current={selected ? "true" : "false"}
-                          className={[
-                            "relative flex-shrink-0 rounded-xl overflow-hidden border-2 transition",
-                            selected ? "border-[#1C448E]" : "border-gray-200 hover:border-[#1C448E]/40",
-                            "!bg-transparent !p-0 !m-0", // ✅ geen witte/grijze achterkant
-                          ].join(" ")}
-                        >
-                          <img
-                            src={src}
-                            alt={`Thumb ${i + 1}`}
-                            draggable={false}
-                            className="block h-16 w-24 sm:w-28 object-cover"
-                          />
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                <div className="mt-2 text-center text-xs text-gray-500">
-                  Foto <span className="font-semibold text-gray-800">{slide + 1}</span> van{" "}
-                  <span className="font-semibold text-gray-800">{images.length}</span>
-                </div>
-              </>
-            )}
-          </>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* ✅ thumbs: WEL border, geen “achterkant”, image forced cover */}
+      {hasImages && (
+        <>
+          <div className="mt-4 w-full flex justify-center">
+            <div className="flex gap-2 overflow-x-auto max-w-full pb-1">
+              {images.map((src, i) => {
+                const selected = i === slide
+                return (
+                  <button
+                    key={src}
+                    type="button"
+                    onClick={() => setSlide(i)}
+                    aria-label={`Foto ${i + 1}`}
+                    aria-current={selected ? "true" : "false"}
+                    className={[
+                      "relative flex-shrink-0 rounded-xl overflow-hidden border-2 transition",
+                      selected ? "!border-[#1C448E]" : "!border-gray-200 hover:!border-[#1C448E]/40",
+                      "!bg-transparent !p-0 !m-0 !shadow-none !ring-0 !outline-none", // ✅ geen witte/grijze achterkant
+                    ].join(" ")}
+                  >
+                    <img
+                      src={src}
+                      alt={`Thumb ${i + 1}`}
+                      draggable={false}
+                      className="block h-16 w-24 sm:w-28 object-cover"
+                    />
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="mt-2 text-center text-xs text-gray-500">
+            Foto <span className="font-semibold text-gray-800">{slide + 1}</span> van{" "}
+            <span className="font-semibold text-gray-800">{images.length}</span>
+          </div>
+        </>
+      )}
+    </>
+  )}
+</div>
 
       {/* ✅ BLOK 1 + BLOK 2 */}
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
