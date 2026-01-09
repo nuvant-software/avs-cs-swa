@@ -182,10 +182,8 @@ export default function CarDetail() {
   const [pageReady, setPageReady] = useState(false)
 
   const [activeTab, setActiveTab] = useState<"kenmerken" | "opties">("kenmerken")
-
   const simWrapRef = useRef<HTMLDivElement | null>(null)
 
-  // 1) laad cars
   useEffect(() => {
     setLoading(true)
     setError(null)
@@ -295,10 +293,8 @@ export default function CarDetail() {
       .finally(() => setLoading(false))
   }, [])
 
-  // 2) match car
   const car = useMemo(() => {
     if (!routeId) return null
-
     const ridRaw = String(routeId).trim()
     const rid = normId(ridRaw)
 
@@ -355,10 +351,8 @@ export default function CarDetail() {
     return null
   }, [cars, routeId])
 
-  // 3) images (static)
   useEffect(() => {
     let cancelled = false
-
     async function run() {
       setPageReady(false)
       if (!car) return
@@ -390,7 +384,6 @@ export default function CarDetail() {
   const prev = () => hasImages && setSlide((s) => (s - 1 + images.length) % images.length)
   const next = () => hasImages && setSlide((s) => (s + 1) % images.length)
 
-  // 4) content: kenmerken + opties
   const overviewItems: Array<{ label: string; value: string }> = useMemo(() => {
     if (!car) return []
     return [
@@ -420,7 +413,6 @@ export default function CarDetail() {
     return groups.length ? groups : null
   }, [car])
 
-  // 5) vergelijkbare autos (top 5-6)
   const similar = useMemo(() => {
     if (!car) return []
     const list = cars.filter((c) => c !== car)
@@ -444,7 +436,6 @@ export default function CarDetail() {
     el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" })
   }
 
-  // ---------- states ----------
   if (loading) {
     return (
       <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-8">
@@ -501,7 +492,6 @@ export default function CarDetail() {
         ← Terug
       </Link>
 
-      {/* ✅ HEADER */}
       <div className="mt-5 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-3xl md:text-4xl font-semibold !text-[#1C448E] truncate">{title}</h1>
@@ -516,7 +506,7 @@ export default function CarDetail() {
         </div>
       </div>
 
-      {/* ✅ FOTO: FOTO VULT FRAME VOLLEDIG (object-cover), frame heeft border, geen extra outer rand */}
+      {/* ✅ FOTO: geen border boven, geen grijs zichtbaar, foto forced 16:9 cover */}
       <div className="mt-8">
         {!pageReady ? (
           <>
@@ -530,8 +520,8 @@ export default function CarDetail() {
         ) : (
           <>
             <div className="relative w-full">
-              {/* ✅ aspect ratio fixed, img schaalt mee en vult altijd */}
-              <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-gray-200 bg-transparent">
+              {/* ✅ frame zonder border en zonder background */}
+              <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-transparent">
                 {hasImages ? (
                   <>
                     <div
@@ -542,20 +532,22 @@ export default function CarDetail() {
                         <button
                           key={src}
                           type="button"
-                          className="w-full h-full flex-shrink-0"
+                          className="w-full h-full flex-shrink-0 bg-transparent"
                           onClick={() => setLightboxOpen(true)}
                           aria-label={`Open foto ${i + 1}`}
                         >
+                          {/* ✅ cover => vult frame altijd, geen grijze randen */}
                           <img
                             src={src}
                             alt={`Slide ${i + 1}`}
-                            className="w-full h-full object-cover select-none"
+                            className="w-full h-full object-cover select-none block"
                             draggable={false}
                           />
                         </button>
                       ))}
                     </div>
 
+                    {/* pijlen blijven */}
                     <button
                       type="button"
                       onClick={prev}
@@ -575,14 +567,12 @@ export default function CarDetail() {
                     </button>
                   </>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">
-                    Geen foto’s gevonden
-                  </div>
+                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">Geen foto’s gevonden</div>
                 )}
               </div>
             </div>
 
-            {/* ✅ thumbs + selected */}
+            {/* ✅ thumbs: WEL border */}
             {hasImages && (
               <>
                 <div className="mt-4 w-full flex justify-center">
@@ -596,14 +586,12 @@ export default function CarDetail() {
                           onClick={() => setSlide(i)}
                           className={[
                             "flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all bg-white",
-                            selected
-                              ? "border-[#1C448E] ring-2 ring-[#1C448E]/30"
-                              : "border-transparent opacity-70 hover:opacity-100 hover:border-[#1C448E]/40",
+                            selected ? "border-[#1C448E]" : "border-gray-200 hover:border-[#1C448E]/40",
                           ].join(" ")}
                           aria-label={`Foto ${i + 1}`}
                           aria-current={selected ? "true" : "false"}
                         >
-                          <img src={src} alt={`Thumb ${i + 1}`} className="h-16 w-24 sm:w-28 object-cover" />
+                          <img src={src} alt={`Thumb ${i + 1}`} className="h-16 w-24 sm:w-28 object-cover block" />
                         </button>
                       )
                     })}
@@ -622,7 +610,6 @@ export default function CarDetail() {
 
       {/* ✅ BLOK 1 + BLOK 2 */}
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
-        {/* links */}
         <div className="min-w-0">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
@@ -664,10 +651,7 @@ export default function CarDetail() {
                 <h3 className="text-lg font-semibold !text-[#1C448E] mb-4">Kenmerken</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-3">
                   {overviewItems.map((it) => (
-                    <div
-                      key={it.label}
-                      className="flex items-center justify-between gap-4 border-b border-gray-100 py-2 min-w-0"
-                    >
+                    <div key={it.label} className="flex items-center justify-between gap-4 border-b border-gray-100 py-2 min-w-0">
                       <span className="text-sm font-medium text-gray-600 truncate">{it.label}</span>
                       <span className="text-sm text-gray-900 truncate">{it.value}</span>
                     </div>
@@ -702,7 +686,6 @@ export default function CarDetail() {
           </div>
         </div>
 
-        {/* rechts */}
         <aside className="h-fit">
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <div className="flex flex-col gap-3">
@@ -721,7 +704,6 @@ export default function CarDetail() {
         </aside>
       </div>
 
-      {/* ✅ BLOK 3 */}
       <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between gap-4">
           <h3 className="text-lg font-semibold !text-[#1C448E]">Prijs calculator</h3>
@@ -733,7 +715,6 @@ export default function CarDetail() {
         </div>
       </div>
 
-      {/* ✅ vergelijkbare auto's */}
       <div className="mt-12">
         <div className="flex items-center justify-between gap-4">
           <h3 className="text-xl font-semibold !text-[#1C448E]">Vergelijkbare auto’s</h3>
@@ -763,11 +744,7 @@ export default function CarDetail() {
             .hide-scrollbar::-webkit-scrollbar{ display:none; }
           `}</style>
 
-          <div
-            ref={simWrapRef}
-            className="hide-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2"
-            style={{ scrollbarWidth: "none" }}
-          >
+          <div ref={simWrapRef} className="hide-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2" style={{ scrollbarWidth: "none" }}>
             {similar.map((d) => (
               <div key={d.id} className="flex-shrink-0 w-[280px] sm:w-[320px]">
                 <CarCard car={d.car} layout="grid" imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER} />
