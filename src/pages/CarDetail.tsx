@@ -342,6 +342,7 @@ export default function CarDetail() {
     return null
   }, [cars, routeId])
 
+  // ✅ FIX: haal images op per auto folder (ipv altijd /api/car_images => car_001)
   useEffect(() => {
     let cancelled = false
 
@@ -350,8 +351,10 @@ export default function CarDetail() {
       if (!car) return
 
       try {
-        // ✅ server haalt alles uit car_001/ (namen boeien niet)
-        const res = await fetch("/api/car_images")
+        const folder = (car.imageFolder?.trim() || FALLBACK_IMAGE_FOLDER)
+        console.log("CarDetail folder:", folder)
+
+        const res = await fetch(`/api/car_images?folder=${encodeURIComponent(folder)}`)
         if (!res.ok) throw new Error(res.statusText)
 
         const data = await res.json()
@@ -385,7 +388,6 @@ export default function CarDetail() {
       cancelled = true
     }
   }, [car])
-
 
   const hasImages = images.length > 0
   const prev = () => hasImages && setSlide((s) => (s - 1 + images.length) % images.length)
@@ -754,7 +756,6 @@ export default function CarDetail() {
           </div>
         </aside>
       </div>
-
 
       <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between gap-4">
