@@ -67,12 +67,6 @@ const FALLBACK_IMAGE_FOLDER = "car_001"
 
 // ✅ tijdelijk: altijd car_001
 const STATIC_FOLDER = "car_001"
-const STATIC_COUNT = 5
-const buildStaticImageUrls = () =>
-  Array.from({ length: STATIC_COUNT }, (_, i) => {
-    const n = i + 1
-    return `https://avsapisa.blob.core.windows.net/carimages/${STATIC_FOLDER}/foto-${n}.jpg`
-  })
 
 const getRegYear = (reg?: string): number | undefined => {
   const m = String(reg ?? "").match(/(\d{4})$/)
@@ -353,25 +347,40 @@ export default function CarDetail() {
 
   useEffect(() => {
     let cancelled = false
+
     async function run() {
       setPageReady(false)
       if (!car) return
 
-      const urls = buildStaticImageUrls()
-      if (cancelled) return
+      try {
+        // ✅ server haalt alles uit car_001/ (namen boeien niet)
+        const res = await fetch("/api/car_images")
+        if (!res.ok) throw new Error(res.statusText)
 
-      setImages(urls)
-      setSlide(0)
+        const data = await res.json()
+        const urls = Array.isArray(data?.images)
+          ? data.images.filter((x: any) => typeof x === "string" && x.length > 0)
+          : []
 
-      if (urls[0]) {
-        try {
-          await preloadImage(urls[0])
-        } catch {
-          // ok
+        if (cancelled) return
+
+        setImages(urls)
+        setSlide(0)
+
+        if (urls[0]) {
+          try {
+            await preloadImage(urls[0])
+          } catch {
+            // ok
+          }
         }
+      } catch {
+        if (cancelled) return
+        setImages([])
+        setSlide(0)
+      } finally {
+        if (!cancelled) setPageReady(true)
       }
-
-      if (!cancelled) setPageReady(true)
     }
 
     run()
@@ -379,6 +388,7 @@ export default function CarDetail() {
       cancelled = true
     }
   }, [car])
+
 
   const hasImages = images.length > 0
   const prev = () => hasImages && setSlide((s) => (s - 1 + images.length) % images.length)
