@@ -547,12 +547,21 @@ export default function CarDetail() {
                       ))}
                     </div>
 
-                    {/* pijlen blijven */}
+                    {/* ✅ pijlen: lage opacity (geen grijs), subtiel blur */}
                     <button
                       type="button"
                       onClick={prev}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95"
                       aria-label="Vorige foto"
+                      className="
+                        absolute left-3 top-1/2 -translate-y-1/2
+                        h-11 w-11 rounded-full
+                        bg-[#1C448E]/30 hover:bg-[#1C448E]/50
+                        text-white text-3xl
+                        grid place-items-center
+                        backdrop-blur-sm
+                        transition
+                        active:scale-95
+                      "
                     >
                       &#10094;
                     </button>
@@ -560,8 +569,17 @@ export default function CarDetail() {
                     <button
                       type="button"
                       onClick={next}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95"
                       aria-label="Volgende foto"
+                      className="
+                        absolute right-3 top-1/2 -translate-y-1/2
+                        h-11 w-11 rounded-full
+                        bg-[#1C448E]/30 hover:bg-[#1C448E]/50
+                        text-white text-3xl
+                        grid place-items-center
+                        backdrop-blur-sm
+                        transition
+                        active:scale-95
+                      "
                     >
                       &#10095;
                     </button>
@@ -574,7 +592,7 @@ export default function CarDetail() {
               </div>
             </div>
 
-            {/* ✅ thumbs: WEL border */}
+            {/* ✅ thumbs: WEL border, geen “achterkant”, image forced cover */}
             {hasImages && (
               <>
                 <div className="mt-4 w-full flex justify-center">
@@ -586,12 +604,20 @@ export default function CarDetail() {
                           key={src}
                           type="button"
                           onClick={() => setSlide(i)}
+                          aria-label={`Foto ${i + 1}`}
+                          aria-current={selected ? "true" : "false"}
                           className={[
-                            "flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all bg-white",
+                            "relative flex-shrink-0 rounded-xl overflow-hidden border-2 transition",
                             selected ? "border-[#1C448E]" : "border-gray-200 hover:border-[#1C448E]/40",
+                            "!bg-transparent !p-0 !m-0", // ✅ geen witte/grijze achterkant
                           ].join(" ")}
                         >
-                          <img src={src} alt={`Thumb ${i + 1}`} className="h-16 w-24 sm:w-28 object-cover block" />
+                          <img
+                            src={src}
+                            alt={`Thumb ${i + 1}`}
+                            draggable={false}
+                            className="block h-16 w-24 sm:w-28 object-cover"
+                          />
                         </button>
                       )
                     })}
@@ -607,7 +633,6 @@ export default function CarDetail() {
           </>
         )}
       </div>
-
 
       {/* ✅ BLOK 1 + BLOK 2 */}
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
