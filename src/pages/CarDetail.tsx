@@ -650,18 +650,19 @@ export default function CarDetail() {
         <div className="min-w-0">
           <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
 
-          <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">{car.description ?? "—"}</p>
+          <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">
+            {car.description ?? "—"}
+          </p>
 
-          {/* ✅ Buttons onder de omschrijving */}
-          <div className="mt-5 flex items-center gap-2 flex-shrink-0">
+          {/* ✅ Buttons onder de omschrijving (default wit, actief blauw) */}
+          <div className="mt-5 flex items-center gap-2">
             <button
               type="button"
               onClick={() => setActiveTab("kenmerken")}
               className={[
-                "px-4 py-2 rounded-lg text-sm font-semibold border transition",
-                activeTab === "kenmerken"
-                  ? "bg-[#1C448E] text-white border-[#1C448E]"
-                  : "bg-white text-[#1C448E] border-[#1C448E]/30 hover:border-[#1C448E]",
+                "px-4 py-2 rounded-lg text-sm font-semibold border transition active:scale-95",
+                "bg-white text-[#1C448E] border-[#1C448E]/30 hover:border-[#1C448E]",
+                activeTab === "kenmerken" ? "!bg-[#1C448E] !text-white !border-[#1C448E]" : "",
               ].join(" ")}
             >
               Kenmerken
@@ -671,10 +672,9 @@ export default function CarDetail() {
               type="button"
               onClick={() => setActiveTab("opties")}
               className={[
-                "px-4 py-2 rounded-lg text-sm font-semibold border transition",
-                activeTab === "opties"
-                  ? "bg-[#1C448E] text-white border-[#1C448E]"
-                  : "bg-white text-[#1C448E] border-[#1C448E]/30 hover:border-[#1C448E)]",
+                "px-4 py-2 rounded-lg text-sm font-semibold border transition active:scale-95",
+                "bg-white text-[#1C448E] border-[#1C448E]/30 hover:border-[#1C448E]",
+                activeTab === "opties" ? "!bg-[#1C448E] !text-white !border-[#1C448E]" : "",
               ].join(" ")}
             >
               Opties
@@ -726,10 +726,14 @@ export default function CarDetail() {
           </div>
         </div>
 
+        {/* ✅ BLOK 2 (rechter sidebar) */}
         <aside className="h-fit">
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <div className="flex flex-col gap-3">
-              <button type="button" className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95">
+              <button
+                type="button"
+                className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95"
+              >
                 Proefrit aanvragen
               </button>
 
@@ -743,6 +747,7 @@ export default function CarDetail() {
           </div>
         </aside>
       </div>
+
 
       <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between gap-4">
