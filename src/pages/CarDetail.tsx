@@ -39,7 +39,6 @@ type CarOverview = {
   exterior_features?: string[]
   interior_features?: string[]
   convenience_features?: string[]
-
   [key: string]: any
 }
 
@@ -436,7 +435,7 @@ export default function CarDetail() {
     const sortNewFirst = (a: CarOverview, b: CarOverview) => (b.year ?? 0) - (a.year ?? 0)
     const base = (primary.length ? primary : list).slice().sort(sortNewFirst)
 
-    return base.slice(0, 8).map(mapCarToGridData) // 8 in data, UI toont per scroll wat past
+    return base.slice(0, 8).map(mapCarToGridData)
   }, [cars, car])
 
   const scrollSimilar = (dir: "left" | "right") => {
@@ -446,7 +445,6 @@ export default function CarDetail() {
     el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" })
   }
 
-  // ---------- states ----------
   if (loading) {
     return (
       <div className="max-w-screen-2xl mx-auto px-4 md:px-6 lg:px-8 py-8">
@@ -506,9 +504,7 @@ export default function CarDetail() {
       {/* ✅ HEADER: links titel, rechts prijs */}
       <div className="mt-5 flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-3xl md:text-4xl font-semibold !text-[#1C448E] truncate">
-            {title}
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-semibold !text-[#1C448E] truncate">{title}</h1>
           {topLine ? <div className="mt-1 text-sm opacity-70">{topLine}</div> : null}
         </div>
 
@@ -520,7 +516,7 @@ export default function CarDetail() {
         </div>
       </div>
 
-      {/* ✅ FOTO: NIET AFSNIJDEN */}
+      {/* ✅ FOTO: geen grijze/zwart overlay, alleen foto + rand langs foto */}
       <div className="mt-8">
         {!pageReady ? (
           <>
@@ -533,7 +529,8 @@ export default function CarDetail() {
           </>
         ) : (
           <>
-            <div className="relative w-full h-[360px] sm:h-[640px] rounded-2xl border border-gray-200 bg-white overflow-hidden">
+            {/* container zonder bg, img bepaalt hoe het eruit ziet */}
+            <div className="relative w-full h-[360px] sm:h-[640px] rounded-2xl border border-gray-200 overflow-hidden bg-transparent">
               {hasImages ? (
                 <>
                   <div
@@ -551,7 +548,8 @@ export default function CarDetail() {
                         <img
                           src={src}
                           alt={`Slide ${i + 1}`}
-                          className="w-full h-full object-contain bg-black/5 select-none"
+                          // ✅ GEEN bg, GEEN forced rect look, foto blijft puur
+                          className="w-full h-full object-contain select-none"
                           draggable={false}
                         />
                       </button>
@@ -577,31 +575,43 @@ export default function CarDetail() {
                   </button>
                 </>
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">
-                  Geen foto’s gevonden
-                </div>
+                <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">Geen foto’s gevonden</div>
               )}
             </div>
 
-            {/* ✅ thumbs: onder foto, midden */}
+            {/* ✅ thumbs: onder foto, midden + selected state super duidelijk */}
             {hasImages && (
               <div className="mt-4 w-full flex justify-center">
                 <div className="flex gap-2 overflow-x-auto max-w-full pb-1">
-                  {images.map((src, i) => (
-                    <button
-                      key={src}
-                      type="button"
-                      onClick={() => setSlide(i)}
-                      className={[
-                        "flex-shrink-0 rounded-xl overflow-hidden border-2 transition-opacity hover:opacity-80 bg-white",
-                        i === slide ? "border-[#1C448E]" : "border-transparent",
-                      ].join(" ")}
-                      aria-label={`Foto ${i + 1}`}
-                    >
-                      <img src={src} alt={`Thumb ${i + 1}`} className="h-16 w-24 sm:w-28 object-cover" />
-                    </button>
-                  ))}
+                  {images.map((src, i) => {
+                    const selected = i === slide
+                    return (
+                      <button
+                        key={src}
+                        type="button"
+                        onClick={() => setSlide(i)}
+                        className={[
+                          "flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all bg-white",
+                          selected
+                            ? "border-[#1C448E] ring-2 ring-[#1C448E]/30"
+                            : "border-transparent opacity-70 hover:opacity-100 hover:border-[#1C448E]/40",
+                        ].join(" ")}
+                        aria-label={`Foto ${i + 1}`}
+                        aria-current={selected ? "true" : "false"}
+                      >
+                        <img src={src} alt={`Thumb ${i + 1}`} className="h-16 w-24 sm:w-28 object-cover" />
+                      </button>
+                    )
+                  })}
                 </div>
+              </div>
+            )}
+
+            {/* ✅ kleine indicator onder thumbs (optioneel maar helpt) */}
+            {hasImages && (
+              <div className="mt-2 text-center text-xs text-gray-500">
+                Foto <span className="font-semibold text-gray-800">{slide + 1}</span> van{" "}
+                <span className="font-semibold text-gray-800">{images.length}</span>
               </div>
             )}
           </>
@@ -612,7 +622,6 @@ export default function CarDetail() {
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
         {/* links */}
         <div className="min-w-0">
-          {/* omschrijving header + tabs */}
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
 
@@ -645,11 +654,8 @@ export default function CarDetail() {
             </div>
           </div>
 
-          <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">
-            {car.description ?? "—"}
-          </p>
+          <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">{car.description ?? "—"}</p>
 
-          {/* ✅ 1 blok: wisselt zonder scrollen */}
           <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5 overflow-hidden">
             {activeTab === "kenmerken" ? (
               <>
@@ -698,10 +704,7 @@ export default function CarDetail() {
         <aside className="h-fit">
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95"
-              >
+              <button type="button" className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95">
                 Proefrit aanvragen
               </button>
 
@@ -753,31 +756,22 @@ export default function CarDetail() {
           </div>
         </div>
 
-        <div className="mt-5 relative">
+        {/* ✅ 1 wrapper, hide scrollbar */}
+        <div className="mt-5">
+          <style>{`
+            .hide-scrollbar::-webkit-scrollbar{ display:none; }
+          `}</style>
+
           <div
             ref={simWrapRef}
-            className="flex gap-4 overflow-x-auto scroll-smooth pb-2"
-            style={{
-              scrollbarWidth: "none",
-            }}
+            className="hide-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2"
+            style={{ scrollbarWidth: "none" }}
           >
-            {/* hide scrollbar (webkit) */}
-            <style>{`
-              .hide-scrollbar::-webkit-scrollbar{ display:none; }
-            `}</style>
-
-            <div className="hide-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2 w-full" ref={simWrapRef as any}>
-              {similar.map((d) => (
-                <div key={d.id} className="flex-shrink-0 w-[280px] sm:w-[320px]">
-                  <CarCard car={d.car} layout="grid" imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER} />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* ✅ “niet laten ontstaan tweede rij” = flex + nowrap + overflow */}
-          <div className="text-xs text-gray-500 mt-2">
-            Scroll met pijlen voor meer suggesties.
+            {similar.map((d) => (
+              <div key={d.id} className="flex-shrink-0 w-[280px] sm:w-[320px]">
+                <CarCard car={d.car} layout="grid" imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER} />
+              </div>
+            ))}
           </div>
         </div>
       </div>
