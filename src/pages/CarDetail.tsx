@@ -562,7 +562,7 @@ export default function CarDetail() {
                         !ring-0
                         !outline-none
                         !text-white
-                        !opacity-40 hover:!opacity-70
+                        !opacity-70 hover:!opacity-80
                         transition
                         !text-5xl
                         active:scale-95
@@ -585,7 +585,7 @@ export default function CarDetail() {
                         !ring-0
                         !outline-none
                         !text-white
-                        !opacity-40 hover:!opacity-70
+                        !opacity-70 hover:!opacity-80
                         transition
                         !text-5xl
                         active:scale-95
