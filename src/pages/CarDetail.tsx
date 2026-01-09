@@ -554,7 +554,7 @@ export default function CarDetail() {
                       aria-label="Vorige foto"
                       className="
                         absolute left-3 top-1/2 -translate-y-1/2
-                        h-11 w-11
+                        h-14 w-14
                         grid place-items-center
                         !bg-transparent
                         !shadow-none
@@ -564,6 +564,7 @@ export default function CarDetail() {
                         !text-white
                         !opacity-40 hover:!opacity-70
                         transition
+                        text-5xl
                         active:scale-95
                       "
                     >
@@ -576,7 +577,7 @@ export default function CarDetail() {
                 aria-label="Volgende foto"
                 className="
                   absolute right-3 top-1/2 -translate-y-1/2
-                  h-11 w-11
+                  h-14 w-14
                   grid place-items-center
                   !bg-transparent
                   !shadow-none
@@ -586,6 +587,7 @@ export default function CarDetail() {
                   !text-white
                   !opacity-40 hover:!opacity-70
                   transition
+                  text-5xl
                   active:scale-95
                 "
               >
