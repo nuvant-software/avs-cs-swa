@@ -516,7 +516,7 @@ export default function CarDetail() {
         </div>
       </div>
 
-      {/* ✅ FOTO: geen grijze/zwart overlay, alleen foto + rand langs foto */}
+      {/* ✅ FOTO: vaste ratio container + foto vult exact de container (geen grijze ruimte) */}
       <div className="mt-8">
         {!pageReady ? (
           <>
@@ -529,90 +529,92 @@ export default function CarDetail() {
           </>
         ) : (
           <>
-            {/* container zonder bg, img bepaalt hoe het eruit ziet */}
-            <div className="relative w-full h-[360px] sm:h-[640px] rounded-2xl border border-gray-200 overflow-hidden bg-transparent">
-              {hasImages ? (
-                <>
-                  <div
-                    className="flex h-full transition-transform duration-500 ease-in-out"
-                    style={{ transform: `translateX(-${slide * 100}%)` }}
-                  >
-                    {images.map((src, i) => (
-                      <button
-                        key={src}
-                        type="button"
-                        className="w-full h-full flex-shrink-0"
-                        onClick={() => setLightboxOpen(true)}
-                        aria-label={`Open foto ${i + 1}`}
-                      >
-                        <img
-                          src={src}
-                          alt={`Slide ${i + 1}`}
-                          // ✅ GEEN bg, GEEN forced rect look, foto blijft puur
-                          className="w-full h-full object-contain select-none"
-                          draggable={false}
-                        />
-                      </button>
-                    ))}
+            <div className="relative w-full rounded-2xl border border-gray-200 overflow-hidden bg-transparent">
+              {/* ✅ ratio => 16:9 (pas aan als je foto’s bijv 4:3 zijn) */}
+              <div className="relative w-full aspect-[16/9]">
+                {hasImages ? (
+                  <>
+                    <div
+                      className="flex w-full h-full transition-transform duration-500 ease-in-out"
+                      style={{ transform: `translateX(-${slide * 100}%)` }}
+                    >
+                      {images.map((src, i) => (
+                        <button
+                          key={src}
+                          type="button"
+                          className="w-full h-full flex-shrink-0"
+                          onClick={() => setLightboxOpen(true)}
+                          aria-label={`Open foto ${i + 1}`}
+                        >
+                          <img
+                            src={src}
+                            alt={`Slide ${i + 1}`}
+                            className="w-full h-full object-cover select-none"
+                            draggable={false}
+                          />
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={prev}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95"
+                      aria-label="Vorige foto"
+                    >
+                      &#10094;
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={next}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95"
+                      aria-label="Volgende foto"
+                    >
+                      &#10095;
+                    </button>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">
+                    Geen foto’s gevonden
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={prev}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95"
-                    aria-label="Vorige foto"
-                  >
-                    &#10094;
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={next}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 h-11 w-11 rounded-full bg-[#1C448E] text-white text-3xl grid place-items-center shadow-md transition-transform duration-200 hover:scale-110 active:scale-95"
-                    aria-label="Volgende foto"
-                  >
-                    &#10095;
-                  </button>
-                </>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">Geen foto’s gevonden</div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* ✅ thumbs: onder foto, midden + selected state super duidelijk */}
+            {/* ✅ thumbs: selected state super duidelijk */}
             {hasImages && (
-              <div className="mt-4 w-full flex justify-center">
-                <div className="flex gap-2 overflow-x-auto max-w-full pb-1">
-                  {images.map((src, i) => {
-                    const selected = i === slide
-                    return (
-                      <button
-                        key={src}
-                        type="button"
-                        onClick={() => setSlide(i)}
-                        className={[
-                          "flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all bg-white",
-                          selected
-                            ? "border-[#1C448E] ring-2 ring-[#1C448E]/30"
-                            : "border-transparent opacity-70 hover:opacity-100 hover:border-[#1C448E]/40",
-                        ].join(" ")}
-                        aria-label={`Foto ${i + 1}`}
-                        aria-current={selected ? "true" : "false"}
-                      >
-                        <img src={src} alt={`Thumb ${i + 1}`} className="h-16 w-24 sm:w-28 object-cover" />
-                      </button>
-                    )
-                  })}
+              <>
+                <div className="mt-4 w-full flex justify-center">
+                  <div className="flex gap-2 overflow-x-auto max-w-full pb-1">
+                    {images.map((src, i) => {
+                      const selected = i === slide
+                      return (
+                        <button
+                          key={src}
+                          type="button"
+                          onClick={() => setSlide(i)}
+                          className={[
+                            "flex-shrink-0 rounded-xl overflow-hidden border-2 transition-all bg-white",
+                            selected
+                              ? "border-[#1C448E] ring-2 ring-[#1C448E]/30"
+                              : "border-transparent opacity-70 hover:opacity-100 hover:border-[#1C448E]/40",
+                          ].join(" ")}
+                          aria-label={`Foto ${i + 1}`}
+                          aria-current={selected ? "true" : "false"}
+                        >
+                          <img src={src} alt={`Thumb ${i + 1}`} className="h-16 w-24 sm:w-28 object-cover" />
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* ✅ kleine indicator onder thumbs (optioneel maar helpt) */}
-            {hasImages && (
-              <div className="mt-2 text-center text-xs text-gray-500">
-                Foto <span className="font-semibold text-gray-800">{slide + 1}</span> van{" "}
-                <span className="font-semibold text-gray-800">{images.length}</span>
-              </div>
+                <div className="mt-2 text-center text-xs text-gray-500">
+                  Foto <span className="font-semibold text-gray-800">{slide + 1}</span> van{" "}
+                  <span className="font-semibold text-gray-800">{images.length}</span>
+                </div>
+              </>
             )}
           </>
         )}
@@ -756,7 +758,6 @@ export default function CarDetail() {
           </div>
         </div>
 
-        {/* ✅ 1 wrapper, hide scrollbar */}
         <div className="mt-5">
           <style>{`
             .hide-scrollbar::-webkit-scrollbar{ display:none; }
