@@ -670,7 +670,7 @@ const Collection: React.FC = () => {
       <div ref={heroEndRef} aria-hidden className="h-0" />
 
       {/* CONTENT */}
-      <div className="w-full max-w-screen-2xl mx-auto" style={{ paddingTop: navSolid ? `${navOffset + 24}px` : 0}}>
+      <div className="w-full max-w-screen-2xl mx-auto" style={{ paddingTop: navSolid ? `${navOffset}px` : 0 }}>
         <div className="grid grid-cols-1 md:grid-cols-[33%_67%] lg:grid-cols-[minmax(260px,360px)_1fr]">
           {/* Sidebar */}
           <aside className="hidden md:block border-r border-gray-200">

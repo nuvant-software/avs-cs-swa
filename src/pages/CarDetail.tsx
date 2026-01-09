@@ -591,103 +591,107 @@ export default function CarDetail() {
                         active:scale-95
                       "
                     >
-                &#10095;
-              </button>
-            </>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">
-              Geen foto’s gevonden
+                      &#10095;
+                    </button>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm text-gray-600">
+                    Geen foto’s gevonden
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* ✅ thumbs: WEL border, geen “achterkant”, image forced cover */}
+            {hasImages && (
+              <>
+                <div className="mt-4 w-full flex justify-center">
+                  <div className="flex gap-2 overflow-x-auto max-w-full pb-1">
+                    {images.map((src, i) => {
+                      const selected = i === slide
+                      return (
+                        <button
+                          key={src}
+                          type="button"
+                          onClick={() => setSlide(i)}
+                          aria-label={`Foto ${i + 1}`}
+                          aria-current={selected ? "true" : "false"}
+                          className={[
+                            "relative flex-shrink-0 rounded-xl overflow-hidden border-2 transition",
+                            selected ? "!border-[#1C448E]" : "!border-gray-200 hover:!border-[#1C448E]/40",
+                            "!bg-transparent !p-0 !m-0 !shadow-none !ring-0 !outline-none",
+                          ].join(" ")}
+                        >
+                          <img
+                            src={src}
+                            alt={`Thumb ${i + 1}`}
+                            draggable={false}
+                            className="block h-16 w-24 sm:w-28 object-cover"
+                          />
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-2 text-center text-xs text-gray-500">
+                  Foto <span className="font-semibold text-gray-800">{slide + 1}</span> van{" "}
+                  <span className="font-semibold text-gray-800">{images.length}</span>
+                </div>
+              </>
+            )}
+          </>
+        )}
       </div>
-
-      {/* ✅ thumbs: WEL border, geen “achterkant”, image forced cover */}
-      {hasImages && (
-        <>
-          <div className="mt-4 w-full flex justify-center">
-            <div className="flex gap-2 overflow-x-auto max-w-full pb-1">
-              {images.map((src, i) => {
-                const selected = i === slide
-                return (
-                  <button
-                    key={src}
-                    type="button"
-                    onClick={() => setSlide(i)}
-                    aria-label={`Foto ${i + 1}`}
-                    aria-current={selected ? "true" : "false"}
-                    className={[
-                      "relative flex-shrink-0 rounded-xl overflow-hidden border-2 transition",
-                      selected ? "!border-[#1C448E]" : "!border-gray-200 hover:!border-[#1C448E]/40",
-                      "!bg-transparent !p-0 !m-0 !shadow-none !ring-0 !outline-none", // ✅ geen witte/grijze achterkant
-                    ].join(" ")}
-                  >
-                    <img
-                      src={src}
-                      alt={`Thumb ${i + 1}`}
-                      draggable={false}
-                      className="block h-16 w-24 sm:w-28 object-cover"
-                    />
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="mt-2 text-center text-xs text-gray-500">
-            Foto <span className="font-semibold text-gray-800">{slide + 1}</span> van{" "}
-            <span className="font-semibold text-gray-800">{images.length}</span>
-          </div>
-        </>
-      )}
-    </>
-  )}
-</div>
 
       {/* ✅ BLOK 1 + BLOK 2 */}
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
+        {/* ✅ BLOK 1 (AANGEPAST): Omschrijving -> tekst -> buttons -> content */}
         <div className="min-w-0">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
-
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setActiveTab("opties")}
-                className={[
-                  "px-4 py-2 rounded-lg text-sm font-semibold border transition",
-                  activeTab === "opties"
-                    ? "bg-[#1C448E] text-white border-[#1C448E]"
-                    : "bg-white text-[#1C448E] border-[#1C448E]/30 hover:border-[#1C448E]",
-                ].join(" ")}
-              >
-                Opties
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab("kenmerken")}
-                className={[
-                  "px-4 py-2 rounded-lg text-sm font-semibold border transition",
-                  activeTab === "kenmerken"
-                    ? "bg-[#1C448E] text-white border-[#1C448E]"
-                    : "bg-white text-[#1C448E] border-[#1C448E]/30 hover:border-[#1C448E]",
-                ].join(" ")}
-              >
-                Kenmerken
-              </button>
-            </div>
-          </div>
+          <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
 
           <p className="mt-3 text-sm leading-relaxed text-gray-700 whitespace-pre-line">{car.description ?? "—"}</p>
 
-          <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5 overflow-hidden">
+          {/* ✅ Buttons onder de omschrijving */}
+          <div className="mt-5 flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab("kenmerken")}
+              className={[
+                "px-4 py-2 rounded-lg text-sm font-semibold border transition",
+                activeTab === "kenmerken"
+                  ? "bg-[#1C448E] text-white border-[#1C448E]"
+                  : "bg-white text-[#1C448E] border-[#1C448E]/30 hover:border-[#1C448E]",
+              ].join(" ")}
+            >
+              Kenmerken
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("opties")}
+              className={[
+                "px-4 py-2 rounded-lg text-sm font-semibold border transition",
+                activeTab === "opties"
+                  ? "bg-[#1C448E] text-white border-[#1C448E]"
+                  : "bg-white text-[#1C448E] border-[#1C448E]/30 hover:border-[#1C448E)]",
+              ].join(" ")}
+            >
+              Opties
+            </button>
+          </div>
+
+          {/* ✅ Kenmerken/Opties content */}
+          <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-5 overflow-hidden">
             {activeTab === "kenmerken" ? (
               <>
                 <h3 className="text-lg font-semibold !text-[#1C448E] mb-4">Kenmerken</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-3">
                   {overviewItems.map((it) => (
-                    <div key={it.label} className="flex items-center justify-between gap-4 border-b border-gray-100 py-2 min-w-0">
+                    <div
+                      key={it.label}
+                      className="flex items-center justify-between gap-4 border-b border-gray-100 py-2 min-w-0"
+                    >
                       <span className="text-sm font-medium text-gray-600 truncate">{it.label}</span>
                       <span className="text-sm text-gray-900 truncate">{it.value}</span>
                     </div>
@@ -780,7 +784,11 @@ export default function CarDetail() {
             .hide-scrollbar::-webkit-scrollbar{ display:none; }
           `}</style>
 
-          <div ref={simWrapRef} className="hide-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2" style={{ scrollbarWidth: "none" }}>
+          <div
+            ref={simWrapRef}
+            className="hide-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2"
+            style={{ scrollbarWidth: "none" }}
+          >
             {similar.map((d) => (
               <div key={d.id} className="flex-shrink-0 w-[280px] sm:w-[320px]">
                 <CarCard car={d.car} layout="grid" imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER} />

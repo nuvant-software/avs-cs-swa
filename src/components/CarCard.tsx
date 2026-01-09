@@ -182,7 +182,7 @@ const CarCard: React.FC<Props> = ({
   if (layout === "list") {
     return (
       <>
-        <div className="w-full overflow-hidden rounded-[10px] border border-gray-200 bg-white transition-shadow duration-300 hover:shadow-lg">
+        <div className="mt-6 w-full overflow-hidden rounded-[10px] border border-gray-200 bg-white transition-shadow duration-300 hover:shadow-lg">
           <div className="grid grid-cols-1 md:grid-cols-[34%_44%_22%]">
             {/* [1] FOTO + 3 BALKJES */}
             <div
@@ -347,7 +347,7 @@ const CarCard: React.FC<Props> = ({
 
   return (
     <>
-      <div className={cardClassName} style={transitionStyle}>
+      <div className={`mt-6 ${cardClassName}`} style={transitionStyle}>
         <div
           className="relative w-full h-56 overflow-hidden group rounded-t-[6px]"
           onMouseLeave={() => setHoverZone(null)}
