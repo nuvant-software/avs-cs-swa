@@ -152,9 +152,51 @@ const Skeleton = ({ className }: { className: string }) => (
 const norm = (v: unknown) => String(v ?? "").trim().toLowerCase()
 const normId = (v: unknown) => norm(v).replace(/\s+/g, "")
 
+// ✅✅✅ FIX: zelfde blob aanpak als CarCard (consistent)
+const blobCache = new Map<string, string[]>()
+
+const normalizeFolder = (folder?: string) => {
+  const raw = (folder ?? "").trim()
+  if (!raw) return FALLBACK_IMAGE_FOLDER
+
+  if (/^car_\d{3}$/i.test(raw)) return raw
+  if (/^\d{3}$/.test(raw)) return `car_${raw}`
+
+  const noSlash = raw.replace(/\/+$/, "")
+  if (/^car_\d{3}$/i.test(noSlash)) return noSlash
+
+  return raw
+}
+
+const listBlobImages = async (folder: string) => {
+  const baseFolder = normalizeFolder(folder)
+
+  const cached = blobCache.get(baseFolder)
+  if (cached) return cached
+
+  const url =
+    `https://avsapisa.blob.core.windows.net/carimages` +
+    `?restype=container&comp=list&prefix=${encodeURIComponent(baseFolder + "/")}`
+
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(res.statusText)
+
+  const xmlText = await res.text()
+  const doc = new DOMParser().parseFromString(xmlText, "application/xml")
+  const blobs = Array.from(doc.getElementsByTagName("Blob"))
+
+  const urls = blobs
+    .map((b) => b.getElementsByTagName("Name")[0]?.textContent)
+    .filter((n): n is string => !!n && /\.(jpg|jpeg|png|webp)$/i.test(n))
+    .map((name) => `https://avsapisa.blob.core.windows.net/carimages/${name}`)
+
+  blobCache.set(baseFolder, urls)
+  return urls
+}
+
 export default function CarDetail() {
   const params = useParams()
-  const routeIdRaw = (params.id ?? params.carId ?? params.slug ?? "").trim()
+  const routeIdRaw = (params.id ?? (params as any).carId ?? (params as any).slug ?? "").trim()
   const routeId = (() => {
     try {
       return decodeURIComponent(routeIdRaw)
@@ -342,7 +384,7 @@ export default function CarDetail() {
     return null
   }, [cars, routeId])
 
-  // ✅ FIX: haal images op per auto folder (ipv altijd /api/car_images => car_001)
+  // ✅✅✅ FIX: images ophalen via Blob list (exact als CarCard)
   useEffect(() => {
     let cancelled = false
 
@@ -351,17 +393,10 @@ export default function CarDetail() {
       if (!car) return
 
       try {
-        const folder = (car.imageFolder?.trim() || FALLBACK_IMAGE_FOLDER)
+        const folder = normalizeFolder(car.imageFolder)
         console.log("CarDetail folder:", folder)
 
-        const res = await fetch(`/api/car_images?folder=${encodeURIComponent(folder)}`)
-        if (!res.ok) throw new Error(res.statusText)
-
-        const data = await res.json()
-        const urls = Array.isArray(data?.images)
-          ? data.images.filter((x: any) => typeof x === "string" && x.length > 0)
-          : []
-
+        const urls = await listBlobImages(folder)
         if (cancelled) return
 
         setImages(urls)
@@ -374,7 +409,8 @@ export default function CarDetail() {
             // ok
           }
         }
-      } catch {
+      } catch (e) {
+        console.error("CarDetail blob list error:", e)
         if (cancelled) return
         setImages([])
         setSlide(0)
@@ -515,7 +551,7 @@ export default function CarDetail() {
         </div>
       </div>
 
-      {/* ✅ FOTO: geen border boven, geen grijs zichtbaar, foto forced 16:9 cover */}
+      {/* ✅ FOTO */}
       <div className="mt-8">
         {!pageReady ? (
           <>
@@ -529,7 +565,6 @@ export default function CarDetail() {
         ) : (
           <>
             <div className="relative w-full">
-              {/* frame: geen border, geen bg */}
               <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden !bg-transparent">
                 {hasImages ? (
                   <>
@@ -545,7 +580,6 @@ export default function CarDetail() {
                           aria-label={`Open foto ${i + 1}`}
                           className="relative w-full h-full flex-shrink-0 !p-0 !m-0 !bg-transparent overflow-hidden"
                         >
-                          {/* ✅ ABSOLUTE => vult ALTIJD het frame, geen grijze randen mogelijk */}
                           <img
                             src={src}
                             alt={`Slide ${i + 1}`}
@@ -556,7 +590,6 @@ export default function CarDetail() {
                       ))}
                     </div>
 
-                    {/* ✅ pijlen: GEEN achtergrond, pijl wit met lage opacity (forced met !) */}
                     <button
                       type="button"
                       onClick={prev}
@@ -611,7 +644,6 @@ export default function CarDetail() {
               </div>
             </div>
 
-            {/* ✅ thumbs: WEL border, geen “achterkant”, image forced cover */}
             {hasImages && (
               <>
                 <div className="mt-4 w-full flex justify-center">
@@ -655,7 +687,6 @@ export default function CarDetail() {
 
       {/* ✅ BLOK 1 + BLOK 2 */}
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
-        {/* ✅ BLOK 1 (AANGEPAST): Omschrijving -> tekst -> buttons -> content */}
         <div className="min-w-0">
           <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
 
@@ -663,7 +694,6 @@ export default function CarDetail() {
             {car.description ?? "—"}
           </p>
 
-          {/* ✅ Buttons onder de omschrijving (default wit, actief blauw) */}
           <div className="mt-5 flex items-center gap-2">
             <button
               type="button"
@@ -690,7 +720,6 @@ export default function CarDetail() {
             </button>
           </div>
 
-          {/* ✅ Kenmerken/Opties content */}
           <div className="mt-5 rounded-2xl border border-gray-200 bg-white p-5 overflow-hidden">
             {activeTab === "kenmerken" ? (
               <>
@@ -735,14 +764,10 @@ export default function CarDetail() {
           </div>
         </div>
 
-        {/* ✅ BLOK 2 (rechter sidebar) */}
         <aside className="h-fit">
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <div className="flex flex-col gap-3">
-              <button
-                type="button"
-                className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95"
-              >
+              <button type="button" className="w-full rounded-xl bg-[#1C448E] text-white font-semibold py-3 hover:opacity-95">
                 Proefrit aanvragen
               </button>
 
@@ -797,11 +822,7 @@ export default function CarDetail() {
             .hide-scrollbar::-webkit-scrollbar{ display:none; }
           `}</style>
 
-          <div
-            ref={simWrapRef}
-            className="hide-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2"
-            style={{ scrollbarWidth: "none" }}
-          >
+          <div ref={simWrapRef} className="hide-scrollbar flex gap-4 overflow-x-auto scroll-smooth pb-2" style={{ scrollbarWidth: "none" }}>
             {similar.map((d) => (
               <div key={d.id} className="flex-shrink-0 w-[280px] sm:w-[320px]">
                 <CarCard car={d.car} layout="grid" imageFolder={d.imageFolder || FALLBACK_IMAGE_FOLDER} />
