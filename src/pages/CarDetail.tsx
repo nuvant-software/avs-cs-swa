@@ -183,10 +183,8 @@ export default function CarDetail() {
 
   const [activeTab, setActiveTab] = useState<"kenmerken" | "opties">("kenmerken")
 
-  // vergelijkbare autos carousel
   const simWrapRef = useRef<HTMLDivElement | null>(null)
 
-  // 1) laad cars
   useEffect(() => {
     setLoading(true)
     setError(null)
@@ -296,7 +294,6 @@ export default function CarDetail() {
       .finally(() => setLoading(false))
   }, [])
 
-  // 2) match car
   const car = useMemo(() => {
     if (!routeId) return null
 
@@ -356,7 +353,6 @@ export default function CarDetail() {
     return null
   }, [cars, routeId])
 
-  // 3) images (static)
   useEffect(() => {
     let cancelled = false
 
@@ -391,7 +387,6 @@ export default function CarDetail() {
   const prev = () => hasImages && setSlide((s) => (s - 1 + images.length) % images.length)
   const next = () => hasImages && setSlide((s) => (s + 1) % images.length)
 
-  // 4) content: kenmerken + opties
   const overviewItems: Array<{ label: string; value: string }> = useMemo(() => {
     if (!car) return []
     return [
@@ -421,7 +416,6 @@ export default function CarDetail() {
     return groups.length ? groups : null
   }, [car])
 
-  // 5) vergelijkbare autos (top 5-6)
   const similar = useMemo(() => {
     if (!car) return []
     const list = cars.filter((c) => c !== car)
@@ -501,7 +495,6 @@ export default function CarDetail() {
         ← Terug
       </Link>
 
-      {/* ✅ HEADER: links titel, rechts prijs */}
       <div className="mt-5 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-3xl md:text-4xl font-semibold !text-[#1C448E] truncate">{title}</h1>
@@ -516,7 +509,7 @@ export default function CarDetail() {
         </div>
       </div>
 
-      {/* ✅ FOTO: vaste ratio container + foto vult exact de container (geen grijze ruimte) */}
+      {/* ✅ FOTO: border zit NU om de slide (dus om de foto), niet om een extra outer container */}
       <div className="mt-8">
         {!pageReady ? (
           <>
@@ -529,9 +522,10 @@ export default function CarDetail() {
           </>
         ) : (
           <>
-            <div className="relative w-full rounded-2xl border border-gray-200 overflow-hidden bg-transparent">
-              {/* ✅ ratio => 16:9 (pas aan als je foto’s bijv 4:3 zijn) */}
-              <div className="relative w-full aspect-[16/9]">
+            {/* outer wrapper: geen border */}
+            <div className="relative w-full">
+              {/* inner frame: hier zit de border exact om de foto (de slide frame) */}
+              <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden border border-gray-200 bg-transparent">
                 {hasImages ? (
                   <>
                     <div
@@ -582,7 +576,6 @@ export default function CarDetail() {
               </div>
             </div>
 
-            {/* ✅ thumbs: selected state super duidelijk */}
             {hasImages && (
               <>
                 <div className="mt-4 w-full flex justify-center">
@@ -622,7 +615,6 @@ export default function CarDetail() {
 
       {/* ✅ BLOK 1 + BLOK 2 */}
       <div className="mt-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
-        {/* links */}
         <div className="min-w-0">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-xl font-semibold !text-[#1C448E]">Omschrijving</h2>
@@ -702,7 +694,6 @@ export default function CarDetail() {
           </div>
         </div>
 
-        {/* rechts (blok 2) */}
         <aside className="h-fit">
           <div className="rounded-2xl border border-gray-200 bg-white p-5">
             <div className="flex flex-col gap-3">
@@ -721,7 +712,6 @@ export default function CarDetail() {
         </aside>
       </div>
 
-      {/* ✅ BLOK 3: onder beide */}
       <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-center justify-between gap-4">
           <h3 className="text-lg font-semibold !text-[#1C448E]">Prijs calculator</h3>
@@ -733,7 +723,6 @@ export default function CarDetail() {
         </div>
       </div>
 
-      {/* ✅ vergelijkbare auto's: 1 rij + pijlen (geen tweede rij) */}
       <div className="mt-12">
         <div className="flex items-center justify-between gap-4">
           <h3 className="text-xl font-semibold !text-[#1C448E]">Vergelijkbare auto’s</h3>
